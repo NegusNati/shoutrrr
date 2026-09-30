@@ -1,0 +1,33 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "allowJs": true,
+        "noEmit": true,
+        "isolatedModules": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "noUncheckedIndexedAccess": false,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "jsx": "react-jsx",
+        "paths": {
+            "@/routes": ["../resources/js/routes/index.ts"],
+            "@/routes/*": ["../resources/js/routes/*"],
+            "@/actions/*": ["../resources/js/actions/*"],
+            "@/*": ["./src/*"]
+        },
+        "types": ["vite/client", "node", "@testing-library/jest-dom"]
+    },
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.d.ts",
+        "src/**/*.tsx",
+        "../resources/js/routes/**/*.ts",
+        "../resources/js/actions/**/*.ts",
+        "../vitest.setup.ts"
+    ]
+}

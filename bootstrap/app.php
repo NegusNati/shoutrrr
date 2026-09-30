@@ -17,6 +17,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -70,6 +71,13 @@ return Application::configure(basePath: dirname(__DIR__))
             // with the <link rel="modulepreload"> tags already rendered into the
             // document (which are generated per request and resolve to https).
             CaptureMcpWorkspaceSelection::class,
+        ]);
+
+        // Session-authenticated first-party SPA calls hit /api/v1 with cookies;
+        // Sanctum's stateful middleware gives them a session guard while
+        // external consumers keep authenticating with Passport API keys.
+        $middleware->api(prepend: [
+            EnsureFrontendRequestsAreStateful::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

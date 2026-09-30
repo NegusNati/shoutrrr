@@ -3,19 +3,11 @@
 namespace App\Http\Middleware;
 
 use App\Enums\Platform;
-use App\Enums\ReplyStatus;
 use App\Enums\SocialProvider;
-use App\Models\AccountSet;
-use App\Models\ConnectedAccount;
-use App\Models\Conversation;
-use App\Models\PostTargetReply;
 use App\Models\User;
-use App\Models\WorkspaceMembership;
-use App\Services\Gifs\KlipyClient;
-use App\Support\CommunityStats;
+use App\Support\AppShellData;
 use App\Support\FeedbackConfig;
 use App\Support\InstanceSettings;
-use App\Support\Notifications\NotificationPresenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -54,13 +46,21 @@ class HandleInertiaRequests extends Middleware
     #[Override]
     public function share(Request $request): array
     {
+        // The shell payload is produced by AppShellData — the same source the
+        // /api/v1 app endpoints use — so the Inertia pages and the SPA shell
+        // can never drift. Closures stay lazy: Inertia filters props against
+        // the partial request *before* resolving them, so a reload that asks
+        // only for `shell.unreadReplies` never runs the workspace or account
+        // queries.
+        $shell = app(AppShellData::class);
+
         // Resolve the update-check once per request and share it across the
         // three deferred sidebar props. A request-local closure (not an instance
         // property) keeps this safe under Octane where the middleware instance
         // may be reused across requests.
         $update = null;
-        $resolveUpdate = function () use (&$update): array {
-            return $update ??= $this->updateData();
+        $resolveUpdate = function () use (&$update, $shell): array {
+            return $update ??= $shell->update();
         };
 
         return [
@@ -70,11 +70,8 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            // Closures, not values: Inertia filters props against the partial
-            // request *before* resolving them, so a reload that asks only for
-            // `shell.unreadReplies` never runs the workspace or account queries.
-            'workspaces' => fn (): array => $this->workspacesData($request->user()),
-            'shell' => $this->shellData($request->user()),
+            'workspaces' => fn (): array => $shell->workspaces($request->user()),
+            'shell' => $this->shellData($request->user(), $shell),
             'socialite' => [
                 'providers' => SocialProvider::enabledProviders(),
             ],
@@ -83,7 +80,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->hasSession() ? $request->session()->get('error') : null,
                 'plainTextApiKey' => $request->hasSession() ? $request->session()->get('flash.plainTextApiKey') : null,
             ],
-            'notifications' => fn (): array => $this->notificationsData($request->user()),
+            'notifications' => fn (): array => $shell->notifications($request->user()),
             'features' => [
                 'analytics' => app(InstanceSettings::class)->metricsEnabled(),
                 'billing' => (bool) config('subscriptions.enabled'),
@@ -94,8 +91,8 @@ class HandleInertiaRequests extends Middleware
             'instance' => [
                 'isOwner' => $request->user()?->isInstanceOwner() ?? false,
             ],
-            'billing' => Inertia::defer(fn () => $this->billingData($request->user()), 'sidebar'),
-            'community' => Inertia::defer(fn () => $this->communityData(), 'sidebar')->once(),
+            'billing' => Inertia::defer(fn () => $shell->billing($request->user()), 'sidebar'),
+            'community' => Inertia::defer(fn () => $shell->community(), 'sidebar')->once(),
             'updateAvailable' => Inertia::defer(fn () => $resolveUpdate()['updateAvailable'], 'sidebar')->once(),
             'latestVersion' => Inertia::defer(fn () => $resolveUpdate()['latestVersion'], 'sidebar')->once(),
             'latestReleaseUrl' => Inertia::defer(fn () => $resolveUpdate()['latestReleaseUrl'], 'sidebar')->once(),
@@ -117,213 +114,15 @@ class HandleInertiaRequests extends Middleware
      *     gifs_enabled: \Closure(): bool,
      * }
      */
-    private function shellData(?User $user): array
+    private function shellData(?User $user, AppShellData $shell): array
     {
-        // Scope explicitly to the current workspace. The HasWorkspaceScope global
-        // scope also covers this, but only once WorkspaceMiddleware has populated
-        // the context — being explicit keeps shell data correct regardless of
-        // middleware ordering and prevents cross-workspace leakage.
-        $workspaceId = $user?->current_workspace_id;
-        $settings = app(InstanceSettings::class);
-
         return [
-            'accounts' => fn (): array => $user && $workspaceId
-                ? $this->shellAccounts($user, $settings)
-                : [],
-            'sets' => fn (): array => $workspaceId
-                ? $this->shellSets($workspaceId)
-                : [],
+            'accounts' => fn (): array => $shell->accounts($user),
+            'sets' => fn (): array => $shell->sets($user?->current_workspace_id),
             'limits' => fn (): array => Platform::allLimits(),
-            'unreadReplies' => fn (): int => $workspaceId
-                && $settings->engagementEnabled()
-                && $settings->engagementPollingEnabled()
-                    ? PostTargetReply::query()
-                        ->where('workspace_id', $workspaceId)
-                        ->where('is_ours', false)
-                        ->where('status', '!=', ReplyStatus::Archived->value)
-                        ->whereNull('read_at')
-                        ->count()
-                    : 0,
-            'unreadMessages' => fn (): int => $workspaceId && $settings->messagesEnabled()
-                ? (int) Conversation::query()
-                    ->where('workspace_id', $workspaceId)
-                    ->whereNull('archived_at')
-                    ->sum('unread_count')
-                : 0,
-            'gifs_enabled' => fn (): bool => app(KlipyClient::class)->configured(),
+            'unreadReplies' => fn (): int => $shell->unreadReplies($user),
+            'unreadMessages' => fn (): int => $shell->unreadMessages($user),
+            'gifs_enabled' => fn (): bool => $shell->gifsEnabled(),
         ];
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function shellAccounts(User $user, InstanceSettings $settings): array
-    {
-        $defaultAccountId = $user->currentWorkspace()->value('default_connected_account_id');
-
-        return ConnectedAccount::query()
-            ->where('workspace_id', $user->current_workspace_id)
-            ->enabled()
-            ->get()
-            ->filter(fn (ConnectedAccount $account): bool => $settings->platformAvailable($account->platform))
-            ->sortByDesc(fn (ConnectedAccount $account): bool => $account->id === $defaultAccountId)
-            ->map(fn (ConnectedAccount $account): array => [
-                'id' => $account->id,
-                'platform' => $account->platform->value,
-                'handle' => $account->handle,
-                'display_name' => $account->display_name,
-                'avatar_url' => $account->avatar_url,
-                'status' => $account->status->value,
-                'max_text_length' => $account->maxTextLength(),
-                'max_video_duration_seconds' => $account->maxVideoDurationSeconds(),
-                'x_premium' => $account->hasXPremium(),
-                'auto_repost_enabled' => $account->autoRepostEnabled(),
-            ])->values()->all();
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function shellSets(string $workspaceId): array
-    {
-        return AccountSet::query()
-            ->where('workspace_id', $workspaceId)
-            ->with('accounts:id')
-            ->get()
-            ->map(fn (AccountSet $set): array => [
-                'id' => $set->id,
-                'name' => $set->name,
-                'connected_account_ids' => $set->accounts->pluck('id')->all(),
-            ])->values()->all();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function workspacesData(?User $user): array
-    {
-        $enabled = (bool) config('kit.workspaces.enabled');
-        $canCreate = $enabled && app(InstanceSettings::class)->workspaceCreationEnabled();
-
-        if (! $user) {
-            return [
-                'enabled' => $enabled,
-                'all' => [],
-                'current' => null,
-                'canCreateWorkspaces' => $canCreate,
-            ];
-        }
-
-        $memberships = $user->workspaceMemberships()->with('workspace.postingSchedule')->get();
-        // Cache the eager-loaded memberships on the user so billingData() can reuse
-        // them within the same request instead of issuing a second query.
-        $user->setRelation('workspaceMemberships', $memberships);
-
-        $all = $memberships->map(fn (WorkspaceMembership $m) => [
-            'id' => $m->workspace->id,
-            'name' => $m->workspace->name,
-            'role' => $m->role->value,
-            'logo' => $m->workspace->logo,
-        ])->values()->all();
-
-        $current = null;
-        if ($user->current_workspace_id) {
-            $membership = $memberships->firstWhere('workspace_id', $user->current_workspace_id);
-
-            if ($membership) {
-                $current = [
-                    'id' => $membership->workspace->id,
-                    'name' => $membership->workspace->name,
-                    'role' => $membership->role->value,
-                    'logo' => $membership->workspace->logo,
-                    'permissions' => $membership->permissions,
-                    'timezone' => $membership->workspace->postingSchedule->timezone ?? 'UTC',
-                ];
-            }
-        }
-
-        return [
-            'enabled' => $enabled,
-            'all' => $all,
-            'current' => $current,
-            'canCreateWorkspaces' => $canCreate,
-        ];
-    }
-
-    /**
-     * @return array{subscribed: bool, manageUrl: string}|null
-     */
-    private function billingData(?User $user): ?array
-    {
-        if (! config('subscriptions.enabled') || ! $user || ! $user->current_workspace_id) {
-            return null;
-        }
-
-        // Reuse the memberships eager-loaded by workspacesData() (which runs earlier
-        // in the same request); fall back to a scoped query if they aren't loaded.
-        $membership = $user->relationLoaded('workspaceMemberships')
-            ? $user->workspaceMemberships->firstWhere('workspace_id', $user->current_workspace_id)
-            : $user->workspaceMemberships()
-                ->with('workspace')
-                ->where('workspace_id', $user->current_workspace_id)
-                ->first();
-
-        if (! $membership || ! in_array('workspace.billing.manage', $membership->permissions, true)) {
-            return null;
-        }
-
-        return [
-            'subscribed' => $membership->workspace->subscribed('default'),
-            'manageUrl' => route('billing.index'),
-        ];
-    }
-
-    /**
-     * @return array{repoUrl: string, sponsorUrl: string, stars: ?int}|null
-     */
-    private function communityData(): ?array
-    {
-        if (config('subscriptions.enabled')) {
-            return null;
-        }
-
-        $repo = (string) config('instance.community.repo');
-
-        return [
-            'repoUrl' => "https://github.com/{$repo}",
-            'sponsorUrl' => (string) config('instance.community.sponsor_url'),
-            'stars' => CommunityStats::stars(),
-        ];
-    }
-
-    /**
-     * @return array{updateAvailable: bool, latestVersion: ?string, latestReleaseUrl: ?string}
-     */
-    private function updateData(): array
-    {
-        if (config('subscriptions.enabled') || ! CommunityStats::updateAvailable()) {
-            return ['updateAvailable' => false, 'latestVersion' => null, 'latestReleaseUrl' => null];
-        }
-
-        $latest = CommunityStats::latestVersion();
-        $repo = (string) config('instance.community.repo');
-
-        return [
-            'updateAvailable' => true,
-            'latestVersion' => $latest,
-            'latestReleaseUrl' => "https://github.com/{$repo}/releases/tag/{$latest}",
-        ];
-    }
-
-    /**
-     * @return array{items: array<int, array<string, mixed>>, unreadCount: int}
-     */
-    private function notificationsData(?User $user): array
-    {
-        if ($user === null) {
-            return ['items' => [], 'unreadCount' => 0];
-        }
-
-        return NotificationPresenter::collection($user, $user->current_workspace_id);
     }
 }

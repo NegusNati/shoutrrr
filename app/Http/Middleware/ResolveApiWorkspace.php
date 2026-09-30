@@ -13,9 +13,11 @@ use Laravel\Passport\AccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * HTTP analogue of WorkspaceTool::bindWorkspace. Resolves the workspace bound to
- * the caller's API key, enforces active-key + live-membership, and installs the
- * same workspace_id Context the web path sets so model scopes and policies match.
+ * HTTP analogue of WorkspaceTool::bindWorkspace. Resolves the caller's
+ * workspace — bound API key for token requests, current_workspace_id for
+ * session (SPA) requests — enforces active-key + live-membership, and installs
+ * the same workspace_id Context the web path sets so model scopes and policies
+ * match.
  */
 class ResolveApiWorkspace
 {
@@ -25,10 +27,21 @@ class ResolveApiWorkspace
         $user = $request->user();
         $accessToken = $user?->currentAccessToken();
 
-        if (! $accessToken instanceof AccessToken) {
-            abort(401, 'Unauthenticated.');
-        }
+        $workspaceId = $accessToken instanceof AccessToken
+            ? $this->workspaceFromApiKey($user, $accessToken)
+            : $this->workspaceFromSession($user);
 
+        Context::add('workspace_id', $workspaceId);
+        $user->current_workspace_id = $workspaceId; // in-memory only
+
+        return $next($request);
+    }
+
+    /**
+     * @param  AccessToken<mixed>  $accessToken
+     */
+    private function workspaceFromApiKey(User $user, AccessToken $accessToken): string
+    {
         $apiKey = ApiKey::query()
             ->where('access_token_id', $accessToken->oauth_access_token_id)
             ->first();
@@ -41,11 +54,21 @@ class ResolveApiWorkspace
             abort(403, 'You are no longer a member of this workspace.');
         }
 
-        Context::add('workspace_id', $apiKey->workspace_id);
-        $user->current_workspace_id = $apiKey->workspace_id; // in-memory only
-
         $apiKey->forceFill(['last_used_at' => now()])->saveQuietly();
 
-        return $next($request);
+        return $apiKey->workspace_id;
+    }
+
+    private function workspaceFromSession(?User $user): string
+    {
+        abort_if($user === null, 401, 'Unauthenticated.');
+
+        $workspaceId = $user->current_workspace_id;
+
+        if ($workspaceId === null || ! $user->isMemberOfWorkspace($workspaceId)) {
+            abort(403, 'You are no longer a member of this workspace.');
+        }
+
+        return $workspaceId;
     }
 }

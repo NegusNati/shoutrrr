@@ -2,8 +2,10 @@
 /bootstrap/ssr
 /node_modules
 /public/build
+/public/build-spa
 /public/fonts-manifest.dev.json
 /public/hot
+/public/spa.hot
 /public/storage
 /public/emoji
 /storage/*.key
@@ -11,6 +13,8 @@
 /resources/js/actions
 /resources/js/routes
 /resources/js/wayfinder
+/web/src/routeTree.gen.ts
+/api.json
 /vendor
 .DS_Store
 .env

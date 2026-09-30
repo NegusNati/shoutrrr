@@ -78,7 +78,7 @@ USER www-data
 FROM --platform=$BUILDPLATFORM oven/bun:latest AS assets
 
 WORKDIR /app
-COPY package.json bun.lock vite.config.ts ./
+COPY package.json bun.lock vite.config.ts vite.spa.config.ts ./
 RUN bun install --frozen-lockfile
 
 # App source (minus .dockerignore'd paths)
@@ -97,6 +97,8 @@ ARG APP_VERSION
 ENV APP_VERSION=${APP_VERSION}
 # Builds client assets AND the SSR bundle (bootstrap/ssr/ssr.mjs)
 RUN bun run build:ssr
+# Builds the standalone SPA bundle served at /app (public/build-spa)
+RUN bun run build:spa
 
 # ============================================================
 # Stage: app — production image (single container, supervised)
