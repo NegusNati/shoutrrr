@@ -8,6 +8,7 @@ use App\Dto\Post\DraftData;
 use App\Enums\PostStatus;
 use App\Http\Controllers\Api\V1\Concerns\ResolvesWorkspacePost;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Post\Concerns\PostPayloadRules;
 use App\Jobs\DeletePostTarget;
 use App\Models\AccountSet;
 use App\Models\Post;
@@ -23,10 +24,10 @@ use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
-use Illuminate\Validation\Rule;
 
 class PostsController extends Controller
 {
+    use PostPayloadRules;
     use ResolvesWorkspacePost;
 
     /**
@@ -132,7 +133,7 @@ class PostsController extends Controller
     {
         $model = $this->findPostOrFail($id);
 
-        return response()->json(['post' => PostView::make($model->load(['targets.account', 'media']))]);
+        return response()->json(['post' => PostView::make($model->load(['targets.account', 'targets.placements', 'media']))]);
     }
 
     public function store(Request $request, DraftService $drafts): JsonResponse
@@ -140,21 +141,11 @@ class PostsController extends Controller
         $this->authorize('create', Post::class);
 
         $validated = $request->validate([
-            'base_text' => ['present', 'nullable', 'string'],
-            'segments' => ['array'],
-            'segments.*' => ['string'],
-            'mentions' => ['array'],
-            'mentions.*.id' => ['required', 'string'],
-            'mentions.*.label' => ['required', 'string'],
-            'mentions.*.handles' => ['array'],
-            'mentions.*.handles.x' => ['nullable', 'string'],
-            'mentions.*.handles.bluesky' => ['nullable', 'string'],
-            'mentions.*.handles.linkedin' => ['nullable', 'string'],
-            'mentions.*.handles.linkedin_urn' => ['nullable', 'string', 'max:255'],
-            'destination' => ['required', 'array'],
-            'destination.kind' => ['required', Rule::in(['all', 'set', 'account'])],
-            'destination.id' => ['nullable', 'string', 'required_if:destination.kind,set,account'],
-            'auto_repost' => ['sometimes', 'nullable', 'boolean'],
+            ...$this->postBodyRules(),
+            // The API also accepts a base_text-only create for external
+            // consumers, so unlike the web FormRequest 'segments' isn't
+            // required to be present.
+            'segments' => ['sometimes', 'array'],
         ]);
 
         /** @var User $user */
@@ -171,9 +162,10 @@ class PostsController extends Controller
             $segments,
             $validated['mentions'] ?? [],
             $validated['auto_repost'] ?? null,
+            DraftData::fromArray($validated),
         );
 
-        return response()->json(['post' => PostView::make($post->fresh(['targets.account', 'media']))], 201);
+        return response()->json(['post' => PostView::make($post->fresh(['targets.account', 'targets.placements', 'media']))], 201);
     }
 
     public function update(Request $request, string $id, DraftService $drafts): JsonResponse
@@ -182,40 +174,21 @@ class PostsController extends Controller
         $this->authorize('update', $model);
 
         $validated = $request->validate([
-            'base_text' => ['present', 'nullable', 'string'],
-            'segments' => ['array'],
-            'segments.*' => ['string'],
-            'mentions' => ['array'],
-            'mentions.*.id' => ['required', 'string'],
-            'mentions.*.label' => ['required', 'string'],
-            'mentions.*.handles' => ['array'],
-            'mentions.*.handles.x' => ['nullable', 'string'],
-            'mentions.*.handles.bluesky' => ['nullable', 'string'],
-            'mentions.*.handles.linkedin' => ['nullable', 'string'],
-            'mentions.*.handles.linkedin_urn' => ['nullable', 'string', 'max:255'],
-            'destination' => ['required', 'array'],
-            'destination.kind' => ['required', Rule::in(['all', 'set', 'account'])],
-            'destination.id' => ['nullable', 'string', 'required_if:destination.kind,set,account'],
-            'targets' => ['array'],
-            'targets.*.connected_account_id' => ['required', 'string'],
-            'targets.*.auto_split' => ['boolean'],
-            'targets.*.content_override' => ['nullable', 'array'],
-            'targets.*.content_override.text' => ['nullable', 'string'],
-            'targets.*.content_override.media_ids' => ['array'],
-            'targets.*.content_override.media_ids.*' => ['string'],
-            'media_ids' => ['array'],
-            'media_ids.*' => ['string'],
-            'auto_repost' => ['sometimes', 'nullable', 'boolean'],
-            'expected_updated_at' => ['nullable', 'string'],
+            ...$this->postBodyRules(),
+            'segments' => ['sometimes', 'array'],
+            ...$this->postEditRules(),
         ]);
 
         try {
             $updated = $drafts->updateDraft($model, DraftData::fromArray($validated));
-        } catch (PostStaleWriteException $e) {
-            abort(409, $e->getMessage());
+        } catch (PostStaleWriteException) {
+            return response()->json([
+                'post' => PostView::make($model->fresh(['targets.account', 'targets.placements', 'media'])),
+                'message' => 'stale_write',
+            ], 409);
         }
 
-        return response()->json(['post' => PostView::make($updated->fresh(['targets.account', 'media']))]);
+        return response()->json(['post' => PostView::make($updated->fresh(['targets.account', 'targets.placements', 'media']))]);
     }
 
     /**
@@ -239,7 +212,7 @@ class PostsController extends Controller
         $draft = $duplicator->duplicate($model);
 
         return response()->json([
-            'post' => PostView::make($draft->fresh(['targets.account', 'media'])),
+            'post' => PostView::make($draft->fresh(['targets.account', 'targets.placements', 'media'])),
         ], 201);
     }
 

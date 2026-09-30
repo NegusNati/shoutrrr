@@ -7,13 +7,21 @@ use App\Http\Controllers\Api\V1\AuthOptionsController;
 use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\ConnectedAccountsController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\GifsController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\MediaController;
+use App\Http\Controllers\Api\V1\NextSlotController;
 use App\Http\Controllers\Api\V1\NotificationsController;
 use App\Http\Controllers\Api\V1\OnboardingController;
+use App\Http\Controllers\Api\V1\PlatformLimitsController;
 use App\Http\Controllers\Api\V1\PostActionsController;
+use App\Http\Controllers\Api\V1\PostGifController;
+use App\Http\Controllers\Api\V1\PostImageEditController;
 use App\Http\Controllers\Api\V1\PostingScheduleController;
+use App\Http\Controllers\Api\V1\PostMediaController;
+use App\Http\Controllers\Api\V1\PostMetricsRefreshController;
 use App\Http\Controllers\Api\V1\PostsController;
+use App\Http\Controllers\Api\V1\PostVideoUploadController;
 use App\Http\Controllers\Api\V1\SharesController;
 use App\Http\Controllers\Api\V1\WorkspaceInvitationsController;
 use App\Http\Controllers\Api\V1\WorkspaceMentionsController;
@@ -60,14 +68,25 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
 
         Route::get('connected-accounts', [ConnectedAccountsController::class, 'index']);
         Route::get('posts', [PostsController::class, 'index']);
+        // Registered before posts/{id} so the literal segment isn't bound as an id.
+        Route::get('posts/next-slot', [NextSlotController::class, 'show']);
         Route::get('posts/{id}', [PostsController::class, 'show']);
         Route::get('account-sets', [AccountSetsController::class, 'index']);
         Route::get('calendar', [CalendarController::class, 'index']);
         Route::get('posting-schedule', [PostingScheduleController::class, 'show']);
         Route::get('posts/{id}/shares', [SharesController::class, 'index']);
+        Route::get('posts/{id}/metrics', [PostMetricsRefreshController::class, 'show'])
+            ->middleware('metrics.enabled');
+        Route::get('platform-limits', [PlatformLimitsController::class, 'index']);
+
+        Route::middleware(['gifs.enabled', 'throttle:120,1'])->group(function (): void {
+            Route::get('gifs/{catalog}/recent', [GifsController::class, 'recent']);
+            Route::get('gifs/{catalog}', [GifsController::class, 'index']);
+        });
 
         Route::middleware(RequireWriteScope::class)->group(function (): void {
             Route::post('posts', [PostsController::class, 'store']);
+            Route::post('workspace-mentions', [WorkspaceMentionsController::class, 'store']);
             Route::patch('posts/{id}', [PostsController::class, 'update']);
             Route::delete('posts/{id}', [PostsController::class, 'destroy']);
 
@@ -76,12 +95,31 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
             Route::post('posts/{id}/publish', [PostActionsController::class, 'publish']);
             Route::post('posts/{id}/targets/{targetId}/retry', [PostActionsController::class, 'retry']);
             Route::post('posts/{id}/duplicate', [PostsController::class, 'duplicate']);
+            // dispatchSync skips the queued job's per-platform rate limiting, so
+            // throttle here — each hit is a real, metered API read across every
+            // published target on the post (mirrors the web route).
+            Route::post('posts/{id}/metrics/refresh', [PostMetricsRefreshController::class, 'store'])
+                ->middleware(['metrics.enabled', 'throttle:10,1']);
 
             Route::post('posts/{id}/shares', [SharesController::class, 'store']);
             Route::delete('posts/{id}/shares/{shareId}', [SharesController::class, 'destroy']);
 
             Route::post('media', [MediaController::class, 'store']);
             Route::delete('media/{mediaId}', [MediaController::class, 'destroy']);
+
+            // Media uploads are throttled to bound abuse (presigned-URL minting /
+            // storage flooding) — mirrors the web group's throttle:60,1.
+            Route::middleware('throttle:60,1')->group(function (): void {
+                Route::post('posts/{post}/media', [PostMediaController::class, 'store']);
+                Route::patch('posts/{post}/media/{media}/alt', [PostMediaController::class, 'updateAlt']);
+                Route::post('posts/{post}/media/video-url', [PostVideoUploadController::class, 'url']);
+                Route::post('posts/{post}/media/video', [PostVideoUploadController::class, 'store']);
+                Route::post('posts/{post}/image-edit', [PostImageEditController::class, 'store']);
+                Route::put('posts/{post}/image-edit/{media}', [PostImageEditController::class, 'update']);
+                Route::post('posts/{post}/gifs', [PostGifController::class, 'store'])
+                    ->middleware('gifs.enabled');
+            });
+            Route::delete('posts/{post}/media/{media}', [PostMediaController::class, 'destroy']);
 
             Route::post('account-sets', [AccountSetsController::class, 'store']);
             Route::patch('account-sets/{set}', [AccountSetsController::class, 'update']);
