@@ -1,4 +1,3 @@
-import InstanceSettingsController from '@/actions/App/Http/Controllers/Settings/InstanceSettingsController';
 import type { Href } from '@/lib/href';
 
 export type InstanceSettingsNavKey =
@@ -12,6 +11,8 @@ export type InstanceSettingsNavItem = {
     key: InstanceSettingsNavKey;
     title: string;
     href: Href;
+    /** Instance settings live inside the SPA — always client-side links. */
+    spa: true;
 };
 
 export function instanceSettingsNavItems(): InstanceSettingsNavItem[] {
@@ -19,27 +20,32 @@ export function instanceSettingsNavItems(): InstanceSettingsNavItem[] {
         {
             key: 'general',
             title: 'General',
-            href: InstanceSettingsController.edit(),
+            href: '/settings/instance',
+            spa: true,
         },
         {
             key: 'polling',
             title: 'Polling',
-            href: InstanceSettingsController.polling(),
+            href: '/settings/instance/polling',
+            spa: true,
         },
         {
             key: 'platforms',
             title: 'Platforms',
-            href: InstanceSettingsController.platforms(),
+            href: '/settings/instance/platforms',
+            spa: true,
         },
         {
             key: 'usage',
             title: 'Usage',
-            href: InstanceSettingsController.usage(),
+            href: '/settings/instance/usage',
+            spa: true,
         },
         {
             key: 'admins',
             title: 'Admins',
-            href: InstanceSettingsController.admins(),
+            href: '/settings/instance/admins',
+            spa: true,
         },
     ];
 }

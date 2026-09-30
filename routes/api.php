@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\PostMetricsRefreshController;
 use App\Http\Controllers\Api\V1\PostsController;
 use App\Http\Controllers\Api\V1\PostVideoUploadController;
 use App\Http\Controllers\Api\V1\Settings\ConnectionsController as ConnectionsSettingsController;
+use App\Http\Controllers\Api\V1\Settings\InstanceSettingsController as InstanceSettingsApiController;
 use App\Http\Controllers\Api\V1\Settings\NotificationPreferencesController as NotificationSettingsController;
 use App\Http\Controllers\Api\V1\Settings\ProfileController as ProfileSettingsController;
 use App\Http\Controllers\Api\V1\Settings\SecurityController as SecuritySettingsController;
@@ -61,6 +62,22 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'
     Route::delete('settings/connections/{socialAccount}', [ConnectionsSettingsController::class, 'destroy']);
     Route::get('settings/notifications', [NotificationSettingsController::class, 'show']);
     Route::put('settings/notifications', [NotificationSettingsController::class, 'update']);
+
+    // Instance-wide settings — each action additionally requires the signed-in
+    // user to be an instance owner (abort 403 / FormRequest authorize).
+    Route::get('settings/instance', [InstanceSettingsApiController::class, 'show']);
+    Route::put('settings/instance', [InstanceSettingsApiController::class, 'update']);
+    Route::get('settings/instance/polling', [InstanceSettingsApiController::class, 'polling']);
+    Route::put('settings/instance/polling', [InstanceSettingsApiController::class, 'updatePolling']);
+    Route::get('settings/instance/platforms', [InstanceSettingsApiController::class, 'platforms']);
+    Route::put('settings/instance/platforms', [InstanceSettingsApiController::class, 'updatePlatforms']);
+    Route::get('settings/instance/usage', [InstanceSettingsApiController::class, 'usage']);
+    Route::get('settings/instance/usage/x', [InstanceSettingsApiController::class, 'xUsage']);
+    Route::get('settings/instance/usage/workspaces/{workspace}', [InstanceSettingsApiController::class, 'workspaceUsage']);
+    Route::put('settings/instance/usage/workspaces/{workspace}/budget', [InstanceSettingsApiController::class, 'updateWorkspaceBudget']);
+    Route::get('settings/instance/admins', [InstanceSettingsApiController::class, 'admins']);
+    Route::post('settings/instance/admins', [InstanceSettingsApiController::class, 'storeAdmin']);
+    Route::delete('settings/instance/admins/{owner}', [InstanceSettingsApiController::class, 'destroyAdmin']);
 });
 
 // Session-only: workspace settings act on the signed-in user's *current*

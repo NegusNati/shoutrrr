@@ -66,4 +66,16 @@ export const endpoints = {
     settingsWorkspaceSubscription: 'settings/workspace/subscription',
     settingsWorkspaceCheckout: 'settings/workspace/subscription/checkout',
     settingsWorkspacePortal: 'settings/workspace/subscription/portal',
+
+    settingsInstance: 'settings/instance',
+    settingsInstancePolling: 'settings/instance/polling',
+    settingsInstancePlatforms: 'settings/instance/platforms',
+    settingsInstanceUsage: 'settings/instance/usage',
+    settingsInstanceXUsage: 'settings/instance/usage/x',
+    settingsInstanceWorkspaceUsage: (id: string) =>
+        `settings/instance/usage/workspaces/${id}`,
+    settingsInstanceWorkspaceBudget: (id: string) =>
+        `settings/instance/usage/workspaces/${id}/budget`,
+    settingsInstanceAdmins: 'settings/instance/admins',
+    settingsInstanceAdmin: (id: string) => `settings/instance/admins/${id}`,
 } as const;
