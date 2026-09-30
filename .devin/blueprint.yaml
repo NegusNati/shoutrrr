@@ -1,0 +1,36 @@
+initialize: |
+  # PHP 8.5 CLI + the extensions shoutrrr needs (ondrej PPA)
+  sudo add-apt-repository -y ppa:ondrej/php
+  sudo apt-get update
+  sudo apt-get install -y php8.5-cli php8.5-bcmath php8.5-curl php8.5-gd php8.5-intl php8.5-mbstring php8.5-pgsql php8.5-sqlite3 php8.5-xml php8.5-zip
+
+  # composer -> /usr/local/bin/composer
+  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+  sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+  rm composer-setup.php
+
+  # bun -> ~/.bun/bin (the repo's JS package manager; there is no node on PATH)
+  curl -fsSL https://bun.sh/install | bash
+  echo 'PATH="$HOME/.bun/bin:$PATH"' >> $ENVRC
+maintenance: |
+  composer install --no-interaction
+  $HOME/.bun/bin/bun install
+knowledge:
+  - name: lint
+    contents: |
+      bun run lint (oxlint), bun run format (oxfmt), vendor/bin/pint --dirty
+  - name: typecheck
+    contents: |
+      composer types:check (Larastan); SPA: bun x tsc --noEmit -p web/tsconfig.json
+  - name: test
+    contents: |
+      php artisan test --compact (Pest, sqlite); bun run test:spa (vitest)
+  - name: build
+    contents: |
+      bun run build (Inertia), bun run build:spa (standalone SPA -> public/build-spa)
+  - name: api-schema
+    contents: |
+      bun run api:gen — scramble:export api.json then openapi-typescript -> web/src/lib/api/schema.gen.ts (uses bun x -p typescript@5; TS 7 lacks the compiler API)
+  - name: dev-servers
+    contents: |
+      php artisan serve (backend :8000); bun run dev:spa (vite :5174); SPA served at /app/* via the 'spa' route + spa.blade.php
