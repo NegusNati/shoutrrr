@@ -1,6 +1,6 @@
+import { useNavigate } from '@tanstack/react-router';
 import { Fragment } from 'react';
 
-import ComposerController from '@/actions/App/Http/Controllers/Posts/ComposerController';
 import { PlatformGlyph } from '@/components/common/platform-glyph';
 import type { ChipTarget } from '@/components/compose/target-status-chips';
 import { Badge } from '@/components/ui/badge';
@@ -128,6 +128,7 @@ function rowTimestamp(post: PostRowData): string {
 }
 
 export function PostRow({ post }: { post: PostRowData }) {
+    const navigate = useNavigate();
     const tz = useSchedulingTimezone();
     const { when, time } = formatWhen(rowTimestamp(post), tz);
     // Default the optional list fields: an older/partial Inertia payload (e.g. a
@@ -141,9 +142,10 @@ export function PostRow({ post }: { post: PostRowData }) {
     ).length;
 
     function openCompose() {
-        // The composer still lives in the server-rendered app — navigate
-        // there with a full page load until that page is ported to the SPA.
-        window.location.assign(ComposerController.show(post.id).url);
+        void navigate({
+            to: '/posts/$postId',
+            params: { postId: post.id },
+        });
     }
 
     const metaParts: { key: string; node: React.ReactNode }[] = [];

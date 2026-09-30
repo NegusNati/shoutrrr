@@ -62,7 +62,6 @@ import {
     type WorkspaceSettingsNavKey,
 } from '@/lib/navigation/workspace-settings-nav';
 import { appVersion, githubReleaseUrl } from '@/lib/version';
-import { dashboard } from '@/routes';
 import { index as accountsRoute } from '@/routes/accounts';
 import { index as analyticsRoute } from '@/routes/analytics';
 import { index as calendarRoute } from '@/routes/calendar';
@@ -165,7 +164,8 @@ export function AppSidebar() {
         setOpenMobile(false);
     }, [currentUrl, setOpenMobile]);
 
-    const composeHref = dashboard();
+    const logoHref = '/dashboard';
+    const composeHref = '/compose';
     const showWorkspaceSettings = workspaces?.enabled && workspaces.current;
     const canManageWorkspace = (
         workspaces?.current?.permissions ?? []
@@ -195,7 +195,7 @@ export function AppSidebar() {
                     <SidebarMenuItem className="flex items-center gap-1">
                         <SidebarMenuButton
                             className="h-8 min-w-0 flex-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
-                            render={<NavItemLink href={composeHref} spa />}
+                            render={<NavItemLink href={logoHref} spa />}
                         >
                             <AppLogo />
                         </SidebarMenuButton>

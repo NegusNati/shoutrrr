@@ -1,7 +1,8 @@
 import dayjs from 'dayjs';
 import { useState } from 'react';
 
-import ComposerController from '@/actions/App/Http/Controllers/Posts/ComposerController';
+import { useNavigate } from '@tanstack/react-router';
+
 import { useConfirm } from '@/components/common/confirm-dialog';
 import {
     defaultPickedAt,
@@ -41,6 +42,7 @@ export function PostRowActions({ post }: Props) {
     const caps = postCapabilities(post);
     const tz = useSchedulingTimezone();
     const confirm = useConfirm();
+    const navigate = useNavigate();
 
     const [mode, setMode] = useState<Mode>('menu');
     const [pickedAt, setPickedAt] = useState<string>(() => defaultPickedAt(tz));
@@ -48,8 +50,10 @@ export function PostRowActions({ post }: Props) {
     const [duplicating, setDuplicating] = useState(false);
 
     function handleEdit() {
-        // The composer still lives in the server-rendered app.
-        window.location.assign(ComposerController.show(post.id).url);
+        void navigate({
+            to: '/posts/$postId',
+            params: { postId: post.id },
+        });
     }
 
     function handleDuplicate() {
@@ -62,10 +66,11 @@ export function PostRowActions({ post }: Props) {
             .then((result) => {
                 invalidatePostQueries();
                 // Parity with the web duplicate flow: land on the new draft's
-                // composer page (still server-rendered).
-                window.location.assign(
-                    ComposerController.show(result.post.id).url,
-                );
+                // composer page.
+                void navigate({
+                    to: '/posts/$postId',
+                    params: { postId: result.post.id },
+                });
             })
             .finally(() => setDuplicating(false));
     }

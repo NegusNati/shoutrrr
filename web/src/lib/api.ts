@@ -9,6 +9,9 @@ export class ApiError extends Error {
         public readonly status: number,
         message: string,
         public readonly errors: Record<string, string[]> = {},
+        /** Raw parsed payload — callers needing more than message/errors (e.g.
+         * the 409 stale-write conflict post) read it here. */
+        public readonly body?: unknown,
     ) {
         super(message);
         this.name = 'ApiError';
@@ -24,6 +27,7 @@ type ApiOptions = {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
     headers?: Record<string, string>;
+    signal?: AbortSignal;
 };
 
 /** Parse a JSON response; throw ApiError (with Laravel's `errors` bag) on non-2xx. */
@@ -50,6 +54,7 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
                 ? payload.message
                 : `Request failed (${response.status})`,
             errors,
+            payload,
         );
     }
 
@@ -65,12 +70,17 @@ export async function apiFetch<T = unknown>(
     path: string,
     options: ApiOptions = {},
 ): Promise<T> {
+    // FormData bodies carry file uploads (media, edited images) — the browser
+    // must set its own multipart boundary, so Content-Type stays unset.
+    const isMultipart =
+        options.body instanceof FormData || options.body instanceof Blob;
+
     const response = await fetch(`/api/v1/${path}`, {
         method: options.method ?? 'GET',
         credentials: 'include',
         headers: {
             Accept: 'application/json',
-            ...(options.body !== undefined && {
+            ...(options.body !== undefined && !isMultipart && {
                 'Content-Type': 'application/json',
             }),
             ...(options.method !== undefined && options.method !== 'GET'
@@ -78,8 +88,11 @@ export async function apiFetch<T = unknown>(
                 : {}),
             ...options.headers,
         },
+        signal: options.signal,
         ...(options.body !== undefined && {
-            body: JSON.stringify(options.body),
+            body: isMultipart
+                ? (options.body as FormData | Blob)
+                : JSON.stringify(options.body),
         }),
     });
 

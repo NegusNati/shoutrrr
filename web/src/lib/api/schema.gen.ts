@@ -136,6 +136,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/gifs/{catalog}/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["gifs.recent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gifs/{catalog}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["gifs.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -179,6 +211,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["media.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/next-slot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["nextSlot.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -303,6 +351,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/platform-limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The per-platform composition limits the composer enforces client-side
+         *     (text length, media counts, video duration) — the same payload
+         *     ComposerController embeds in the Inertia page
+         */
+        get: operations["platformLimits.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/{id}/schedule": {
         parameters: {
             query?: never;
@@ -361,6 +430,167 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["postActions.retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post}/gifs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postGif.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post}/image-edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postImageEdit.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post}/image-edit/{media}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["postImageEdit.update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postMedia.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post}/media/{media}/alt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["postMedia.updateAlt"];
+        trace?: never;
+    };
+    "/posts/{post}/media/{media}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["postMedia.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read-only rollup for the published view's initial render */
+        get: operations["postMetricsRefresh.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/metrics/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postMetricsRefresh.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post}/media/video-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postVideoUpload.url"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post}/media/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postVideoUpload.store"];
         delete?: never;
         options?: never;
         head?: never;
@@ -513,7 +743,7 @@ export interface paths {
         };
         get: operations["workspaceMentions.index"];
         put?: never;
-        post?: never;
+        post: operations["workspaceMentions.store"];
         delete?: never;
         options?: never;
         head?: never;
@@ -582,14 +812,112 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AttachGifRequest */
+        AttachGifRequest: {
+            /** @enum {string} */
+            catalog: "gif" | "sticker" | "clip";
+            slug: string;
+            title?: string | null;
+            variants: {
+                /** Format: uri */
+                url: string;
+                /** @enum {string} */
+                mime: "image/gif" | "image/webp" | "video/mp4";
+                width: number;
+                height: number;
+                bytes?: number | null;
+            }[];
+            duration_seconds?: number | null;
+            /**
+             * @description What the client currently holds attached, used as the "existing
+             *      media" set for GifAttacher's mixing-rule guard. Both surfaces need
+             *     it: a reply has no reply_id column on post_media at all, and a
+             *     post's media rows stay orphaned until the draft is next saved.
+             *     Both controllers re-resolve these ids workspace-scoped, so they
+             *     grant no access the caller doesn't already have.
+             */
+            media_ids?: string[] | null;
+        };
         /**
          * InstanceRole
          * @enum {string}
          */
         InstanceRole: "owner";
+        /**
+         * PostFormat
+         * @enum {string}
+         */
+        PostFormat: "feed" | "reels" | "story";
+        /** SignVideoUploadRequest */
+        SignVideoUploadRequest: {
+            /** @enum {string} */
+            content_type: "video/mp4";
+        };
+        /** StorePostImageEditRequest */
+        StorePostImageEditRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            composed: string;
+            settings: {
+                version: number;
+                background: string[];
+                padding: number;
+                radius: number;
+                shadow: string;
+                aspect: string;
+                zoom: number;
+                tilt: string[];
+                crop?: string[] | null;
+            };
+            alt_text?: string | null;
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            source: string;
+        };
+        /** StorePostMediaRequest */
+        StorePostMediaRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            file: string;
+            alt_text?: string | null;
+        };
+        /** StoreVideoRequest */
+        StoreVideoRequest: {
+            key: string;
+            duration_seconds: number;
+            width: number;
+            height: number;
+            alt_text?: string | null;
+        };
         /** StoreWorkspaceRequest */
         StoreWorkspaceRequest: {
             name: string;
+        };
+        /** UpdatePostImageEditRequest */
+        UpdatePostImageEditRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            composed: string;
+            settings: {
+                version: number;
+                background: string[];
+                padding: number;
+                radius: number;
+                shadow: string;
+                aspect: string;
+                zoom: number;
+                tilt: string[];
+                crop?: string[] | null;
+            };
+            alt_text?: string | null;
         };
         /** User */
         User: {
@@ -984,6 +1312,76 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
         };
     };
+    "gifs.recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: unknown[];
+                        has_next: boolean;
+                    } | {
+                        items: string[];
+                        has_next: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "gifs.index": {
+        parameters: {
+            query?: {
+                page?: number;
+            };
+            header?: never;
+            path: {
+                catalog: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: unknown[];
+                        has_next: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example GIF search is unavailable right now.
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "me.show": {
         parameters: {
             query?: never;
@@ -1200,6 +1598,32 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "nextSlot.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        has_schedule: string;
+                        slot: string | null;
+                        slots: unknown[];
+                        timezone: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "notifications.index": {
@@ -1446,6 +1870,28 @@ export interface operations {
                 };
             };
             404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "platformLimits.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        limits: unknown[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "postActions.schedule": {
@@ -1961,6 +2407,439 @@ export interface operations {
             };
         };
     };
+    "postGif.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The post ID */
+                post: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachGifRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "postImageEdit.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The post ID */
+                post: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StorePostImageEditRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "postImageEdit.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The post ID */
+                post: string;
+                /** @description The media ID */
+                media: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UpdatePostImageEditRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "postMedia.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The post ID */
+                post: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StorePostMediaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "postMedia.updateAlt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The post ID */
+                post: string;
+                /** @description The media ID */
+                media: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    alt_text?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "postMedia.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The post ID */
+                post: string;
+                /** @description The media ID */
+                media: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "postMetricsRefresh.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        supported: string;
+                        captured_at: string | null;
+                        totals: {
+                            likes: number;
+                            comments: number;
+                            reposts: number;
+                        };
+                        targets: {
+                            id: string;
+                            platform: string;
+                            handle: string | null;
+                            display_name: string | null;
+                            avatar_url: string | null;
+                            status: string | null;
+                            likes: string;
+                            comments: string;
+                            reposts: string;
+                            impressions: string;
+                            captured_at: string | null;
+                            series: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "postMetricsRefresh.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        supported: string;
+                        captured_at: string | null;
+                        totals: {
+                            likes: number;
+                            comments: number;
+                            reposts: number;
+                        };
+                        targets: {
+                            id: string;
+                            platform: string;
+                            handle: string | null;
+                            display_name: string | null;
+                            avatar_url: string | null;
+                            status: string | null;
+                            likes: string;
+                            comments: string;
+                            reposts: string;
+                            impressions: string;
+                            captured_at: string | null;
+                            series: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+        };
+    };
+    "postVideoUpload.url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The post ID */
+                post: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignVideoUploadRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        key: string;
+                        url: string;
+                        headers: string[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "postVideoUpload.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The post ID */
+                post: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreVideoRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "postingSchedule.show": {
         parameters: {
             query?: never;
@@ -2058,8 +2937,13 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    base_text: string | null;
-                    segments?: string[];
+                    base_text?: string | null;
+                    /**
+                     * @description The API also accepts a base_text-only create for external
+                     *     consumers, so unlike the web FormRequest 'segments' isn't
+                     *     required to be present.
+                     */
+                    segments?: (string | null)[];
                     mentions?: {
                         id: string;
                         label: string;
@@ -2067,15 +2951,27 @@ export interface operations {
                             x?: string | null;
                             bluesky?: string | null;
                             linkedin?: string | null;
+                            facebook?: string | null;
+                            instagram?: string | null;
+                            threads?: string | null;
+                            discord?: string | null;
                             linkedin_urn?: string | null;
                         };
                     }[];
                     destination: {
                         /** @enum {string} */
-                        kind: "all" | "set" | "account";
+                        kind: "all" | "none" | "set" | "account" | "accounts";
                         id?: string | null;
+                        ids?: string[];
                     };
+                    segment_breaks?: string[];
+                    placements?: {
+                        media_id: string;
+                        segment_ref: string;
+                        position: number;
+                    }[];
                     auto_repost?: boolean | null;
+                    skip_sync?: boolean;
                 };
             };
         };
@@ -2336,8 +3232,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    base_text: string | null;
-                    segments?: string[];
+                    base_text?: string | null;
+                    segments?: (string | null)[];
                     mentions?: {
                         id: string;
                         label: string;
@@ -2345,24 +3241,44 @@ export interface operations {
                             x?: string | null;
                             bluesky?: string | null;
                             linkedin?: string | null;
+                            facebook?: string | null;
+                            instagram?: string | null;
+                            threads?: string | null;
+                            discord?: string | null;
                             linkedin_urn?: string | null;
                         };
                     }[];
                     destination: {
                         /** @enum {string} */
-                        kind: "all" | "set" | "account";
+                        kind: "all" | "none" | "set" | "account" | "accounts";
                         id?: string | null;
+                        ids?: string[];
                     };
+                    segment_breaks?: string[];
+                    placements?: {
+                        media_id: string;
+                        segment_ref: string;
+                        position: number;
+                    }[];
+                    auto_repost?: boolean | null;
+                    skip_sync?: boolean;
                     targets?: {
                         connected_account_id: string;
                         auto_split?: boolean;
+                        format?: components["schemas"]["PostFormat"] | null;
                         content_override?: {
                             text?: string | null;
+                            segments?: (string | null)[];
                             media_ids?: string[];
                         } | null;
+                        segment_breaks?: string[] | null;
+                        placements?: {
+                            media_id: string;
+                            segment_ref: string;
+                            position: number;
+                        }[] | null;
                     }[];
                     media_ids?: string[];
-                    auto_repost?: boolean | null;
                     expected_updated_at?: string | null;
                 };
             };
@@ -2467,15 +3383,102 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
-            /** @description An error */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /** @description Error overview. */
-                        message: string;
+                        post: {
+                            id: string;
+                            base_text: string;
+                            segments: string[];
+                            mentions: {
+                                id: string;
+                                label: string;
+                                handles: {
+                                    [key: string]: string;
+                                };
+                            }[];
+                            status: string;
+                            scheduled_at: string | null;
+                            auto_repost: boolean | null;
+                            skip_sync: boolean;
+                            published_at: string | null;
+                            updated_at: string;
+                            destination: {
+                                /** @constant */
+                                kind: "all";
+                                id: null;
+                            } | {
+                                /** @constant */
+                                kind: "accounts";
+                                id: null;
+                                ids: unknown[];
+                            } | {
+                                /** @constant */
+                                kind: "account";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                kind: "none";
+                                id: null;
+                            } | {
+                                /** @constant */
+                                kind: "set";
+                                id: string | null;
+                            };
+                            targets: {
+                                id: string;
+                                connected_account_id: string;
+                                platform: string;
+                                handle: string;
+                                display_name: string | null;
+                                avatar_url: string | null;
+                                sections: string[];
+                                segment_breaks: string[];
+                                placements: {
+                                    media_id: string;
+                                    segment_ref: string;
+                                    position: number;
+                                }[];
+                                content_override: {
+                                    text?: string | null;
+                                    media_ids?: string[];
+                                } | null;
+                                auto_split: boolean;
+                                format: string;
+                                status: string;
+                                error_kind: string | null;
+                                error_message: string | null;
+                                attempts: number;
+                                remote_id: string | null;
+                                issues: string;
+                            }[];
+                            media: {
+                                id: string;
+                                url: string;
+                                mime: string;
+                                kind: string;
+                                duration_seconds: number | null;
+                                alt_text: string | null;
+                                position: number;
+                                edit_settings: {
+                                    [key: string]: unknown;
+                                } | null;
+                                source_url: string | null;
+                                edit_url: string;
+                                source_edit_url: string | null;
+                            }[];
+                            segment_breaks: string[];
+                            placements: {
+                                media_id: string;
+                                segment_ref: string;
+                                position: number;
+                            }[];
+                        };
+                        /** @constant */
+                        message: "stale_write";
                     };
                 };
             };
@@ -2791,6 +3794,42 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "workspaceMentions.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    handles: string[];
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        mention: {
+                            id: string;
+                            name: string;
+                            handles: {
+                                [key: string]: string;
+                            };
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "workspaceMentions.destroy": {

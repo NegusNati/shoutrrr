@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { postsInfiniteQuery } from '@/features/posts/posts';
 import { STATUS_TABS, type StatusTab } from '@/lib/posts/status-tabs';
-import { dashboard } from '@/routes';
+import { Link } from '@tanstack/react-router';
 
 export type PostsSearch = {
     status: StatusTab;
@@ -257,7 +257,7 @@ export default function PostsIndexPage({ search }: { search: PostsSearch }) {
                         nativeButton={false}
                         size="sm"
                         className="h-8"
-                        render={<a href={dashboard().url} />}
+                        render={<Link to="/compose" />}
                     >
                         New post
                     </Button>

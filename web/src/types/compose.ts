@@ -1,3 +1,5 @@
+import type { EditSettings } from '@/lib/image-editor/settings';
+
 export const BASE_TAB = '__base__';
 
 export type PlatformName =
@@ -89,8 +91,8 @@ export type MediaView = {
     alt_text: string | null;
     duration_seconds: number | null;
     position: number;
-    /** The structured EditSettings type returns with the media editor port. */
-    edit_settings: Record<string, unknown> | null;
+    /** Structured image-editor state; null when the media was never edited. */
+    edit_settings: EditSettings | null;
     source_url: string | null;
     /** Same-origin proxy URL the canvas editor fetches (display URLs omit CORS headers). */
     edit_url: string;
