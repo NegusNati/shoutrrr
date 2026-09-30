@@ -39,8 +39,12 @@ function filterBucket(status: PostStatus): FilterId | null {
             return 'published';
         case 'draft':
             return 'draft';
-        default:
+        case 'deleted':
             return null;
+        default: {
+            const _exhaustive: never = status;
+            return _exhaustive;
+        }
     }
 }
 

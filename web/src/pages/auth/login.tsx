@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { authOptionsQuery, login } from '@/features/auth/auth';
 import { ApiError } from '@/lib/api';
+import { fieldString } from '@/lib/forms';
 
 export default function LoginPage({
     status,
@@ -43,8 +44,8 @@ export default function LoginPage({
         setProcessing(true);
         setErrors({});
         void login({
-            email: form.get('email') as string,
-            password: form.get('password') as string,
+            email: fieldString(form, 'email'),
+            password: fieldString(form, 'password'),
             remember: form.get('remember') === 'on',
         })
             .then((result) => {

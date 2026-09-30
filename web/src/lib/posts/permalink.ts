@@ -34,8 +34,16 @@ export function postPermalink(
             return remoteId.startsWith('urn:li:')
                 ? `https://www.linkedin.com/feed/update/${remoteId}/`
                 : null;
-        default:
+        case 'facebook':
+        case 'instagram':
+        case 'threads':
+        case 'discord':
+            // No public permalink format for these platforms.
             return null;
+        default: {
+            const _exhaustive: never = platform;
+            return _exhaustive;
+        }
     }
 }
 

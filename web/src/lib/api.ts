@@ -38,11 +38,18 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
     >;
 
     if (!response.ok) {
+        // Laravel's error contract: { message: string, errors: {field: string[]} }
+        const errors =
+            typeof payload.errors === 'object' && payload.errors !== null
+                ? (payload.errors as Record<string, string[]>)
+                : {};
+
         throw new ApiError(
             response.status,
-            (payload.message as string) ??
-                `Request failed (${response.status})`,
-            (payload.errors as Record<string, string[]>) ?? {},
+            typeof payload.message === 'string'
+                ? payload.message
+                : `Request failed (${response.status})`,
+            errors,
         );
     }
 
@@ -131,15 +138,19 @@ export async function apiCall<T>(
         return data as T;
     }
 
-    const body = error as {
-        message?: string;
-        errors?: Record<string, string[]>;
-    };
+    const body =
+        typeof error === 'object' && error !== null
+            ? (error as { message?: unknown; errors?: unknown })
+            : {};
 
     throw new ApiError(
         response.status,
-        body?.message ?? `Request failed (${response.status})`,
-        body?.errors ?? {},
+        typeof body.message === 'string'
+            ? body.message
+            : `Request failed (${response.status})`,
+        typeof body.errors === 'object' && body.errors !== null
+            ? (body.errors as Record<string, string[]>)
+            : {},
     );
 }
 

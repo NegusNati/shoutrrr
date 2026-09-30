@@ -30,7 +30,8 @@ const TARGET_STATUS_META: Record<TargetStatus, TargetStatusMeta> = {
 };
 
 export function targetStatusMeta(status: TargetStatus): TargetStatusMeta {
-    return TARGET_STATUS_META[status] ?? TARGET_STATUS_META.pending;
+    // Record<TargetStatus, _> is total — every status is a key.
+    return TARGET_STATUS_META[status];
 }
 
 /** True while any target is still pending/publishing/deleting. */

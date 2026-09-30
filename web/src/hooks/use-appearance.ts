@@ -3,6 +3,15 @@ import { useSyncExternalStore } from 'react';
 export type ResolvedAppearance = 'light' | 'dark';
 export type Appearance = ResolvedAppearance | 'system';
 
+const APPEARANCES: readonly Appearance[] = ['light', 'dark', 'system'];
+
+function isAppearance(value: unknown): value is Appearance {
+    return (
+        typeof value === 'string' &&
+        APPEARANCES.some((a) => a === value)
+    );
+}
+
 export type UseAppearanceReturn = {
     readonly appearance: Appearance;
     readonly resolvedAppearance: ResolvedAppearance;
@@ -34,7 +43,9 @@ const getStoredAppearance = (): Appearance => {
         return 'system';
     }
 
-    return (localStorage.getItem('appearance') as Appearance) || 'system';
+    const stored = localStorage.getItem('appearance');
+
+    return isAppearance(stored) ? stored : 'system';
 };
 
 const isDarkMode = (appearance: Appearance): boolean => {

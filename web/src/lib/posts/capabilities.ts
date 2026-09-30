@@ -66,7 +66,12 @@ export function postCapabilities(post: CapabilityInput): PostCapabilities {
                 canRetry: hasFailedTarget,
                 canDuplicate: true,
             };
-        default:
+        case 'publishing':
+        case 'deleted':
             return NONE;
+        default: {
+            const _exhaustive: never = post.status;
+            return _exhaustive;
+        }
     }
 }

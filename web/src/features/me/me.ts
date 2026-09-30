@@ -1,6 +1,6 @@
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { apiCall, apiClient } from '@/lib/api';
+import { ApiError, apiCall, apiClient } from '@/lib/api';
 import type { Auth, SocialProviderOption } from '@/types/auth';
 import type { Account, AccountSet, PlatformLimits } from '@/types/compose';
 import type { NotificationsData } from '@/types/notifications';
@@ -56,9 +56,8 @@ export const meQuery = queryOptions({
     retry: (failureCount, error) =>
         // 401/403 are steady states — don't retry them.
         !(
-            error instanceof Error &&
-            'status' in error &&
-            [401, 403].includes((error as { status: number }).status)
+            error instanceof ApiError &&
+            (error.status === 401 || error.status === 403)
         ) && failureCount < 2,
 });
 

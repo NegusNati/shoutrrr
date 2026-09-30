@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { authOptionsQuery, resetPassword } from '@/features/auth/auth';
 import { ApiError } from '@/lib/api';
+import { fieldString } from '@/lib/forms';
 
 export default function ResetPasswordPage({
     token,
@@ -36,8 +37,8 @@ export default function ResetPasswordPage({
         void resetPassword({
             token,
             email,
-            password: form.get('password') as string,
-            password_confirmation: form.get('password_confirmation') as string,
+            password: fieldString(form, 'password'),
+            password_confirmation: fieldString(form, 'password_confirmation'),
         })
             .then((result) => {
                 void navigate({

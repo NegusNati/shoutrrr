@@ -8,10 +8,10 @@ export const STATUS_TABS: { value: StatusTab; label: string }[] = [
     { value: 'missed', label: 'Missed' },
 ];
 
-const STATUS_TAB_VALUES = new Set<StatusTab>(
+const STATUS_TAB_VALUES: ReadonlySet<string> = new Set<StatusTab>(
     STATUS_TABS.map((tab) => tab.value),
 );
 
 export function isStatusTab(value: unknown): value is StatusTab {
-    return STATUS_TAB_VALUES.has(value as StatusTab);
+    return typeof value === 'string' && STATUS_TAB_VALUES.has(value);
 }

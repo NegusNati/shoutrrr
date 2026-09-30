@@ -1,6 +1,6 @@
 import type { PlatformName } from '@/types/compose';
 
-const PLATFORM_LABELS: Record<string, string> = {
+const PLATFORM_LABELS = {
     x: 'X',
     bluesky: 'Bluesky',
     linkedin: 'LinkedIn',
@@ -8,16 +8,20 @@ const PLATFORM_LABELS: Record<string, string> = {
     instagram: 'Instagram',
     threads: 'Threads',
     discord: 'Discord',
-};
+} satisfies Record<PlatformName, string>;
+
+export function isPlatformName(value: string): value is PlatformName {
+    return Object.hasOwn(PLATFORM_LABELS, value);
+}
 
 export function platformLabel(platform: string): string {
-    return PLATFORM_LABELS[platform] ?? platform;
+    return isPlatformName(platform) ? PLATFORM_LABELS[platform] : platform;
 }
 
 export function platformKeys(
     enabled: Record<PlatformName, boolean>,
 ): PlatformName[] {
-    return Object.keys(enabled) as PlatformName[];
+    return Object.keys(enabled).filter(isPlatformName);
 }
 
 export function disabledPlatformLabels(

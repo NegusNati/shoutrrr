@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { requestPasswordReset } from '@/features/auth/auth';
 import { ApiError } from '@/lib/api';
+import { fieldString } from '@/lib/forms';
 
 export default function ForgotPasswordPage() {
     const [status, setStatus] = useState<string>();
@@ -24,7 +25,7 @@ export default function ForgotPasswordPage() {
         const form = new FormData(event.currentTarget);
         setProcessing(true);
         setErrors({});
-        void requestPasswordReset(form.get('email') as string)
+        void requestPasswordReset(fieldString(form, 'email'))
             .then((result) => setStatus(result.message))
             .catch((error: unknown) => {
                 if (error instanceof ApiError) {

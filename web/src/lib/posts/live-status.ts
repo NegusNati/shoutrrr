@@ -34,7 +34,12 @@ export function postLiveStatus(
             return post.scheduled_at
                 ? `Missed · was due ${dayjs(post.scheduled_at).fromNow()}`
                 : 'Missed';
-        default:
+        case 'draft':
+        case 'deleted':
             return null;
+        default: {
+            const _exhaustive: never = post.status;
+            return _exhaustive;
+        }
     }
 }

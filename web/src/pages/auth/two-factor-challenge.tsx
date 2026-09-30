@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/input-otp';
 import { submitTwoFactorChallenge } from '@/features/auth/auth';
 import { ApiError } from '@/lib/api';
+import { fieldString } from '@/lib/forms';
 
 const OTP_MAX_LENGTH = 6;
 
@@ -37,7 +38,7 @@ export default function TwoFactorChallengePage() {
         }
         const form = new FormData(event.currentTarget);
         const body = showRecoveryInput
-            ? { recovery_code: form.get('recovery_code') as string }
+            ? { recovery_code: fieldString(form, 'recovery_code') }
             : { code };
         setProcessing(true);
         setErrors({});
