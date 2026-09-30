@@ -22,6 +22,8 @@ export const endpoints = {
 
     nextSlot: 'posts/next-slot',
 
+    calendar: (month: string) => `calendar?month=${month}`,
+
     postMediaStore: (postId: string) => `posts/${postId}/media`,
     postMediaAlt: (postId: string, mediaId: string) =>
         `posts/${postId}/media/${mediaId}/alt`,

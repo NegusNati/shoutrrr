@@ -15,9 +15,17 @@ import {
 } from '@/features/posts/compose.queries';
 import { usePostStatusPoll } from '@/hooks/compose/use-post-status-poll';
 import { firstLineTitle } from '@/lib/compose/composer-state';
-import type { PostView } from '@/types/compose';
+import type { Destination, PostView } from '@/types/compose';
 
-export function ComposePage({ post }: { post: PostView | null }) {
+export function ComposePage({
+    post,
+    initialScheduleAt = null,
+    initialDestination = null,
+}: {
+    post: PostView | null;
+    initialScheduleAt?: string | null;
+    initialDestination?: Destination | null;
+}) {
     const me = useMeData();
     const { data: mentionsData } = useQuery(workspaceMentionsQuery);
     const { data: limitsData } = useQuery(platformLimitsQuery);
@@ -85,6 +93,8 @@ export function ComposePage({ post }: { post: PostView | null }) {
                     accounts={accounts}
                     sets={sets}
                     limits={limits}
+                    initialScheduleAt={initialScheduleAt}
+                    initialDestination={initialDestination}
                     initialSavedMentions={savedMentions}
                 />
             )}

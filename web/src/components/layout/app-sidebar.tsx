@@ -64,7 +64,6 @@ import {
 import { appVersion, githubReleaseUrl } from '@/lib/version';
 import { index as accountsRoute } from '@/routes/accounts';
 import { index as analyticsRoute } from '@/routes/analytics';
-import { index as calendarRoute } from '@/routes/calendar';
 import { index as engagementRoute } from '@/routes/engagement';
 import { index as messagesRoute } from '@/routes/messages';
 import { index as postsRoute } from '@/routes/posts';
@@ -100,7 +99,7 @@ const versionBadgeClassName =
 
 const postsNavItems: NavItem[] = [
     { title: 'Posts', href: postsRoute(), icon: Inbox, spa: true },
-    { title: 'Calendar', href: calendarRoute(), icon: CalendarDays },
+    { title: 'Calendar', href: '/calendar', icon: CalendarDays, spa: true },
     {
         title: 'Queue',
         href: PostingScheduleController.show(),
