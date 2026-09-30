@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\AppShellData;
 use App\Support\FeedbackConfig;
 use App\Support\InstanceSettings;
+use Closure;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -105,24 +106,17 @@ class HandleInertiaRequests extends Middleware
      * they ask for: the unread-badge poll requests `shell.unreadReplies` and
      * `shell.unreadMessages` and never touches the account or set queries.
      *
-     * @return array{
-     *     accounts: \Closure(): array<int, array<string, mixed>>,
-     *     sets: \Closure(): array<int, array<string, mixed>>,
-     *     limits: \Closure(): list<array<string, mixed>>,
-     *     unreadReplies: \Closure(): int,
-     *     unreadMessages: \Closure(): int,
-     *     gifs_enabled: \Closure(): bool,
-     * }
+     * @return array{accounts: Closure():array<int, array<string, mixed>>, sets: Closure():array<int, array<string, mixed>>, limits: Closure():list<array<string, mixed>>, unreadReplies: Closure():int, unreadMessages: Closure():int, gifs_enabled: Closure():bool}
      */
     private function shellData(?User $user, AppShellData $shell): array
     {
         return [
             'accounts' => fn (): array => $shell->accounts($user),
             'sets' => fn (): array => $shell->sets($user?->current_workspace_id),
-            'limits' => fn (): array => Platform::allLimits(),
+            'limits' => Platform::allLimits(...),
             'unreadReplies' => fn (): int => $shell->unreadReplies($user),
             'unreadMessages' => fn (): int => $shell->unreadMessages($user),
-            'gifs_enabled' => fn (): bool => $shell->gifsEnabled(),
+            'gifs_enabled' => $shell->gifsEnabled(...),
         ];
     }
 }
