@@ -34,3 +34,9 @@ knowledge:
   - name: dev-servers
     contents: |
       php artisan serve (backend :8000); bun run dev:spa (vite :5174); SPA served at /app/* via the 'spa' route + spa.blade.php
+  - name: ui-testing
+    contents: |
+      - .env provisioning for a fresh box: cp .env.example .env + php artisan key:generate + php artisan migrate; add INSTANCE_REGISTRATIONS_ENABLED=true if register flows are needed (registration turns off once an instance owner exists).
+      - php artisan serve alone is enough for SPA UI testing once public/build-spa exists (bun run build:spa); dev:spa is only needed for HMR.
+      - bun run build (Inertia bundle) must have run at least once or every legacy page 500s with 'Vite manifest not found at public/build/manifest.json'.
+      - artisan serve reads .env only at boot — restart it after .env edits.
