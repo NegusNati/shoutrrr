@@ -26,6 +26,29 @@ type ApiOptions = {
     headers?: Record<string, string>;
 };
 
+/** Parse a JSON response; throw ApiError (with Laravel's `errors` bag) on non-2xx. */
+async function parseJsonResponse<T>(response: Response): Promise<T> {
+    if (response.status === 204) {
+        return undefined as T;
+    }
+
+    const payload = (await response.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+    >;
+
+    if (!response.ok) {
+        throw new ApiError(
+            response.status,
+            (payload.message as string) ??
+                `Request failed (${response.status})`,
+            (payload.errors as Record<string, string[]>) ?? {},
+        );
+    }
+
+    return payload as T;
+}
+
 /**
  * Thin fetch wrapper for the first-party API. Session-authenticated (cookie +
  * XSRF header); returns parsed JSON and throws ApiError on non-2xx so callers
@@ -53,25 +76,7 @@ export async function apiFetch<T = unknown>(
         }),
     });
 
-    if (response.status === 204) {
-        return undefined as T;
-    }
-
-    const payload = (await response.json().catch(() => ({}))) as Record<
-        string,
-        unknown
-    >;
-
-    if (!response.ok) {
-        throw new ApiError(
-            response.status,
-            (payload.message as string) ??
-                `Request failed (${response.status})`,
-            (payload.errors as Record<string, string[]>) ?? {},
-        );
-    }
-
-    return payload as T;
+    return parseJsonResponse<T>(response);
 }
 
 export const api = {
@@ -157,19 +162,5 @@ export async function webPost<T = unknown>(
         body: JSON.stringify(body),
     });
 
-    const payload = (await response.json().catch(() => ({}))) as Record<
-        string,
-        unknown
-    >;
-
-    if (!response.ok) {
-        throw new ApiError(
-            response.status,
-            (payload.message as string) ??
-                `Request failed (${response.status})`,
-            (payload.errors as Record<string, string[]>) ?? {},
-        );
-    }
-
-    return payload as T;
+    return parseJsonResponse<T>(response);
 }

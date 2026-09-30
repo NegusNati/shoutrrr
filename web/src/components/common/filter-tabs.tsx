@@ -1,19 +1,24 @@
 import { cn } from '@/lib/utils';
 
-export type FilterTab = { value: string; label: string; count?: number };
+export type FilterTab<T extends string = string> = {
+    value: T;
+    label: string;
+    count?: number;
+};
 
 /**
- * Pill-style segmented tabs with optional counts.
+ * Pill-style segmented tabs with optional counts. Generic over the tab value
+ * so callers' onChange handlers get their own union type, not `string`.
  */
-export function FilterTabs({
+export function FilterTabs<T extends string>({
     tabs,
     value,
     onChange,
     className,
 }: {
-    tabs: FilterTab[];
-    value: string;
-    onChange: (value: string) => void;
+    tabs: FilterTab<T>[];
+    value: T;
+    onChange: (value: T) => void;
     className?: string;
 }) {
     return (

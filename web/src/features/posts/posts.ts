@@ -7,8 +7,12 @@ import { queryClient } from '@/lib/query-client';
 import type { OnboardingData } from '@/types';
 import type { WorkspaceMention } from '@/types/compose';
 
+type PostsIndexQuery = NonNullable<
+    paths['/posts']['get']['parameters']['query']
+>;
+
 export type PostsFilters = {
-    status?: string;
+    status?: PostsIndexQuery['status'];
     set?: string;
     platform?: string;
     q?: string;
@@ -42,15 +46,11 @@ export type DashboardData = {
     posts: PostRowData[];
 };
 
-type PostsIndexQuery = NonNullable<
-    paths['/posts']['get']['parameters']['query']
->;
-
 const postsQueryParams = (
     filters: PostsFilters,
     cursor?: string,
 ): PostsIndexQuery => ({
-    status: filters.status as PostsIndexQuery['status'],
+    status: filters.status,
     set: filters.set,
     platform: filters.platform,
     q: filters.q,

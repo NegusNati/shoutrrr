@@ -17,7 +17,7 @@
         "build:spa": "vite build --config vite.spa.config.ts",
         "types:check:spa": "tsc --noEmit -p web/tsconfig.json",
         "test:spa": "vitest run --config vitest.spa.config.ts",
-        "api:gen": "php artisan scramble:export --path=api.json && openapi-typescript api.json -o web/src/lib/api/schema.gen.ts"
+        "api:gen": "php artisan scramble:export --path=api.json && bun x -p typescript@5.9.3 -p openapi-typescript@7.13.0 openapi-typescript api.json -o web/src/lib/api/schema.gen.ts"
     },
     "devDependencies": {
         "@laravel/vite-plugin-wayfinder": "^0.1.10",

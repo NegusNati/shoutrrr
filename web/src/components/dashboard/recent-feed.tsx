@@ -72,7 +72,7 @@ export function RecentFeed({ posts }: { posts: PostRowData[] }) {
                 <FilterTabs
                     tabs={tabs}
                     value={tab}
-                    onChange={(v) => setTab(v as FilterId)}
+                    onChange={setTab}
                     className="order-last w-full sm:order-none sm:w-auto"
                 />
                 <Link

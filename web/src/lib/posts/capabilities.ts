@@ -1,4 +1,4 @@
-import type { PostView } from '@/types/compose';
+import type { PostStatus, TargetStatus } from '@/types/compose';
 
 export interface PostCapabilities {
     canEdit: boolean;
@@ -20,7 +20,13 @@ const NONE: PostCapabilities = {
     canDuplicate: false,
 };
 
-export function postCapabilities(post: PostView): PostCapabilities {
+/** The minimal row shape the capability check reads — any post list item satisfies it structurally. */
+type CapabilityInput = {
+    status: PostStatus;
+    targets?: { status: TargetStatus }[];
+};
+
+export function postCapabilities(post: CapabilityInput): PostCapabilities {
     // Tolerate partial Inertia payloads that omit targets (e.g. lighter feed rows).
     const hasFailedTarget = (post.targets ?? []).some(
         (t) => t.status === 'failed',

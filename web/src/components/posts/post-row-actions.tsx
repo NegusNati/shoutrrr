@@ -23,7 +23,6 @@ import {
 import { useSchedulingTimezone } from '@/hooks/posts/use-scheduling-timezone';
 import { api } from '@/lib/api';
 import { postCapabilities } from '@/lib/posts/capabilities';
-import type { PostView } from '@/types/compose';
 
 import type { PostRowData } from './post-row';
 import { ShareDialog } from './share-dialog';
@@ -39,9 +38,7 @@ function stopBubble(e: React.MouseEvent | React.KeyboardEvent) {
 }
 
 export function PostRowActions({ post }: Props) {
-    // PostRowData is structurally compatible with the subset postCapabilities reads
-    // (.status: PostStatus, .targets[].status: TargetStatus).
-    const caps = postCapabilities(post as unknown as PostView);
+    const caps = postCapabilities(post);
     const tz = useSchedulingTimezone();
     const confirm = useConfirm();
 

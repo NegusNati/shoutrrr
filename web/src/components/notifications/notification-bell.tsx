@@ -19,24 +19,23 @@ import type {
 /** Load the next page once the user scrolls within this many px of the bottom. */
 const SCROLL_THRESHOLD = 64;
 
-const readNotificationIds = new Set<string>();
-const deletedNotificationIds = new Set<string>();
-
 function applyLocalNotificationState(
     data: NotificationsData,
+    readIds: Set<string>,
+    deletedIds: Set<string>,
 ): NotificationsData {
     const items = data.items
-        .filter((notification) => !deletedNotificationIds.has(notification.id))
+        .filter((notification) => !deletedIds.has(notification.id))
         .map((notification) =>
-            readNotificationIds.has(notification.id)
+            readIds.has(notification.id)
                 ? { ...notification, read: true }
                 : notification,
         );
     const locallyClearedUnreadCount = data.items.filter(
         (notification) =>
             !notification.read &&
-            (readNotificationIds.has(notification.id) ||
-                deletedNotificationIds.has(notification.id)),
+            (readIds.has(notification.id) ||
+                deletedIds.has(notification.id)),
     ).length;
 
     return {
@@ -62,8 +61,16 @@ function apiActionPath(href: string): string | null {
 }
 
 export function NotificationBell() {
+    // Read/deleted overrides the user applied locally; ref-scoped so they
+    // survive /me refetches but can't leak into another session or test.
+    const readIds = useRef(new Set<string>());
+    const deletedIds = useRef(new Set<string>());
     const notifications = useMeData()?.notifications ?? EMPTY_NOTIFICATIONS;
-    const initialNotifications = applyLocalNotificationState(notifications);
+    const initialNotifications = applyLocalNotificationState(
+        notifications,
+        readIds.current,
+        deletedIds.current,
+    );
     const [items, setItems] = useState<NotificationItem[]>(
         initialNotifications.items,
     );
@@ -88,8 +95,11 @@ export function NotificationBell() {
             return;
         }
 
-        const locallySyncedNotifications =
-            applyLocalNotificationState(notifications);
+        const locallySyncedNotifications = applyLocalNotificationState(
+            notifications,
+            readIds.current,
+            deletedIds.current,
+        );
 
         setItems(locallySyncedNotifications.items);
         setCursor(locallySyncedNotifications.nextCursor);
@@ -107,7 +117,11 @@ export function NotificationBell() {
             `notifications?cursor=${encodeURIComponent(cursor)}`,
         )
             .then((data) => {
-                const locallySyncedData = applyLocalNotificationState(data);
+                const locallySyncedData = applyLocalNotificationState(
+                    data,
+                    readIds.current,
+                    deletedIds.current,
+                );
 
                 setItems((prev) => {
                     const seen = new Set(prev.map((n) => n.id));
@@ -138,7 +152,7 @@ export function NotificationBell() {
 
     function markOneRead(id: string) {
         const wasUnread = items.some((n) => n.id === id && !n.read);
-        readNotificationIds.add(id);
+        readIds.current.add(id);
 
         if (wasUnread) {
             setUnread((count) => Math.max(0, count - 1));
@@ -151,7 +165,7 @@ export function NotificationBell() {
 
     function markEverythingRead() {
         items.forEach((notification) => {
-            readNotificationIds.add(notification.id);
+            readIds.current.add(notification.id);
         });
 
         setItems((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -160,7 +174,7 @@ export function NotificationBell() {
     }
 
     function deleteOne(notification: NotificationItem) {
-        deletedNotificationIds.add(notification.id);
+        deletedIds.current.add(notification.id);
 
         if (!notification.read) {
             setUnread((count) => Math.max(0, count - 1));
@@ -173,7 +187,7 @@ export function NotificationBell() {
 
     function deleteEverything() {
         items.forEach((notification) => {
-            deletedNotificationIds.add(notification.id);
+            deletedIds.current.add(notification.id);
         });
 
         setItems([]);

@@ -390,6 +390,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * List the workspace's posts with the same status/set/platform/search
+         *     filters and per-status counts the web index computes, so the SPA's filter
+         *     tabs stay consistent with the list beneath them
+         */
         get: operations["posts.index"];
         put?: never;
         post: operations["posts.store"];
@@ -425,7 +430,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Copy a terminal post into a new draft — JSON equivalent of the web
+         * Copy a terminal post into a new draft — the JSON equivalent of the web
          *     duplicate action, which redirected to the new draft's page
          */
         post: operations["posts.duplicate"];
@@ -508,7 +513,7 @@ export interface paths {
         };
         get: operations["workspaceMentions.index"];
         put?: never;
-        post: operations["workspaceMentions.store"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -607,6 +612,18 @@ export interface components {
         };
     };
     responses: {
+        /** @description Not found */
+        ModelNotFoundException: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @description Error overview. */
+                    message: string;
+                };
+            };
+        };
         /** @description Unauthenticated */
         AuthenticationException: {
             headers: {
@@ -637,18 +654,6 @@ export interface components {
         };
         /** @description Authorization error */
         AuthorizationException: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    /** @description Error overview. */
-                    message: string;
-                };
-            };
-        };
-        /** @description Not found */
-        ModelNotFoundException: {
             headers: {
                 [name: string]: unknown;
             };
@@ -1986,7 +1991,7 @@ export interface operations {
     "posts.index": {
         parameters: {
             query?: {
-                status?: "draft" | "scheduled" | "publishing" | "published" | "partial" | "failed" | "deleted" | "missed" | null;
+                status?: "all" | "draft" | "scheduled" | "publishing" | "published" | "partial" | "failed" | "deleted" | "missed" | null;
                 set?: string | null;
                 platform?: string | null;
                 q?: string | null;
@@ -2039,6 +2044,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -2785,42 +2791,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
-        };
-    };
-    "workspaceMentions.store": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name: string;
-                    handles: string[];
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        mention: {
-                            id: string;
-                            name: string;
-                            handles: {
-                                [key: string]: string;
-                            };
-                        };
-                    };
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            422: components["responses"]["ValidationException"];
         };
     };
     "workspaceMentions.destroy": {

@@ -28,24 +28,15 @@ import { Filter, Inbox, Search, SearchX, X } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { postsInfiniteQuery } from '@/features/posts/posts';
+import { STATUS_TABS, type StatusTab } from '@/lib/posts/status-tabs';
 import { dashboard } from '@/routes';
 
 export type PostsSearch = {
-    status: string;
+    status: StatusTab;
     set: string;
     platform: string;
     q: string;
 };
-
-type StatusTab = 'all' | 'scheduled' | 'draft' | 'published' | 'missed';
-
-const STATUS_TABS: { value: StatusTab; label: string }[] = [
-    { value: 'all', label: 'All' },
-    { value: 'scheduled', label: 'Scheduled' },
-    { value: 'draft', label: 'Drafts' },
-    { value: 'published', label: 'Published' },
-    { value: 'missed', label: 'Missed' },
-];
 
 const PLATFORM_OPTIONS: { value: string; label: string }[] = [
     { value: 'x', label: 'X' },
@@ -281,7 +272,7 @@ export default function PostsIndexPage({ search }: { search: PostsSearch }) {
                         count: counts?.[tab.value] ?? 0,
                     }))}
                     value={search.status}
-                    onChange={(v) => handleStatusChange(v as StatusTab)}
+                    onChange={handleStatusChange}
                 />
             </div>
 
