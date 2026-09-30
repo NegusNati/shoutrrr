@@ -40,7 +40,7 @@ class PostsController extends Controller
         $this->authorize('viewAny', Post::class);
 
         $validated = $request->validate([
-            'status' => ['nullable', 'string', 'in:draft,scheduled,publishing,published,partial,failed,deleted,missed'],
+            'status' => ['nullable', 'string', 'in:all,draft,scheduled,publishing,published,partial,failed,deleted,missed'],
             'set' => ['nullable', 'string'],
             'platform' => ['nullable', 'string'],
             'q' => ['nullable', 'string', 'max:200'],

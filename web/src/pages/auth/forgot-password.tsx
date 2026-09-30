@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { requestPasswordReset } from '@/features/auth/auth';
 import { ApiError } from '@/lib/api';
-import { appUrl } from '@/lib/href';
 
 export default function ForgotPasswordPage() {
     const [status, setStatus] = useState<string>();
@@ -76,7 +75,7 @@ export default function ForgotPasswordPage() {
 
                 <div className="space-x-1 text-center text-sm text-muted-foreground">
                     <span>Or, return to</span>
-                    <TextLink href={appUrl('/login')}>log in</TextLink>
+                    <TextLink href="/login">log in</TextLink>
                 </div>
             </div>
         </>

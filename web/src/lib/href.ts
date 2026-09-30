@@ -21,6 +21,10 @@ export const APP_BASE = '/app';
  * inside the React router (e.g. `/dashboard` → `/app/dashboard`). Only call
  * this for pages that live inside the SPA — links to pages still served by
  * the server-rendered app use the legacy URL as-is.
+ *
+ * Only for plain <a href> and window.location: TanStack Router prepends the
+ * basepath to `Link to`/`navigate` targets itself, so those take the
+ * app-relative path (e.g. `/dashboard`) — never `appUrl()` output.
  */
 export function appUrl(href: Href): string {
     const url = toUrl(href);

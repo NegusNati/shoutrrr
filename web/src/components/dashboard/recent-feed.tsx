@@ -15,7 +15,6 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { Inbox } from '@/components/ui/icons';
-import { appUrl } from '@/lib/href';
 import { index as postsRoute } from '@/routes/posts';
 
 type FilterId = 'all' | 'scheduled' | 'published' | 'draft';
@@ -77,7 +76,7 @@ export function RecentFeed({ posts }: { posts: PostRowData[] }) {
                     className="order-last w-full sm:order-none sm:w-auto"
                 />
                 <Link
-                    to={appUrl(postsRoute().url)}
+                    to={postsRoute().url}
                     className="ml-auto shrink-0 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
                 >
                     View all →

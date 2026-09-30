@@ -47,7 +47,7 @@ import {
 import { WorkspaceSelector } from '@/components/workspace/workspace-selector';
 import { useMeData } from '@/features/me/me';
 import { useCurrentUrl } from '@/hooks/use-current-url';
-import { appUrl, toUrl } from '@/lib/href';
+import { toUrl } from '@/lib/href';
 import type { Href } from '@/lib/href';
 import {
     composeButtonClassName,
@@ -130,7 +130,7 @@ function NavItemLink({
 }) {
     if (spa) {
         return (
-            <Link to={appUrl(href)} className={className}>
+            <Link to={toUrl(href)} className={className}>
                 {children}
             </Link>
         );

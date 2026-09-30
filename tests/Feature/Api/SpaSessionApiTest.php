@@ -123,6 +123,15 @@ test('posts index reports status counts and sets in meta', function () {
         ->assertJsonPath('meta.counts.all', 2);
 });
 
+test('posts index accepts status=all', function () {
+    [$user, $workspace, $token] = issuedKey();
+    Post::factory()->for($workspace)->create(['author_id' => $user->id, 'status' => 'draft']);
+
+    $this->withToken($token)->getJson('/api/v1/posts?status=all')
+        ->assertOk()
+        ->assertJsonPath('meta.counts.all', 1);
+});
+
 test('duplicating a published post creates a draft', function () {
     [$user, $workspace, $token] = issuedKey();
     $post = Post::factory()->for($workspace)->create([

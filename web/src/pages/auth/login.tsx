@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { authOptionsQuery, login } from '@/features/auth/auth';
 import { ApiError } from '@/lib/api';
-import { appUrl } from '@/lib/href';
 
 export default function LoginPage({
     status,
@@ -107,7 +106,7 @@ export default function LoginPage({
                             <Label htmlFor="password">Password</Label>
                             {canResetPassword && (
                                 <TextLink
-                                    href={appUrl('/forgot-password')}
+                                    href="/forgot-password"
                                     className="ml-auto text-sm"
                                     tabIndex={5}
                                 >
@@ -148,11 +147,11 @@ export default function LoginPage({
                     <div className="text-center text-sm text-muted-foreground">
                         Don't have an account?{' '}
                         <TextLink
-                            href={appUrl(
+                            href={
                                 invitation
                                     ? `/register?invitation=${invitation}`
-                                    : '/register',
-                            )}
+                                    : '/register'
+                            }
                             tabIndex={5}
                         >
                             Sign up

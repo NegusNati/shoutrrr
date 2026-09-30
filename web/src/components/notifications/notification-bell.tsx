@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,6 @@ import {
 } from '@/components/ui/popover';
 import { useMeData } from '@/features/me/me';
 import { api, apiFetch } from '@/lib/api';
-import { appUrl } from '@/lib/href';
 import { cn } from '@/lib/utils';
 import type {
     NotificationAction,
@@ -372,13 +370,13 @@ function NotificationRow({
     if (notification.href && !hasActions) {
         return (
             <div className="flex border-b border-border transition-colors last:border-b-0 hover:bg-muted/50">
-                <Link
-                    to={appUrl(notification.href)}
+                <a
+                    href={notification.href}
                     className="min-w-0 flex-1 pl-3"
                     onClick={() => onRead(notification.id)}
                 >
                     {content}
-                </Link>
+                </a>
                 {deleteButton}
             </div>
         );

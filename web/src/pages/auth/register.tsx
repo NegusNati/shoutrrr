@@ -13,7 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { authOptionsQuery, register } from '@/features/auth/auth';
 import { ApiError } from '@/lib/api';
-import { appUrl } from '@/lib/href';
 
 export default function RegisterPage({ invitation }: { invitation?: string }) {
     const navigate = useNavigate();
@@ -154,11 +153,11 @@ export default function RegisterPage({ invitation }: { invitation?: string }) {
                 <div className="text-center text-sm text-muted-foreground">
                     Already have an account?{' '}
                     <TextLink
-                        href={appUrl(
+                        href={
                             invitation
                                 ? `/login?invitation=${invitation}`
-                                : '/login',
-                        )}
+                                : '/login'
+                        }
                         tabIndex={6}
                     >
                         Log in

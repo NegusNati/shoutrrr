@@ -1,5 +1,5 @@
 import { webPost } from '@/lib/api';
-import { toUrl } from '@/lib/href';
+import { appUrl, toUrl } from '@/lib/href';
 import { queryClient } from '@/lib/query-client';
 import { logout as logoutRoute } from '@/routes';
 
@@ -9,6 +9,6 @@ export async function logout() {
         await webPost(toUrl(logoutRoute()));
     } finally {
         queryClient.clear();
-        window.location.href = '/';
+        window.location.href = appUrl('/login');
     }
 }

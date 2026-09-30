@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { resendVerificationEmail } from '@/features/auth/auth';
 import { logout } from '@/features/auth/logout';
-import { appUrl } from '@/lib/href';
 
 export default function VerifyEmailPage() {
     const [status, setStatus] = useState<string>();
@@ -44,7 +43,7 @@ export default function VerifyEmailPage() {
                 Log out
             </button>
 
-            <TextLink href={appUrl('/login')} className="mx-auto block text-sm">
+            <TextLink href="/login" className="mx-auto block text-sm">
                 Back to log in
             </TextLink>
         </div>
