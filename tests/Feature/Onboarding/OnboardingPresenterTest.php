@@ -40,7 +40,7 @@ test('step hrefs point into the SPA for ported pages, legacy routes otherwise', 
     expect($steps['first_post']['href'])->toBe('/app/dashboard')
         ->and($steps['timezone']['href'])->toBe('/app/settings/workspace')
         ->and($steps['invite_teammate']['href'])->toBe('/app/settings/workspace/members')
-        ->and($steps['connect_account']['href'])->toBe(route('accounts.index'));
+        ->and($steps['connect_account']['href'])->toBe('/app/accounts');
 });
 
 test('read-only member sees no steps and is never complete', function () {

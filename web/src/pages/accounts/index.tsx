@@ -64,6 +64,7 @@ export default function ConnectedAccounts({
      * failed connect), then strip the params so a reload doesn't re-fire.
      */
     const flashedRef = useRef(false);
+    const [connectError, setConnectError] = useState<string | null>(null);
     useEffect(() => {
         if (flashedRef.current) {
             return;
@@ -73,6 +74,9 @@ export default function ConnectedAccounts({
         if (search.success) {
             toast.success(search.success);
         }
+        if (search.error) {
+            setConnectError(search.error);
+        }
         if (search.success || search.error) {
             void navigate({
                 to: '/accounts',
@@ -81,10 +85,6 @@ export default function ConnectedAccounts({
             });
         }
     }, [search.success, search.error, navigate]);
-
-    const [dismissedError, setDismissedError] = useState<string | null>(null);
-    const connectError =
-        search.error && search.error !== dismissedError ? search.error : null;
 
     const toggleMutation = useToggleAccount();
     const autoRepostMutation = useAutoRepost();
@@ -145,7 +145,7 @@ export default function ConnectedAccounts({
                     <AlertDescription>{connectError}</AlertDescription>
                     <button
                         type="button"
-                        onClick={() => setDismissedError(search.error ?? null)}
+                        onClick={() => setConnectError(null)}
                         aria-label="Dismiss"
                         className="absolute top-3 right-3 text-muted-foreground transition-colors hover:text-foreground"
                     >
@@ -154,7 +154,7 @@ export default function ConnectedAccounts({
                 </Alert>
             )}
 
-            {accounts.length === 0 ? (
+            {!data ? null : accounts.length === 0 ? (
                 <Empty>
                     <EmptyHeader>
                         <EmptyMedia variant="icon">

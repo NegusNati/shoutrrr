@@ -74,7 +74,7 @@ enum OnboardingStep: string
             self::FirstPost => '/app/dashboard',
             self::Timezone => '/app/settings/workspace',
             self::InviteTeammate => '/app/settings/workspace/members',
-            self::ConnectAccount => null,
+            self::ConnectAccount => '/app/accounts',
         };
     }
 }
