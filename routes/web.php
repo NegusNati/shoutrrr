@@ -40,6 +40,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
+// First-party SPA (TanStack Router, served from /app/*). Mounted outside the
+// auth group — the SPA's route guard redirects to /app/login on a 401 from
+// /api/v1/me, so the blade shell itself is public like the login page.
+Route::get('app/{path?}', fn () => view('spa'))
+    ->where('path', '.*')
+    ->name('spa');
+
 Route::middleware('auth')->group(function () {
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::delete('notifications', [NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');

@@ -249,3 +249,32 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 - IMPORTANT: Activate `inertia-react-development` when working with Inertia React client-side patterns.
 
 </laravel-boost-guidelines>
+
+=== spa architecture rules ===
+
+# Architecture Rules — Laravel API + React SPA
+
+This project is migrating from Inertia to a Laravel JSON API + independent
+React SPA. These rules override the Inertia conventions above for any `web/`
+frontend work and any `/api/v1` endpoint work.
+
+1. The SPA lives in `web/` and mounts at `/app/*` (`spa.blade.php`). The legacy
+   Inertia app in `resources/js/` keeps working until pages are ported; new
+   user-facing pages go in `web/` only.
+2. `web/` never accesses the database and never imports Inertia. All data comes
+   from `/api/v1` (or generated Wayfinder URLs pointing back at it).
+3. `/api/v1` is dual-auth: session cookies (`auth:sanctum`, via Sanctum's
+   stateful middleware) for the SPA, and Passport API keys (`auth:api`) for
+   external consumers. Session-only endpoints (e.g. `workspaces/switch`) must
+   reject `currentAccessToken() instanceof AccessToken`.
+4. Controllers hold no business logic — they validate, authorize, call a
+   service, and shape the response. `App\Support\AppShellData` is the single
+   source of truth for the shell payload (Inertia shared props AND `/me`).
+5. Every endpoint has a Pest feature test in `tests/Feature/Api/`.
+6. API contract changes must regenerate the OpenAPI export + TS types:
+   `bun run api:gen`. Never hand-edit `web/src/lib/api/schema.gen.ts` or
+   `web/src/routeTree.gen.ts` — both are generated and gitignored.
+7. Frontend data fetching is TanStack Query with feature-scoped
+   `features/<name>/<name>.ts` query/mutation helpers — no `useEffect` fetches.
+   Routing is TanStack Router file routes under `web/src/routes/`.
+8. Do not add Redis, new services, or new dependencies without measured need.

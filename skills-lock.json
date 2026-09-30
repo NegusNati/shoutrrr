@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "thermo-nuclear-code-quality-review": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md",
+      "computedHash": "9052b01b46b1d8dbf94c45f9313ec1983443f9a460e83d49cdc7fe0f640ca476"
+    },
+    "typescript-best-practices": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "pstack/skills/typescript-best-practices/SKILL.md",
+      "computedHash": "b987c46f03f6c918110c2c198aa49fdd39e126f23ba75ae75fb8efe84625e397"
+    }
+  }
+}
