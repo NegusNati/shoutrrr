@@ -40,7 +40,7 @@ test('x callback records dm_enabled true when the dm scopes are granted', functi
         'approvedScopes' => ['users.read', 'tweet.read', 'dm.read', 'dm.write'],
     ]);
 
-    test()->get('/accounts/callback/x')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/x')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'x-dm-yes');
     expect($account->capabilities['dm_enabled'])->toBeTrue()
@@ -60,7 +60,7 @@ test('x callback records dm_enabled false when the dm scopes are not granted', f
         'approvedScopes' => ['users.read', 'tweet.read'],
     ]);
 
-    test()->get('/accounts/callback/x')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/x')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'x-dm-no');
     expect($account->capabilities['dm_enabled'])->toBeFalse()
@@ -85,7 +85,7 @@ test('x callback keeps the dm capability alongside the existing tier capabilitie
         ]),
     ]);
 
-    test()->get('/accounts/callback/x')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/x')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'x-dm-merge');
     expect($account->capabilities)->toMatchArray([
@@ -122,7 +122,7 @@ test('bluesky connect records dm_enabled from the dm_access checkbox', function 
         'identifier' => 'dm.bsky.social',
         'app_password' => 'app-pass-1234',
         'dm_access' => true,
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'did:plc:dm');
     expect($account->capabilities['dm_enabled'])->toBeTrue()
@@ -156,7 +156,7 @@ test('bluesky connect defaults dm_enabled to false without the checkbox', functi
     test()->post('/accounts/connect/bluesky', [
         'identifier' => 'nodm.bsky.social',
         'app_password' => 'app-pass-1234',
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'did:plc:nodm');
     expect($account->capabilities['dm_enabled'])->toBeFalse()

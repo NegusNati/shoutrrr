@@ -11,14 +11,14 @@ use App\Models\ConnectedAccount;
 use App\Services\ConnectedAccounts\AccountConnectionService;
 use App\Services\ConnectedAccounts\Meta\MetaAssetEnumerator;
 use App\Support\InstanceSettings;
+use App\Support\MetaConnectStash;
+use App\Support\Spa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\User as SocialiteUser;
@@ -39,8 +39,6 @@ use Throwable;
  */
 class MetaConnectionController extends Controller
 {
-    private const string SESSION_KEY = 'accounts.meta.connect';
-
     public function __construct(
         private readonly MetaAssetEnumerator $enumerator,
         private readonly AccountConnectionService $connections,
@@ -54,7 +52,7 @@ class MetaConnectionController extends Controller
         $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
 
         // Drop any half-finished picker stash so a re-connect starts clean.
-        $request->session()->forget(self::SESSION_KEY);
+        $request->session()->forget(MetaConnectStash::KEY);
         $request->session()->save();
 
         // setScopes (not scopes): Socialite's Facebook driver defaults include
@@ -85,7 +83,7 @@ class MetaConnectionController extends Controller
         }
     }
 
-    public function callback(Request $request): RedirectResponse|InertiaResponse
+    public function callback(Request $request): RedirectResponse
     {
         $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
 
@@ -100,8 +98,8 @@ class MetaConnectionController extends Controller
 
         // Duplicate callback (Facebook/browser double-hit) after a successful
         // exchange: re-show the picker instead of flashing a false failure.
-        if ($this->hasStashedAssets($request)) {
-            return $this->renderAssetPicker($request);
+        if (MetaConnectStash::hasAssets($request)) {
+            return $this->renderAssetPicker();
         }
 
         if (! $request->filled('code')) {
@@ -115,8 +113,8 @@ class MetaConnectionController extends Controller
             $lock->block(15);
 
             // Another concurrent callback may have finished while we waited.
-            if ($this->hasStashedAssets($request)) {
-                return $this->renderAssetPicker($request);
+            if (MetaConnectStash::hasAssets($request)) {
+                return $this->renderAssetPicker();
             }
 
             $oauthUser = $this->resolveOAuthUser($request);
@@ -125,8 +123,8 @@ class MetaConnectionController extends Controller
             $assets = $this->enumerator->listPages($longLived['token']);
         } catch (Throwable $exception) {
             // Code already redeemed by the winning parallel request that stashed assets.
-            if ($this->isAuthorizationCodeUsed($exception) && $this->hasStashedAssets($request)) {
-                return $this->renderAssetPicker($request);
+            if ($this->isAuthorizationCodeUsed($exception) && MetaConnectStash::hasAssets($request)) {
+                return $this->renderAssetPicker();
             }
 
             Log::warning('Meta OAuth callback failed.', [
@@ -159,22 +157,19 @@ class MetaConnectionController extends Controller
             ];
         }
 
-        $request->session()->put(self::SESSION_KEY, [
-            'assets' => $stashedAssets,
-            'userTokenExpiresAt' => $longLived['expiresAt']?->toIso8601String(),
-        ]);
+        MetaConnectStash::put($request, $stashedAssets, $longLived['expiresAt']?->toIso8601String());
         $request->session()->save();
 
-        return $this->renderAssetPicker($request);
+        return $this->renderAssetPicker();
     }
 
     public function store(Request $request): RedirectResponse
     {
         $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
 
-        $stash = $request->session()->get(self::SESSION_KEY);
+        $stash = MetaConnectStash::get($request);
         /** @var array<string, array{pageId: string, pageName: string, pageAccessToken: string, igUserId: ?string, igUsername: ?string, igAvatarUrl: ?string}> $stashedAssets */
-        $stashedAssets = is_array($stash) ? ($stash['assets'] ?? []) : [];
+        $stashedAssets = $stash['assets'] ?? [];
 
         $launchedPlatforms = array_map(
             fn (Platform $platform): string => $platform->value,
@@ -198,7 +193,7 @@ class MetaConnectionController extends Controller
             // valid pairs (`availablePlatformsFor`), but a crafted request could
             // pick `instagram` for a Page with no linked IG account, which would
             // otherwise persist a ghost account with an empty remote id.
-            if (! in_array($platform->value, $this->availablePlatformsFor($asset), true)) {
+            if (! in_array($platform->value, MetaConnectStash::availablePlatformsFor($asset), true)) {
                 throw ValidationException::withMessages([
                     'selected' => "{$platform->label()} is not available for the selected Page.",
                 ]);
@@ -208,12 +203,12 @@ class MetaConnectionController extends Controller
             $created++;
         }
 
-        $request->session()->forget(self::SESSION_KEY);
+        MetaConnectStash::forget($request);
 
-        return redirect()->route('accounts.index')->with(
-            'success',
-            $created === 1 ? '1 account connected.' : "{$created} accounts connected.",
-        );
+        return redirect(Spa::url(
+            '/accounts',
+            success: $created === 1 ? '1 account connected.' : "{$created} accounts connected.",
+        ));
     }
 
     /**
@@ -304,75 +299,18 @@ class MetaConnectionController extends Controller
         };
     }
 
-    /**
-     * @param  array<string, array{pageId: string, pageName: string, pageAccessToken: string, igUserId: ?string, igUsername: ?string, igAvatarUrl: ?string}>  $stashedAssets
-     * @return list<array{key: string, pageId: string, pageName: string, igUserId: ?string, igUsername: ?string, igAvatarUrl: ?string, platforms: list<string>}>
-     */
-    private function projectAssets(array $stashedAssets): array
-    {
-        $projected = [];
-
-        foreach ($stashedAssets as $key => $asset) {
-            $projected[] = [
-                'key' => $key,
-                'pageId' => $asset['pageId'],
-                'pageName' => $asset['pageName'],
-                'igUserId' => $asset['igUserId'],
-                'igUsername' => $asset['igUsername'],
-                'igAvatarUrl' => $asset['igAvatarUrl'],
-                'platforms' => $this->availablePlatformsFor($asset),
-            ];
-        }
-
-        return $projected;
-    }
-
-    /**
-     * @param  array{igUserId: ?string}  $asset
-     * @return list<string>
-     */
-    private function availablePlatformsFor(array $asset): array
-    {
-        $available = Platform::availableMetaGraphPlatforms();
-        $platforms = [];
-
-        if (in_array(Platform::Facebook, $available, true)) {
-            $platforms[] = Platform::Facebook->value;
-        }
-
-        if (in_array(Platform::Instagram, $available, true) && $asset['igUserId'] !== null) {
-            $platforms[] = Platform::Instagram->value;
-        }
-
-        return $platforms;
-    }
-
     private function failed(string $message): RedirectResponse
     {
-        return redirect()->route('accounts.index')->with('error', $message);
+        return redirect(Spa::url('/accounts', error: $message));
     }
 
     /**
-     * Reads live session state that a concurrent OAuth callback may stash while
-     * we hold the lock, so its result changes between calls within one request.
-     *
-     * @phpstan-impure
+     * The picker lives in the SPA now — the stash stays server-side and the
+     * page reads its token-stripped projection from the session-only API.
      */
-    private function hasStashedAssets(Request $request): bool
+    private function renderAssetPicker(): RedirectResponse
     {
-        $stash = $request->session()->get(self::SESSION_KEY);
-
-        return is_array($stash) && is_array($stash['assets'] ?? null) && $stash['assets'] !== [];
-    }
-
-    private function renderAssetPicker(Request $request): InertiaResponse
-    {
-        /** @var array{assets: array<string, array{pageId: string, pageName: string, pageAccessToken: string, igUserId: ?string, igUsername: ?string, igAvatarUrl: ?string}>} $stash */
-        $stash = $request->session()->get(self::SESSION_KEY);
-
-        return Inertia::render('accounts/connect-meta', [
-            'assets' => $this->projectAssets($stash['assets']),
-        ]);
+        return redirect(Spa::url('/accounts/connect/meta'));
     }
 
     private function isAuthorizationCodeUsed(Throwable $exception): bool

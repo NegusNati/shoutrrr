@@ -25,7 +25,7 @@ test('redirect sends an owner to the X provider when configured', function () {
     ownerActingIn();
     fakeOAuthUser('x', ['id' => 'x-1']);
 
-    test()->get('/accounts/connect/x')->assertRedirect('https://provider.test/oauth');
+    $response = test()->get('/accounts/connect/x')->assertRedirect('https://provider.test/oauth');
 });
 
 test('redirect 404s for an unconfigured platform', function () {
@@ -84,7 +84,7 @@ test('callback persists an active X account with an encrypted token', function (
         ]),
     ]);
 
-    test()->get('/accounts/callback/x')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/x')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'x-99');
     expect($account)->not->toBeNull()
@@ -119,7 +119,7 @@ test('callback detects the X Premium subscription tier for longer posts', functi
         ]),
     ]);
 
-    test()->get('/accounts/callback/x')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/x')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'x-premium');
     expect($account->hasXPremium())->toBeTrue()
@@ -145,7 +145,7 @@ test('callback does not fabricate a free tier when the X lookup fails at connect
         'https://api.x.com/2/users/me*' => Http::response([], 503),
     ]);
 
-    test()->get('/accounts/callback/x')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/x')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'x-blip');
     expect($account)->not->toBeNull()
@@ -169,7 +169,7 @@ test('callback maps a linkedin-openid user', function () {
         'expiresIn' => 5184000,
     ]);
 
-    test()->get('/accounts/callback/linkedin')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/linkedin')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'sub-1');
     expect($account->platform)->toBe(Platform::LinkedIn)
@@ -245,7 +245,7 @@ test('linkedin connect records the engagement capability from the granted scopes
         'approvedScopes' => ['openid', 'profile', 'email', 'w_member_social', 'r_member_social_feed'],
     ]);
 
-    test()->get('/accounts/callback/linkedin')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/linkedin')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'sub-cap');
     expect($account->capabilities['linkedin_engagement'])->toBeTrue()
@@ -264,7 +264,7 @@ test('linkedin connect marks engagement unavailable when the feed scope is not g
         'approvedScopes' => ['openid', 'profile', 'email', 'w_member_social'],
     ]);
 
-    test()->get('/accounts/callback/linkedin')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/linkedin')->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'sub-nocap');
     expect($account->capabilities['linkedin_engagement'])->toBeFalse()
@@ -299,13 +299,13 @@ test('duplicate callback after a successful OAuth connection keeps the success f
     Socialite::shouldReceive('driver')->with('linkedin-openid')->twice()->andReturn($provider);
 
     test()->get('/accounts/callback/linkedin')
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success', 'LinkedIn account connected.');
+        ->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('success=');
 
     test()->get('/accounts/callback/linkedin')
-        ->assertRedirect(route('accounts.index'))
+        ->assertRedirectContains('/app/accounts')
         ->assertSessionMissing('error')
-        ->assertSessionHas('success', 'LinkedIn account connected.');
+        ->assertRedirectContains('success=');
 });
 
 test('a member is forbidden from connecting', function () {
@@ -329,10 +329,12 @@ test('callback surfaces a friendly message when the user declines on the provide
     config()->set('services.x.client_secret', 'secret');
     ownerActingIn();
 
-    test()->get('/accounts/callback/x?error=access_denied')
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'declined')
-            && str_contains($message, 'X'));
+    $response = test()->get('/accounts/callback/x?error=access_denied');
+
+    $response->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('error=');
+    expect(urldecode((string) $response->headers->get('Location')))
+        ->toContain('declined')->toContain('X');
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });
@@ -347,9 +349,11 @@ test('callback maps a scope failure to a friendly permission message', function 
     $provider->shouldReceive('user')->andThrow(new RuntimeException('Missing required OAuth2 scopes: users.email'));
     Socialite::shouldReceive('driver')->with('x')->andReturn($provider);
 
-    test()->get('/accounts/callback/x')
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'permission'));
+    $response = test()->get('/accounts/callback/x')
+        ->assertRedirectContains('/app/accounts');
+    $response->assertRedirectContains('error=');
+    expect(urldecode((string) $response->headers->get('Location')))
+        ->toContain('permission');
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });

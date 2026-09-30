@@ -40,6 +40,21 @@ export const endpoints = {
     gifRecent: (catalog: string) => `gifs/${catalog}/recent`,
     postGifs: (postId: string) => `posts/${postId}/gifs`,
 
+    connectedAccountsManage: 'connected-accounts/manage',
+    connectBluesky: 'connected-accounts/connect/bluesky',
+    connectDiscord: 'connected-accounts/connect/discord',
+    connectMeta: 'connected-accounts/connect/meta',
+    connectLinkedin: 'connected-accounts/connect/linkedin',
+    connectedAccountDefault: (id: string) => `connected-accounts/${id}/default`,
+    connectedAccountToggle: (id: string) => `connected-accounts/${id}/toggle`,
+    connectedAccountAutoRepost: (id: string) =>
+        `connected-accounts/${id}/auto-repost`,
+    connectedAccountRefreshXTier: (id: string) =>
+        `connected-accounts/${id}/refresh-x-tier`,
+    connectedAccountReconnect: (id: string) =>
+        `connected-accounts/${id}/reconnect`,
+    connectedAccount: (id: string) => `connected-accounts/${id}`,
+
     workspaceMentions: 'workspace-mentions',
     workspaceMention: (id: string) => `workspace-mentions/${id}`,
     platformLimits: 'platform-limits',

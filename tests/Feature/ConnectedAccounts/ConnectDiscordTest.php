@@ -32,7 +32,7 @@ test('an owner connects a Discord webhook and the URL is sealed in the secret', 
     ])]);
 
     test()->post('/accounts/connect/discord', ['webhook_url' => $url])
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirectContains('/app/accounts');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', '999');
     expect($account->platform)->toBe(Platform::Discord)
@@ -48,7 +48,7 @@ test('an invalid webhook URL redirects back with an error and connects nothing',
     Http::fake();
 
     test()->post('/accounts/connect/discord', ['webhook_url' => 'https://evil.com/api/webhooks/1/t'])
-        ->assertRedirect()->assertSessionHas('error');
+        ->assertRedirect()->assertRedirectContains('error=');
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });

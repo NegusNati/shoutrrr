@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\V1\AccountConnectionsController;
 use App\Http\Controllers\Api\V1\AccountSetsController;
 use App\Http\Controllers\Api\V1\AuthOptionsController;
 use App\Http\Controllers\Api\V1\CalendarController;
@@ -112,6 +113,24 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
     Route::post('sync', [SyncPipelinesController::class, 'store']);
     Route::patch('sync/{syncPipeline}', [SyncPipelinesController::class, 'update']);
     Route::delete('sync/{syncPipeline}', [SyncPipelinesController::class, 'destroy']);
+
+    // Connected accounts: connect flows + per-account management. Session-only
+    // because the OAuth pickers pass provider data through the session stash
+    // and ResolveApiWorkspace scopes the {account} bindings to the workspace.
+    Route::get('connected-accounts/manage', [ConnectedAccountsController::class, 'manage']);
+    Route::post('connected-accounts/connect/bluesky', [AccountConnectionsController::class, 'connectBluesky']);
+    Route::post('connected-accounts/connect/discord', [AccountConnectionsController::class, 'connectDiscord']);
+    Route::get('connected-accounts/connect/meta', [AccountConnectionsController::class, 'metaPicker']);
+    Route::post('connected-accounts/connect/meta', [AccountConnectionsController::class, 'storeMetaSelection']);
+    Route::get('connected-accounts/connect/linkedin', [AccountConnectionsController::class, 'linkedinPicker']);
+    Route::post('connected-accounts/connect/linkedin', [AccountConnectionsController::class, 'storeLinkedinSelection']);
+    Route::post('connected-accounts/{account}/default', [ConnectedAccountsController::class, 'makeDefault']);
+    Route::patch('connected-accounts/{account}/toggle', [ConnectedAccountsController::class, 'toggle']);
+    Route::patch('connected-accounts/{account}/auto-repost', [ConnectedAccountsController::class, 'autoRepost']);
+    Route::post('connected-accounts/{account}/refresh-x-tier', [ConnectedAccountsController::class, 'refreshXTier']);
+    Route::post('connected-accounts/{account}/reconnect', [ConnectedAccountsController::class, 'reconnect']);
+    Route::delete('connected-accounts/{account}', [ConnectedAccountsController::class, 'destroy']);
+>>>>>>> 053055e (Port connected accounts to the /api/v1 + React SPA)
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session

@@ -53,7 +53,7 @@ test('reconnecting a bluesky account preserves its id and clears needs_attention
         'identifier' => 'ada.bsky.social',
         'app_password' => 'fresh-pass',
         'pds_url' => 'https://bsky.social',
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertRedirectContains('/app/accounts');
 
     $fresh = $account->fresh();
     expect($fresh->id)->toBe($account->id)
@@ -108,8 +108,8 @@ test('reconnecting a discord webhook adopts a recreated webhook onto the same ac
     ])]);
 
     test()->post("/accounts/{$account->id}/reconnect", ['webhook_url' => $newUrl])
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success');
+        ->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('success=');
 
     $fresh = $account->fresh();
     expect($fresh->id)->toBe($account->id)
@@ -143,7 +143,7 @@ test('reconnecting a discord webhook with an invalid url flashes an error and ch
 
     test()->post("/accounts/{$account->id}/reconnect", [
         'webhook_url' => 'https://evil.com/api/webhooks/1/t',
-    ])->assertRedirect()->assertSessionHas('error');
+    ])->assertRedirect()->assertRedirectContains('error=');
 
     expect($account->fresh()->remote_account_id)->toBe('keep-me')
         ->and($account->fresh()->status)->toBe(ConnectedAccountStatus::NeedsAttention);
@@ -174,8 +174,8 @@ test('disconnect removes both the account and its secret row', function () {
     ConnectedAccountSecret::factory()->create(['connected_account_id' => $account->id]);
 
     test()->delete("/accounts/{$account->id}")
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success');
+        ->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('success=');
 
     expect(ConnectedAccount::withoutGlobalScopes()->find($account->id))->toBeNull()
         ->and(ConnectedAccountSecret::find($account->id))->toBeNull();

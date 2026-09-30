@@ -195,8 +195,8 @@ test('bluesky oauth fails closed when an advanced service url identifier cannot 
             'identifier' => 'ada.bsky.social',
             'pds_url' => 'https://pds.example',
         ]))
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error');
+        ->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('error=');
 
     expect(session('accounts.bluesky.oauth'))->toBeNull();
 });
@@ -217,8 +217,8 @@ test('bluesky oauth rejects private discovered authorization servers', function 
 
     test()->from(route('accounts.index'))
         ->get(route('accounts.bluesky.oauth', ['pds_url' => 'https://pds.example']))
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error');
+        ->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('error=');
 
     Http::assertNotSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://127.0.0.1'));
 });
@@ -245,8 +245,8 @@ test('bluesky oauth rejects unsafe metadata endpoint urls', function () {
 
     test()->from(route('accounts.index'))
         ->get(route('accounts.bluesky.oauth', ['pds_url' => 'https://pds.example']))
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error');
+        ->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('error=');
 
     Http::assertNotSent(fn (Request $request): bool => $request->url() === 'https://auth.example/oauth/par');
 });
@@ -262,7 +262,7 @@ test('bluesky oauth callback stores an oauth account', function () {
         'state' => $state,
         'code' => 'code-123',
         'iss' => 'https://bsky.social',
-    ]))->assertRedirect(route('accounts.index'))->assertSessionHas('success');
+    ]))->assertRedirectContains('/app/accounts')->assertRedirectContains('success=');
 
     $account = ConnectedAccount::withoutGlobalScopes()->where('workspace_id', $workspace->id)->first();
 

@@ -38,13 +38,12 @@ test('linkedin callback renders the page picker when organizations are administe
     ]);
 
     test()->get('/accounts/callback/linkedin?code=abc&state=xyz')
-        // The `accounts/connect-linkedin` picker page is a later task; skip
-        // Inertia's page-file existence check (mirrors ConnectMetaTest).
-        ->assertInertia(fn ($page) => $page
-            ->component('accounts/connect-linkedin', false)
-            ->where('person.remoteAccountId', 'PERSON1')
-            ->has('organizations', 1)
-            ->where('organizations.0.name', 'Acme Inc'));
+        ->assertRedirectContains('/app/accounts/connect/linkedin');
+
+    $stash = session('accounts.linkedin.connect');
+    expect($stash['person']['remoteAccountId'])->toBe('PERSON1')
+        ->and($stash['organizations'])->toHaveCount(1)
+        ->and($stash['organizations']['2414183']['name'])->toBe('Acme Inc');
 
     expect(ConnectedAccount::count())->toBe(0); // nothing persisted until the user picks
 });
@@ -54,7 +53,7 @@ test('linkedin callback stays single-step when the toggle is off', function () {
 
     fakeOAuthUser('linkedin-openid', ['id' => 'PERSON1', 'name' => 'Jane', 'nickname' => 'jane', 'approvedScopes' => []]);
 
-    test()->get('/accounts/callback/linkedin?code=abc&state=xyz')->assertRedirect(route('accounts.index'));
+    test()->get('/accounts/callback/linkedin?code=abc&state=xyz')->assertRedirectContains('/app/accounts');
 
     expect(ConnectedAccount::where('platform', 'linkedin')->count())->toBe(1);
 });
@@ -74,7 +73,7 @@ test('store persists the personal profile and selected pages', function () {
 
     test()->post(route('accounts.linkedin.store'), [
         'selected' => [['type' => 'person'], ['type' => 'organization', 'id' => '2414183']],
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertRedirectContains('/app/accounts');
 
     $person = ConnectedAccount::where('remote_account_id', 'PERSON1')->firstOrFail();
     $page = ConnectedAccount::where('remote_account_id', '2414183')->firstOrFail();
@@ -101,7 +100,7 @@ test('store gates page engagement capability off when the org scope was not gran
 
     test()->post(route('accounts.linkedin.store'), [
         'selected' => [['type' => 'person'], ['type' => 'organization', 'id' => '2414183']],
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertRedirectContains('/app/accounts');
 
     $person = ConnectedAccount::where('remote_account_id', 'PERSON1')->firstOrFail();
     $page = ConnectedAccount::where('remote_account_id', '2414183')->firstOrFail();

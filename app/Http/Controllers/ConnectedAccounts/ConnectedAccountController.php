@@ -15,6 +15,7 @@ use App\Services\ConnectedAccounts\DiscordConnector;
 use App\Services\ConnectedAccounts\XAccountCapabilities;
 use App\Services\Publishing\TokenManager;
 use App\Support\InstanceSettings;
+use App\Support\Spa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -104,8 +105,7 @@ class ConnectedAccountController extends Controller
         $request->user()->can('update', $account) ?: abort(403);
 
         if (! app(InstanceSettings::class)->platformAvailable($account->platform)) {
-            return redirect()->route('accounts.index')
-                ->with('error', "{$account->platform->label()} is disabled on this instance.");
+            return redirect(Spa::url('/accounts', error: "{$account->platform->label()} is disabled on this instance."));
         }
 
         // OAuth accounts reconnect by re-running the provider flow (which upserts
@@ -113,8 +113,7 @@ class ConnectedAccountController extends Controller
         // resubmit credentials here.
         if ($account->platform === Platform::Bluesky && $account->auth_method === 'oauth') {
             if (! $account->platform->isConfigured()) {
-                return redirect()->route('accounts.index')
-                    ->with('error', "{$account->platform->label()} is not configured for reconnection.");
+                return redirect(Spa::url('/accounts', error: "{$account->platform->label()} is not configured for reconnection."));
             }
 
             return redirect()->route('accounts.bluesky.oauth', ['identifier' => ltrim($account->handle, '@')]);
@@ -132,18 +131,17 @@ class ConnectedAccountController extends Controller
             try {
                 $data = $this->discord->connect($validated['webhook_url']);
             } catch (RuntimeException $exception) {
-                return back()->with('error', $exception->getMessage());
+                return redirect(Spa::url('/accounts', error: $exception->getMessage()));
             }
 
             $this->connections->reconnect($account, $data, $request->user());
 
-            return redirect()->route('accounts.index')->with('success', 'Account reconnected.');
+            return redirect(Spa::url('/accounts', success: 'Account reconnected.'));
         }
 
         if (! $account->platform->supportsAppPassword()) {
             if (! $account->platform->isConfigured()) {
-                return redirect()->route('accounts.index')
-                    ->with('error', "{$account->platform->label()} is not configured for reconnection.");
+                return redirect(Spa::url('/accounts', error: "{$account->platform->label()} is not configured for reconnection."));
             }
 
             // Facebook/Instagram reconnect by re-running the shared Meta
@@ -168,7 +166,7 @@ class ConnectedAccountController extends Controller
                 $validated['pds_url'] ?? null,
             );
         } catch (RuntimeException $exception) {
-            return back()->with('error', $exception->getMessage());
+            return redirect(Spa::url('/accounts', error: $exception->getMessage()));
         }
 
         if ($data->remoteAccountId !== $account->remote_account_id) {
@@ -179,7 +177,7 @@ class ConnectedAccountController extends Controller
 
         $this->connections->store($data, $request->user());
 
-        return redirect()->route('accounts.index')->with('success', 'Account reconnected.');
+        return redirect(Spa::url('/accounts', success: 'Account reconnected.'));
     }
 
     public function makeDefault(Request $request, ConnectedAccount $account): RedirectResponse
@@ -192,7 +190,7 @@ class ConnectedAccountController extends Controller
             'default_connected_account_id' => $account->id,
         ])->save();
 
-        return redirect()->route('accounts.index')->with('success', "{$account->handle} is now the default account.");
+        return redirect(Spa::url('/accounts', success: "{$account->handle} is now the default account."));
     }
 
     public function toggle(Request $request, ConnectedAccount $account): RedirectResponse
@@ -218,7 +216,7 @@ class ConnectedAccountController extends Controller
             ? "{$account->handle} is disabled."
             : "{$account->handle} is enabled.";
 
-        return redirect()->route('accounts.index')->with('success', $message);
+        return redirect(Spa::url('/accounts', success: $message));
     }
 
     public function autoRepost(UpdateAutoRepostRequest $request, ConnectedAccount $account): RedirectResponse
@@ -248,7 +246,7 @@ class ConnectedAccountController extends Controller
             ])->save();
         });
 
-        return redirect()->route('accounts.index')->with('success', 'Auto-repost updated.');
+        return redirect(Spa::url('/accounts', success: 'Auto-repost updated.'));
     }
 
     public function refreshXAccountTier(Request $request, ConnectedAccount $account): RedirectResponse
@@ -256,7 +254,7 @@ class ConnectedAccountController extends Controller
         $request->user()->can('update', $account) ?: abort(403);
 
         if ($account->platform !== Platform::X) {
-            return back()->with('error', 'Only X accounts have a subscription tier.');
+            return redirect(Spa::url('/accounts', error: 'Only X accounts have a subscription tier.'));
         }
 
         try {
@@ -271,11 +269,11 @@ class ConnectedAccountController extends Controller
                 'message' => $exception->getMessage(),
             ]);
 
-            return back()->with('error', "We couldn't refresh {$account->handle}'s X account tier. Your existing limit was kept.");
+            return redirect(Spa::url('/accounts', error: "We couldn't refresh {$account->handle}'s X account tier. Your existing limit was kept."));
         }
 
         if ($capabilities === null) {
-            return back()->with('error', "We couldn't refresh {$account->handle}'s X account tier. Your existing limit was kept.");
+            return redirect(Spa::url('/accounts', error: "We couldn't refresh {$account->handle}'s X account tier. Your existing limit was kept."));
         }
 
         // Lock the row for the capabilities read-modify-write so a concurrent
@@ -300,10 +298,10 @@ class ConnectedAccountController extends Controller
         // the newly-stored tier rather than the pre-refresh capabilities.
         $account->refresh();
 
-        return back()->with(
-            'success',
-            "{$account->handle} is {$account->xSubscriptionLabel()} — {$account->maxTextLength()} characters per X post and up to {$account->maxVideoDurationSeconds()} seconds of video.",
-        );
+        return redirect(Spa::url(
+            '/accounts',
+            success: "{$account->handle} is {$account->xSubscriptionLabel()} — {$account->maxTextLength()} characters per X post and up to {$account->maxVideoDurationSeconds()} seconds of video.",
+        ));
     }
 
     public function destroy(Request $request, ConnectedAccount $account): RedirectResponse
@@ -319,6 +317,6 @@ class ConnectedAccountController extends Controller
         $account->delete();
         Inertia::clearHistory();
 
-        return redirect()->route('accounts.index')->with('success', 'Account disconnected.');
+        return redirect(Spa::url('/accounts', success: 'Account disconnected.'));
     }
 }

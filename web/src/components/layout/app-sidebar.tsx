@@ -61,7 +61,6 @@ import {
     type WorkspaceSettingsNavKey,
 } from '@/lib/navigation/workspace-settings-nav';
 import { appVersion, githubReleaseUrl } from '@/lib/version';
-import { index as accountsRoute } from '@/routes/accounts';
 import { index as analyticsRoute } from '@/routes/analytics';
 import { index as engagementRoute } from '@/routes/engagement';
 import { index as messagesRoute } from '@/routes/messages';
@@ -104,7 +103,7 @@ const postsNavItems: NavItem[] = [
         href: PostingScheduleController.show(),
         icon: ListChecks,
     },
-    { title: 'Accounts', href: accountsRoute(), icon: Share2 },
+    { title: 'Accounts', href: '/accounts', icon: Share2, spa: true },
     { title: 'Engagement', href: engagementRoute(), icon: MessageCircle },
     { title: 'Messages', href: messagesRoute(), icon: MessageSquare },
 ];

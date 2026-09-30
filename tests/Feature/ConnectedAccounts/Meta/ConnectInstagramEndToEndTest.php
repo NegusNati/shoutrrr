@@ -56,8 +56,8 @@ test('posting a stashed page selection creates an instagram connected account an
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'instagram'],
         ],
-    ])->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success', '1 account connected.');
+    ])->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('success=');
 
     $account = ConnectedAccount::withoutGlobalScopes()->sole();
 

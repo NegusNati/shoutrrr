@@ -16,7 +16,7 @@ import { Plug } from '@/components/ui/icons';
 import { useMeData } from '@/features/me/me';
 import { dashboardQuery } from '@/features/posts/posts';
 import { shouldShowDashboardNoAccountsNotice } from '@/lib/dashboard/accounts';
-import { index as accountsRoute } from '@/routes/accounts';
+import { appUrl } from '@/lib/href';
 
 function timeGreeting(): string {
     const hour = new Date().getHours();
@@ -47,7 +47,7 @@ function NoAccountsNotice() {
                 </EmptyDescription>
             </EmptyHeader>
             <a
-                href={accountsRoute().url}
+                href={appUrl('/accounts')}
                 className="text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
                 View connected accounts

@@ -2,6 +2,7 @@ import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { useState } from 'react';
 
 import { Check, Rocket } from '@/components/ui/icons';
+import { appUrl } from '@/lib/href';
 import { cn } from '@/lib/utils';
 import type { Account } from '@/types/compose';
 
@@ -150,7 +151,7 @@ export function BoostPopover({ value, onChange, accounts }: Props) {
                                       account.{' '}
                                       {/* Accounts management still lives in the legacy app. */}
                                       <a
-                                          href="/accounts"
+                                          href={appUrl('/accounts')}
                                           className="font-medium text-foreground underline underline-offset-2"
                                       >
                                           Turn it on in Accounts

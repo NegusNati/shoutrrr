@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ConnectedAccount\ConnectBlueskyRequest;
 use App\Services\ConnectedAccounts\AccountConnectionService;
 use App\Services\ConnectedAccounts\BlueskyConnector;
+use App\Support\Spa;
 use Illuminate\Http\RedirectResponse;
 use RuntimeException;
 
@@ -27,7 +28,7 @@ class BlueskyConnectionController extends Controller
                 $request->input('pds_url'),
             );
         } catch (RuntimeException $exception) {
-            return back()->with('error', $exception->getMessage());
+            return redirect(Spa::url('/accounts', error: $exception->getMessage()));
         }
 
         // Bluesky has no OAuth scopes to inspect, so `dm_enabled` is set from the
@@ -40,6 +41,6 @@ class BlueskyConnectionController extends Controller
 
         $this->connections->store($data, $request->user());
 
-        return redirect()->route('accounts.index')->with('success', 'Bluesky account connected.');
+        return redirect(Spa::url('/accounts', success: 'Bluesky account connected.'));
     }
 }

@@ -40,6 +40,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/connected-accounts/connect/bluesky": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accountConnections.connectBluesky"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/connect/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accountConnections.connectDiscord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/connect/meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Picker payload for the Meta connect page. The OAuth callback has already
+         *     stashed the Pages/IG assets (with page access tokens) server-side — this
+         *     returns the token-stripped projection only
+         */
+        get: operations["accountConnections.metaPicker"];
+        put?: never;
+        post: operations["accountConnections.storeMetaSelection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/connect/linkedin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Picker payload for the LinkedIn connect page — the OAuth callback has
+         *     stashed the person profile + administered organizations server-side
+         */
+        get: operations["accountConnections.linkedinPicker"];
+        put?: never;
+        post: operations["accountConnections.storeLinkedinSelection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/account-sets": {
         parameters: {
             query?: never;
@@ -99,6 +172,127 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/manage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Full payload for the connected-accounts page: every account in the
+         *     workspace plus the platform capability and permission flags the page
+         *     needs to render connect/manage affordances
+         */
+        get: operations["connectedAccounts.manage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/{account}/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["connectedAccounts.makeDefault"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/{account}/toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["connectedAccounts.toggle"];
+        trace?: never;
+    };
+    "/connected-accounts/{account}/auto-repost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["connectedAccounts.autoRepost"];
+        trace?: never;
+    };
+    "/connected-accounts/{account}/refresh-x-tier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["connectedAccounts.refreshXTier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/{account}/reconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Credential-based reconnects complete here (422 on provider failure);
+         *     OAuth-based reconnects hand back a URL for the browser to follow
+         */
+        post: operations["connectedAccounts.reconnect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/{account}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["connectedAccounts.destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -834,6 +1028,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+<<<<<<< HEAD
     "/sync": {
         parameters: {
             query?: never;
@@ -920,6 +1115,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+||||||| parent of 053055e (Port connected accounts to the /api/v1 + React SPA)
+=======
+    "/settings/workspace/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaceApiKeys.index"];
+        put?: never;
+        post: operations["workspaceApiKeys.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/api-keys/{apiKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["workspaceApiKeys.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+>>>>>>> 053055e (Port connected accounts to the /api/v1 + React SPA)
     "/workspace-invitations/{invitation}/accept": {
         parameters: {
             query?: never;
@@ -1242,6 +1472,23 @@ export interface components {
              */
             media_ids?: string[] | null;
         };
+        /** ConnectBlueskyRequest */
+        ConnectBlueskyRequest: {
+            identifier: string;
+            app_password: string;
+            /** Format: uri */
+            pds_url?: string | null;
+            /**
+             * @description "This app password has DM access" — Bluesky has no OAuth scopes to
+             *     inspect, so the operator self-declares it at connect time instead.
+             */
+            dm_access?: boolean;
+        };
+        /** ConnectDiscordRequest */
+        ConnectDiscordRequest: {
+            /** Format: uri */
+            webhook_url: string;
+        };
         /**
          * InstanceRole
          * @enum {string}
@@ -1324,6 +1571,7 @@ export interface components {
         StoreWorkspaceRequest: {
             name: string;
         };
+<<<<<<< HEAD
         /** TransferOwnershipRequest */
         TransferOwnershipRequest: {
             membership_id: string;
@@ -1333,6 +1581,23 @@ export interface components {
             /** @enum {string} */
             role: "member" | "admin";
         };
+||||||| parent of 053055e (Port connected accounts to the /api/v1 + React SPA)
+=======
+        /** TransferOwnershipRequest */
+        TransferOwnershipRequest: {
+            membership_id: string;
+        };
+        /** UpdateAutoRepostRequest */
+        UpdateAutoRepostRequest: {
+            enabled: boolean;
+            min_percentile?: number;
+        };
+        /** UpdateMemberRoleRequest */
+        UpdateMemberRoleRequest: {
+            /** @enum {string} */
+            role: "member" | "admin";
+        };
+>>>>>>> 053055e (Port connected accounts to the /api/v1 + React SPA)
         /** UpdateNotificationPreferencesRequest */
         UpdateNotificationPreferencesRequest: {
             preferences: {
@@ -1454,6 +1719,287 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "accountConnections.connectBluesky": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectBlueskyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connected: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "accountConnections.connectDiscord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectDiscordRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connected: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "accountConnections.metaPicker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        assets: {
+                            key: string;
+                            pageId: string;
+                            pageName: string;
+                            igUserId: string;
+                            igUsername: string;
+                            igAvatarUrl: string;
+                            platforms: string[];
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Your Meta connection expired. Please try connecting again.";
+                    };
+                };
+            };
+        };
+    };
+    "accountConnections.storeMetaSelection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    selected: {
+                        /** @enum {string} */
+                        assetKey: "";
+                        /** @enum {string} */
+                        platform: "facebook" | "instagram";
+                    }[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connected: number;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Your Meta connection expired. Please try connecting again.";
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "accountConnections.linkedinPicker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        person: string;
+                        organizations: unknown[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Your LinkedIn connection expired. Please try again.";
+                    };
+                };
+            };
+        };
+    };
+    "accountConnections.storeLinkedinSelection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    selected: {
+                        /** @enum {string} */
+                        type: "person" | "organization";
+                        /** @enum {string|null} */
+                        id?: "" | null;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connected: number;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Your LinkedIn connection expired. Please try again.";
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "accountSets.index": {
         parameters: {
             query?: {
@@ -1663,6 +2209,335 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "connectedAccounts.manage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accounts: {
+                            id: string;
+                            platform: string;
+                            /** @enum {string} */
+                            platform_label: "X" | "Bluesky" | "LinkedIn" | "Facebook" | "Instagram" | "Threads" | "Discord";
+                            handle: string;
+                            display_name: string | null;
+                            avatar_url: string | null;
+                            status: string;
+                            /** @enum {string} */
+                            status_label: "Active" | "Needs attention";
+                            auth_method: string;
+                            connected_by: string | null;
+                            token_expires_at: string | null;
+                            max_text_length: number;
+                            max_video_duration_seconds: number;
+                            x_premium: boolean;
+                            x_subscription_tier: string | null;
+                            /** @enum {string|null} */
+                            x_subscription_label: "X Premium Basic" | "X Premium" | "X Premium+" | "Free" | null;
+                            x_subscription_checked_at: string | null;
+                            is_linkedin_page: boolean;
+                            is_default: boolean;
+                            disabled: boolean;
+                            pds_url: string | null;
+                            auto_repost_enabled: boolean;
+                        }[];
+                        capabilities: unknown[];
+                        canManage: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "connectedAccounts.makeDefault": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account ID */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        is_default: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "connectedAccounts.toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account ID */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        disabled: boolean;
+                        is_default: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "connectedAccounts.autoRepost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account ID */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAutoRepostRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        auto_repost_enabled: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "connectedAccounts.refreshXTier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account ID */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string|null} */
+                        x_subscription_label: "X Premium Basic" | "X Premium" | "X Premium+" | "Free" | null;
+                        x_subscription_checked_at: string | null;
+                        max_text_length: number;
+                        max_video_duration_seconds: number;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    } | {
+                        /** @constant */
+                        message: "Only X accounts have a subscription tier.";
+                    };
+                };
+            };
+        };
+    };
+    "connectedAccounts.reconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account ID */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    webhook_url: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reconnected: boolean;
+                    } | {
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "connectedAccounts.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account ID */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "connectedAccounts.index": {
@@ -4511,6 +5386,7 @@ export interface operations {
             404: components["responses"]["ModelNotFoundException"];
         };
     };
+<<<<<<< HEAD
     "syncPipelines.index": {
         parameters: {
             query?: never;
@@ -4794,6 +5670,109 @@ export interface operations {
             404: components["responses"]["ModelNotFoundException"];
         };
     };
+||||||| parent of 053055e (Port connected accounts to the /api/v1 + React SPA)
+=======
+    "workspaceApiKeys.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        apiKeys: {
+                            id: string;
+                            name: string;
+                            last_four: string | null;
+                            scope: string;
+                            last_used_at: string | null;
+                            expires_at: string | null;
+                            created_at: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceApiKeys.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** @enum {string} */
+                    scope: "read" | "write";
+                    /** Format: date-time */
+                    expires_at?: string | null;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        apiKey: {
+                            id: string;
+                            name: string;
+                            last_four: string | null;
+                            scope: string;
+                            last_used_at: string | null;
+                            expires_at: string | null;
+                            created_at: string;
+                        };
+                        plainTextApiKey: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "workspaceApiKeys.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The api key ID */
+                apiKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        revoked: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+>>>>>>> 053055e (Port connected accounts to the /api/v1 + React SPA)
     "workspaceInvitations.accept": {
         parameters: {
             query?: never;

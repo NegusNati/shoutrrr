@@ -36,6 +36,8 @@ test('honors X-Forwarded-Proto from a trusted proxy, generating https redirects'
 });
 
 test('ignores X-Forwarded-Proto when no proxy is trusted', function (): void {
+    TrustProxies::flushState();
+
     $response = $this->get('/', ['X-Forwarded-Proto' => 'https']);
 
     $response->assertRedirect();

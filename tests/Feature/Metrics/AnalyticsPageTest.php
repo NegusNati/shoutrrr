@@ -314,7 +314,7 @@ test('disconnecting an account removes it from cached analytics', function (): v
 
     $this->actingAs($this->user)
         ->delete(route('accounts.destroy', $disconnectedAccount))
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirectContains('/app/accounts');
 
     $this->actingAs($this->user)
         ->get(route('analytics.index'))

@@ -13,11 +13,10 @@ use App\Services\ConnectedAccounts\LinkedIn\LinkedInOrganizationDiscovery;
 use App\Services\ConnectedAccounts\Threads\ThreadsTokenExchanger;
 use App\Services\ConnectedAccounts\XAccountCapabilities;
 use App\Support\InstanceSettings;
+use App\Support\Spa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\InvalidStateException;
@@ -27,6 +26,9 @@ use Throwable;
 
 class OAuthConnectionController extends Controller
 {
+    /** Session key recording which platform's callback already succeeded. */
+    private const string SUCCESS_MARKER = 'accounts.oauth.connected';
+
     public function __construct(
         private readonly AccountConnectionService $connections,
         private readonly XAccountCapabilities $xCapabilities,
@@ -44,7 +46,7 @@ class OAuthConnectionController extends Controller
         return $this->driver($resolved)->setScopes($this->scopesFor($resolved))->redirect();
     }
 
-    public function callback(Request $request, string $platform): RedirectResponse|InertiaResponse
+    public function callback(Request $request, string $platform): RedirectResponse
     {
         $resolved = $this->resolveOAuthPlatform($platform);
 
@@ -65,10 +67,11 @@ class OAuthConnectionController extends Controller
         try {
             $oauthUser = $this->driver($resolved)->user();
         } catch (Throwable $exception) {
-            if ($exception instanceof InvalidStateException && $this->hasSuccessfulConnectionFlash($request, $resolved)) {
-                $request->session()->keep('success');
-
-                return redirect()->route('accounts.index');
+            // A provider/browser retry after a first successful callback hits
+            // an already-spent OAuth state. The first callback marks the
+            // session so the retry can repeat the success instead of erroring.
+            if ($exception instanceof InvalidStateException && $request->session()->pull(self::SUCCESS_MARKER) === $resolved->value) {
+                return redirect(Spa::url('/accounts', success: $this->successMessage($resolved)));
             }
 
             Log::warning('Connected-account OAuth callback failed.', [
@@ -150,8 +153,9 @@ class OAuthConnectionController extends Controller
 
         $this->connections->store($data, $request->user());
 
-        return redirect()->route('accounts.index')
-            ->with('success', $this->successMessage($resolved));
+        $request->session()->put(self::SUCCESS_MARKER, $resolved->value);
+
+        return redirect(Spa::url('/accounts', success: $this->successMessage($resolved)));
     }
 
     /**
@@ -162,7 +166,7 @@ class OAuthConnectionController extends Controller
      *
      * @param  list<string>  $grantedScopes
      */
-    private function renderLinkedInPagePicker(Request $request, ConnectedAccountData $data, array $grantedScopes): ?InertiaResponse
+    private function renderLinkedInPagePicker(Request $request, ConnectedAccountData $data, array $grantedScopes): ?RedirectResponse
     {
         $organizations = $this->linkedInOrganizations->administeredOrganizations((string) $data->accessToken);
 
@@ -187,7 +191,7 @@ class OAuthConnectionController extends Controller
             'avatarUrl' => $data->avatarUrl,
         ];
 
-        $request->session()->put('accounts.linkedin.connect', [
+        $request->session()->put(LinkedInPageConnectionController::SESSION_KEY, [
             'person' => $person,
             'organizations' => $stashedOrganizations,
             'accessToken' => $data->accessToken,
@@ -196,25 +200,19 @@ class OAuthConnectionController extends Controller
             'approvedScopes' => $grantedScopes,
         ]);
 
-        return Inertia::render('accounts/connect-linkedin', [
-            'person' => $person,
-            'organizations' => array_values($stashedOrganizations),
-        ]);
+        // The picker is an SPA page now; it reads this stash back through the
+        // session-only /api/v1 picker endpoint.
+        return redirect(Spa::url('/accounts/connect/linkedin'));
     }
 
     private function failed(string $message): RedirectResponse
     {
-        return redirect()->route('accounts.index')->with('error', $message);
+        return redirect(Spa::url('/accounts', error: $message));
     }
 
     private function successMessage(Platform $platform): string
     {
         return "{$platform->label()} account connected.";
-    }
-
-    private function hasSuccessfulConnectionFlash(Request $request, Platform $platform): bool
-    {
-        return $request->session()->get('success') === $this->successMessage($platform);
     }
 
     /**

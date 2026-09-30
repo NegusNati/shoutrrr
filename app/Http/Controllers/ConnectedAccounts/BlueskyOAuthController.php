@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ConnectedAccount;
 use App\Services\ConnectedAccounts\AccountConnectionService;
 use App\Services\ConnectedAccounts\BlueskyOAuthConnector;
+use App\Support\Spa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -43,7 +44,7 @@ class BlueskyOAuthController extends Controller
                 $validated['pds_url'] ?? null,
             );
         } catch (RuntimeException $exception) {
-            return redirect()->route('accounts.index')->with('error', $exception->getMessage());
+            return redirect(Spa::url('/accounts', error: $exception->getMessage()));
         }
 
         $request->session()->put(self::SESSION_KEY.'.'.$authorization['state'], $authorization['context']);
@@ -77,14 +78,14 @@ class BlueskyOAuthController extends Controller
         $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
 
         if ($request->filled('error')) {
-            return redirect()->route('accounts.index')->with('error', 'Bluesky did not authorize the connection.');
+            return redirect(Spa::url('/accounts', error: 'Bluesky did not authorize the connection.'));
         }
 
         $state = (string) $request->query('state');
         $context = $request->session()->pull(self::SESSION_KEY.'.'.$state);
 
         if (! is_array($context)) {
-            return redirect()->route('accounts.index')->with('error', 'Bluesky OAuth state expired. Please try again.');
+            return redirect(Spa::url('/accounts', error: 'Bluesky OAuth state expired. Please try again.'));
         }
 
         try {
@@ -96,11 +97,11 @@ class BlueskyOAuthController extends Controller
         } catch (RuntimeException $exception) {
             Log::warning('Bluesky OAuth callback failed.', ['message' => $exception->getMessage()]);
 
-            return redirect()->route('accounts.index')->with('error', $exception->getMessage());
+            return redirect(Spa::url('/accounts', error: $exception->getMessage()));
         }
 
         $this->connections->store($data, $request->user());
 
-        return redirect()->route('accounts.index')->with('success', 'Bluesky account connected.');
+        return redirect(Spa::url('/accounts', success: 'Bluesky account connected.'));
     }
 }

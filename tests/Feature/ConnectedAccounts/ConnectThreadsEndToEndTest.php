@@ -94,8 +94,8 @@ test('callback exchanges the short-lived token for a long-lived one and persists
     ]);
 
     test()->get('/accounts/callback/threads')
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success', 'Threads account connected.');
+        ->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('success=');
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'threads-99');
     expect($account)->not->toBeNull()
@@ -128,8 +128,8 @@ test('callback redirects with a friendly error instead of 500ing when the long-l
     ]);
 
     test()->get('/accounts/callback/threads')
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error');
+        ->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('error=');
 
     expect(ConnectedAccount::withoutGlobalScopes()->where('remote_account_id', 'threads-fail')->exists())->toBeFalse();
 });

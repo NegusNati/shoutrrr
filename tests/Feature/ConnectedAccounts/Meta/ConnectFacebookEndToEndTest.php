@@ -53,8 +53,8 @@ test('posting a stashed page selection creates a facebook connected account and 
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'facebook'],
         ],
-    ])->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success', '1 account connected.');
+    ])->assertRedirectContains('/app/accounts')
+        ->assertRedirectContains('success=');
 
     $account = ConnectedAccount::withoutGlobalScopes()->sole();
 

@@ -95,11 +95,13 @@ test('owners can refresh an X subscription tier without reconnecting', function 
         ]),
     ]);
 
-    test()->actingAs($owner)
-        ->post(route('accounts.refresh-x-tier', $account))
-        ->assertRedirect()
-        ->assertSessionHas('success', fn (string $message): bool => str_contains($message, 'X Premium+')
-            && str_contains($message, '25000'));
+    $response = test()->actingAs($owner)
+        ->post(route('accounts.refresh-x-tier', $account));
+
+    $response->assertRedirect()->assertRedirectContains('success=');
+
+    expect(urldecode((string) $response->headers->get('Location')))
+        ->toContain('X Premium')->toContain('25000');
 
     expect($account->fresh()->xSubscriptionTier())->toBe('premium_plus')
         ->and($account->fresh()->maxTextLength())->toBe(25_000)
@@ -136,10 +138,13 @@ test('a failed X tier lookup retains the existing account limit', function () {
         'https://api.x.com/2/users/me*' => Http::response([], 503),
     ]);
 
-    test()->actingAs($owner)
-        ->post(route('accounts.refresh-x-tier', $account))
-        ->assertRedirect()
-        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'existing limit was kept'));
+    $response = test()->actingAs($owner)
+        ->post(route('accounts.refresh-x-tier', $account));
+
+    $response->assertRedirect()->assertRedirectContains('error=');
+
+    expect(urldecode((string) $response->headers->get('Location')))
+        ->toContain('existing limit was kept');
 
     expect($account->fresh()->xSubscriptionTier())->toBe('premium')
         ->and($account->fresh()->maxTextLength())->toBe(25_000);
@@ -201,7 +206,7 @@ test('owners can set a workspace default account from the accounts page', functi
 
     test()->actingAs($owner)
         ->post(route('accounts.default', $account))
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirectContains('/app/accounts');
 
     expect($workspace->fresh()->default_connected_account_id)->toBe($account->id);
 });
@@ -256,7 +261,7 @@ test('disconnecting the workspace default account clears the default', function 
 
     test()->actingAs($owner)
         ->delete(route('accounts.destroy', $account))
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirectContains('/app/accounts');
 
     expect($workspace->fresh()->default_connected_account_id)->toBeNull();
 });
@@ -273,7 +278,7 @@ test('disconnecting an account clears stale inertia history on the next accounts
 
     test()->actingAs($owner)
         ->delete(route('accounts.destroy', $account))
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirectContains('/app/accounts');
 
     test()->actingAs($owner)
         ->get(route('accounts.index'))

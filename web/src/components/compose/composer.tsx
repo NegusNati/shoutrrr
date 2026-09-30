@@ -1,11 +1,9 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useMeData } from '@/features/me/me';
-import { apiUrl, endpoints } from '@/lib/api/endpoints';
-import { useHttp } from '@/lib/api/use-http';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { AtSign, Eye, Pin, Plug, TriangleAlert } from '@/components/ui/icons';
+import { useMeData } from '@/features/me/me';
 import { useAutosave } from '@/hooks/compose/use-autosave';
 import { useEmojiPreferences } from '@/hooks/compose/use-emoji-preferences';
 import { useImageEditor } from '@/hooks/compose/use-image-editor';
@@ -14,6 +12,8 @@ import { useNextSlot } from '@/hooks/compose/use-next-slot';
 import { usePublishStatus } from '@/hooks/compose/use-publish-status';
 import { useVideoEditor } from '@/hooks/compose/use-video-editor';
 import { useSchedulingTimezone } from '@/hooks/posts/use-scheduling-timezone';
+import { apiUrl, endpoints } from '@/lib/api/endpoints';
+import { useHttp } from '@/lib/api/use-http';
 import {
     composerReducer,
     hasMultipleThreads,
@@ -41,6 +41,7 @@ import {
 import { buildPlatformPreview } from '@/lib/compose/platform-preview';
 import { precheckAccount, precheckDestinations } from '@/lib/compose/precheck';
 import { readVideoMetadata, videoLimitsForTargets } from '@/lib/compose/video';
+import { appUrl } from '@/lib/href';
 import {
     defaultSettings,
     normalizeSettings,
@@ -933,9 +934,7 @@ export default function Composer({
             return;
         }
 
-        await deleteMentionHttp.delete(
-            endpoints.workspaceMention(saved.id),
-        );
+        await deleteMentionHttp.delete(endpoints.workspaceMention(saved.id));
 
         setSavedMentions((current) =>
             current.filter((item) => item.id !== saved.id),
@@ -1227,7 +1226,7 @@ export default function Composer({
                                               addMediaToSegment(ref)
                                           }
                                           onAttachGif={
-                                              shell?.gifs_enabled ?? false
+                                              (shell?.gifs_enabled ?? false)
                                                   ? (item) =>
                                                         attachGif(item, ref)
                                                   : undefined
@@ -1302,7 +1301,7 @@ export default function Composer({
                     <div className="px-4 pb-3.5 sm:px-[26px]">
                         {/* Accounts management still lives in the legacy app. */}
                         <a
-                            href="/accounts"
+                            href={appUrl('/accounts')}
                             className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border px-2.5 py-1 text-[12px] tracking-[-0.005em] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
                         >
                             <Plug className="size-3.5" aria-hidden />
@@ -1349,7 +1348,11 @@ export default function Composer({
                         emojiRecents={emojiPrefs.recents}
                         emojiSkinTone={emojiPrefs.skinTone}
                         onEmojiSkinToneChange={emojiPrefs.setSkinTone}
-                        onAttachGif={shell?.gifs_enabled ?? false ? attachGif : undefined}
+                        onAttachGif={
+                            (shell?.gifs_enabled ?? false)
+                                ? attachGif
+                                : undefined
+                        }
                         activePlatform={activeAccount?.platform}
                         autoSplit={
                             activeAccount

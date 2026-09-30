@@ -13,6 +13,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { appUrl } from '@/lib/href';
 import { cn } from '@/lib/utils';
 import { BASE_TAB, type Account } from '@/types/compose';
 
@@ -352,7 +353,7 @@ function NeedsAttentionIcon({ account }: { account: Account }) {
         event.preventDefault();
         event.stopPropagation();
         // Accounts management still lives in the legacy app — full navigation.
-        window.location.assign('/accounts');
+        window.location.assign(appUrl('/accounts'));
     }
 
     return (

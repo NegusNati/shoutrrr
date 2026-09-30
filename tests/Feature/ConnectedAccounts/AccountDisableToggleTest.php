@@ -29,11 +29,11 @@ test('toggling disables then re-enables an account', function () {
     ]);
 
     test()->actingAs($user)->patch("/accounts/{$account->id}/toggle")
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirectContains('/app/accounts');
     expect($account->fresh()->isDisabled())->toBeTrue();
 
     test()->actingAs($user)->patch("/accounts/{$account->id}/toggle")
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirectContains('/app/accounts');
     expect($account->fresh()->isDisabled())->toBeFalse();
 });
 

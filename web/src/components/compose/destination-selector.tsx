@@ -18,6 +18,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { appUrl } from '@/lib/href';
 import { cn } from '@/lib/utils';
 import type { Account, AccountSet, Destination } from '@/types/compose';
 
@@ -284,7 +285,7 @@ function NeedsAttentionLabel({ handle }: { handle?: string }) {
         event.preventDefault();
         event.stopPropagation();
         // Accounts management still lives in the legacy app.
-        window.location.assign('/accounts');
+        window.location.assign(appUrl('/accounts'));
     }
 
     return (

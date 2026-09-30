@@ -1,0 +1,193 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+import Heading from '@/components/common/heading';
+import { PlatformGlyph } from '@/components/common/platform-glyph';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import { CircleAlert, Plug } from '@/components/ui/icons';
+import {
+    type MetaSelection,
+    accountsKeys,
+    metaPickerQuery,
+    storeMetaSelection,
+} from '@/features/accounts/connected-accounts';
+import { ApiError, getErrorMessage } from '@/lib/api';
+
+type SelectionState = Record<string, Record<string, boolean>>;
+
+/**
+ * Flattens the per-asset/per-platform checkbox state into the
+ * `{assetKey, platform}[]` shape `POST connect/meta` expects. Unchecked and
+ * never-toggled pairs are dropped entirely.
+ */
+export function buildMetaSelection(selected: SelectionState): MetaSelection[] {
+    return Object.entries(selected).flatMap(([assetKey, platforms]) =>
+        Object.entries(platforms)
+            .filter(([, checked]) => checked)
+            .map(([platform]) => ({ assetKey, platform })),
+    );
+}
+
+export default function ConnectMeta() {
+    const { data, error } = useQuery(metaPickerQuery);
+    const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const [selected, setSelected] = useState<SelectionState>({});
+    const [processing, setProcessing] = useState(false);
+
+    useEffect(() => {
+        document.title = 'Connect Meta';
+
+        return () => {
+            document.title = 'Shoutrrr';
+        };
+    }, []);
+
+    const toggle = (assetKey: string, platform: string) => {
+        setSelected((prev) => ({
+            ...prev,
+            [assetKey]: {
+                ...prev[assetKey],
+                [platform]: !prev[assetKey]?.[platform],
+            },
+        }));
+    };
+
+    const selection = buildMetaSelection(selected);
+    const assets = data?.assets ?? [];
+
+    const submit = async () => {
+        setProcessing(true);
+        try {
+            const result = await storeMetaSelection(selection);
+            await queryClient.invalidateQueries({
+                queryKey: accountsKeys.manage,
+            });
+            toast.success(
+                `Connected ${result.connected} account${result.connected === 1 ? '' : 's'}.`,
+            );
+            await navigate({ to: '/accounts' });
+        } catch (submitError) {
+            toast.error(
+                getErrorMessage(submitError, 'Could not connect the Pages.'),
+            );
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const missingStash = error instanceof ApiError && error.status === 404;
+
+    return (
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pt-6 pb-16 sm:px-6">
+            <Heading
+                title="Choose Pages to connect"
+                description="Select which Facebook Pages — and their linked Instagram accounts — to connect to this workspace."
+            />
+
+            {missingStash ? (
+                <Alert variant="destructive">
+                    <CircleAlert />
+                    <AlertTitle>Connection expired</AlertTitle>
+                    <AlertDescription>
+                        The Meta sign-in session expired.{' '}
+                        <a href="/accounts/connect/meta" className="underline">
+                            Start the Facebook connection again
+                        </a>
+                        .
+                    </AlertDescription>
+                </Alert>
+            ) : assets.length === 0 ? (
+                <Empty>
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <Plug />
+                        </EmptyMedia>
+                        <EmptyTitle>No Pages found</EmptyTitle>
+                        <EmptyDescription>
+                            We couldn't find any Facebook Pages on your account.
+                            Create a Page on Facebook, then reconnect.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
+            ) : (
+                <div className="flex flex-col gap-4">
+                    {assets.map((asset) => (
+                        <div
+                            key={asset.key}
+                            className="flex flex-col gap-3 rounded-xl border p-4"
+                        >
+                            <label className="flex items-center gap-3">
+                                <Checkbox
+                                    checked={!!selected[asset.key]?.facebook}
+                                    onCheckedChange={() =>
+                                        toggle(asset.key, 'facebook')
+                                    }
+                                />
+                                <PlatformGlyph
+                                    platform="facebook"
+                                    size={16}
+                                    className="size-4"
+                                />
+                                <span className="font-medium">
+                                    {asset.pageName}
+                                </span>
+                            </label>
+
+                            {asset.platforms.includes('instagram') && (
+                                <label className="ml-7 flex items-center gap-3">
+                                    <Checkbox
+                                        checked={
+                                            !!selected[asset.key]?.instagram
+                                        }
+                                        onCheckedChange={() =>
+                                            toggle(asset.key, 'instagram')
+                                        }
+                                    />
+                                    {asset.igAvatarUrl ? (
+                                        <img
+                                            src={asset.igAvatarUrl}
+                                            alt=""
+                                            className="size-5 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <PlatformGlyph
+                                            platform="instagram"
+                                            size={16}
+                                            className="size-4"
+                                        />
+                                    )}
+                                    <span className="text-sm text-muted-foreground">
+                                        {asset.igUsername
+                                            ? `@${asset.igUsername}`
+                                            : 'Instagram account'}
+                                    </span>
+                                </label>
+                            )}
+                        </div>
+                    ))}
+
+                    <Button
+                        type="button"
+                        onClick={submit}
+                        disabled={selection.length === 0 || processing}
+                        className="w-full sm:w-auto"
+                    >
+                        Connect selected
+                    </Button>
+                </div>
+            )}
+        </div>
+    );
+}
