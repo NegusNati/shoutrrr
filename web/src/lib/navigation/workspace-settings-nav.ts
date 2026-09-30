@@ -1,6 +1,3 @@
-import BillingController from '@/actions/App/Http/Controllers/BillingController';
-import ApiKeysController from '@/actions/App/Http/Controllers/Settings/ApiKeysController';
-import WorkspaceSettingsController from '@/actions/App/Http/Controllers/Settings/WorkspaceSettingsController';
 import type { Href } from '@/lib/href';
 
 export type WorkspaceSettingsNavKey =
@@ -13,6 +10,8 @@ export type WorkspaceSettingsNavItem = {
     key: WorkspaceSettingsNavKey;
     title: string;
     href: Href;
+    /** Workspace settings live inside the SPA — always client-side links. */
+    spa: true;
 };
 
 export function workspaceSettingsNavItems({
@@ -29,12 +28,14 @@ export function workspaceSettingsNavItems({
         {
             key: 'overview',
             title: 'Overview',
-            href: WorkspaceSettingsController.showOverview(),
+            href: '/settings/workspace',
+            spa: true,
         },
         {
             key: 'members',
             title: 'Members',
-            href: WorkspaceSettingsController.showMembers(),
+            href: '/settings/workspace/members',
+            spa: true,
         },
     ];
 
@@ -42,7 +43,8 @@ export function workspaceSettingsNavItems({
         items.push({
             key: 'apiKeys',
             title: 'API keys',
-            href: ApiKeysController.index(),
+            href: '/settings/workspace/api-keys',
+            spa: true,
         });
     }
 
@@ -50,7 +52,8 @@ export function workspaceSettingsNavItems({
         items.push({
             key: 'subscription',
             title: 'Subscription',
-            href: BillingController.index(),
+            href: '/settings/workspace/subscription',
+            spa: true,
         });
     }
 

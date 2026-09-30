@@ -23,6 +23,7 @@ import {
     CalendarClockIcon,
     CalendarDaysIcon,
     CalendarXIcon,
+    Camera01Icon,
     Cancel01Icon,
     ChartColumnIcon,
     CheckCheckIcon,
@@ -149,6 +150,7 @@ export const Calendar = icon(Calendar01Icon);
 export const CalendarClock = icon(CalendarClockIcon);
 export const CalendarDays = icon(CalendarDaysIcon);
 export const CalendarX = icon(CalendarXIcon);
+export const Camera = icon(Camera01Icon);
 export const ChartColumn = icon(ChartColumnIcon);
 export const Check = icon(CheckIcon);
 export const CheckCheck = icon(CheckCheckIcon);

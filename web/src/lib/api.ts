@@ -23,6 +23,19 @@ export class ApiError extends Error {
     }
 }
 
+/**
+ * Human-readable message for a caught error — the server's message on an
+ * ApiError, the Error's own message otherwise, or a fallback for non-Errors.
+ */
+export function getErrorMessage(
+    error: unknown,
+    fallback = 'Something went wrong.',
+): string {
+    return error instanceof Error && error.message !== ''
+        ? error.message
+        : fallback;
+}
+
 type ApiOptions = {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;

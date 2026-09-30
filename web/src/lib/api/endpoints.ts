@@ -50,4 +50,20 @@ export const endpoints = {
     settingsConnections: 'settings/connections',
     settingsConnection: (id: string | number) => `settings/connections/${id}`,
     settingsNotifications: 'settings/notifications',
+
+    settingsWorkspace: 'settings/workspace',
+    settingsWorkspaceTimezone: 'settings/workspace/timezone',
+    settingsWorkspaceMembers: 'settings/workspace/members',
+    settingsWorkspaceMember: (id: string) => `settings/workspace/members/${id}`,
+    settingsWorkspaceInvitations: 'settings/workspace/invitations',
+    settingsWorkspaceInvitation: (id: string) =>
+        `settings/workspace/invitations/${id}`,
+    settingsWorkspaceLeave: 'settings/workspace/leave',
+    settingsWorkspaceTransfer: 'settings/workspace/transfer',
+    settingsWorkspaceApiKeys: 'settings/workspace/api-keys',
+    settingsWorkspaceApiKey: (id: string) =>
+        `settings/workspace/api-keys/${id}`,
+    settingsWorkspaceSubscription: 'settings/workspace/subscription',
+    settingsWorkspaceCheckout: 'settings/workspace/subscription/checkout',
+    settingsWorkspacePortal: 'settings/workspace/subscription/portal',
 } as const;
