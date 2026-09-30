@@ -65,7 +65,7 @@ class OnboardingController extends Controller
         }
 
         return response()->json([
-            'redirect_url' => route($step->routeName()),
+            'redirect_url' => $step->spaHref() ?? route($step->routeName()),
         ]);
     }
 

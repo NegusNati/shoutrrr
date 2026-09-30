@@ -32,6 +32,17 @@ test('owner sees all four steps, none done on a fresh workspace', function () {
         ->and($data['complete'])->toBeFalse();
 });
 
+test('step hrefs point into the SPA for ported pages, legacy routes otherwise', function () {
+    [$workspace, $user] = ownerWithWorkspaceForOnboarding();
+
+    $steps = collect(OnboardingPresenter::make($workspace, $user)['steps'])->keyBy('key');
+
+    expect($steps['first_post']['href'])->toBe('/app/dashboard')
+        ->and($steps['timezone']['href'])->toBe('/app/settings/workspace')
+        ->and($steps['invite_teammate']['href'])->toBe('/app/settings/workspace/members')
+        ->and($steps['connect_account']['href'])->toBe(route('accounts.index'));
+});
+
 test('read-only member sees no steps and is never complete', function () {
     $workspace = Workspace::factory()->create();
     $member = User::factory()->create(['current_workspace_id' => $workspace->id]);

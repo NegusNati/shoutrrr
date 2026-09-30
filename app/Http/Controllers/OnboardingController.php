@@ -56,7 +56,7 @@ class OnboardingController extends Controller
 
         $this->recordStep($workspace, $step);
 
-        return redirect()->route($step->routeName());
+        return redirect($step->spaHref() ?? route($step->routeName()));
     }
 
     private function currentWorkspace(Request $request): Workspace

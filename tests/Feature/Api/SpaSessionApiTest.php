@@ -182,6 +182,16 @@ test('onboarding dismiss is conflict without a connected account', function () {
     $this->postJson('/api/v1/onboarding/dismiss')->assertConflict();
 });
 
+test('completing a click-to-complete onboarding step returns its SPA url', function () {
+    [, $workspace] = ownerActingIn();
+
+    $response = $this->postJson('/api/v1/onboarding/steps/complete', ['key' => 'timezone'])
+        ->assertOk();
+
+    expect($response->json('redirect_url'))->toBe('/app/settings/workspace')
+        ->and($workspace->fresh()->onboarding_progress)->toContain('timezone');
+});
+
 test('a workspace invitation can be accepted by the invitee', function () {
     [, $workspace] = ownerActingIn();
     $invitee = User::factory()->create();

@@ -63,7 +63,7 @@ test('completing the timezone step records it and redirects to workspace setting
 
     $this->actingAs($user)
         ->post(route('onboarding.step'), ['key' => 'timezone'])
-        ->assertRedirect(route('settings.workspace'));
+        ->assertRedirect('/app/settings/workspace');
 
     expect($user->currentWorkspace->fresh()->onboarding_progress)->toContain('timezone');
 });

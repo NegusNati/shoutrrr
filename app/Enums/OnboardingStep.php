@@ -63,4 +63,18 @@ enum OnboardingStep: string
             self::InviteTeammate => 'settings.workspace.members',
         };
     }
+
+    /**
+     * Path inside the SPA when the step's target page has been ported;
+     * null while the target still lives in the legacy app.
+     */
+    public function spaHref(): ?string
+    {
+        return match ($this) {
+            self::FirstPost => '/app/dashboard',
+            self::Timezone => '/app/settings/workspace',
+            self::InviteTeammate => '/app/settings/workspace/members',
+            self::ConnectAccount => null,
+        };
+    }
 }
