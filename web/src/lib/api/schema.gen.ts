@@ -72,6 +72,26 @@ export interface paths {
         patch: operations["accountSets.update"];
         trace?: never;
     };
+    "/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Follower series, post markers, headline summary, and engagement
+         *     comparison for the workspace
+         */
+        get: operations["analytics.report"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/options": {
         parameters: {
             query?: never;
@@ -120,6 +140,105 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/messages/{conversationId}/gifs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["conversationGif.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{conversationId}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["conversationMedia.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{conversationId}/media/{mediaId}/alt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update an attachment's alt text. Body: { alt_text: string|null } */
+        patch: operations["conversationMedia.updateAlt"];
+        trace?: never;
+    };
+    "/messages/{conversationId}/media/{mediaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["conversationMedia.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{conversationId}/media/video-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign a video upload. Body: { content_type: 'video/mp4' } */
+        post: operations["conversationVideoUpload.url"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{conversationId}/media/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a finished upload. Body: { key, duration_seconds, width, height, alt_text } */
+        post: operations["conversationVideoUpload.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dashboard": {
         parameters: {
             query?: never;
@@ -128,6 +247,161 @@ export interface paths {
             cookie?: never;
         };
         get: operations["dashboard.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Paginated conversation groups with the inbox's filters, facets, feature
+         *     flags, and saved mentions
+         */
+        get: operations["engagement.inbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/thread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The full conversation thread rooted at the given reply's base reply */
+        get: operations["engagement.thread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark every inbound reply in the conversation read */
+        post: operations["engagement.markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive every inbound reply in the conversation */
+        post: operations["engagement.archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reply to the conversation. Body: { text?, media?[] } — one is required */
+        post: operations["engagement.respond"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Like the reply on the platform */
+        post: operations["engagement.like"];
+        /** Remove the platform like from the reply */
+        delete: operations["engagement.unlike"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an outbound reply (only replies the workspace posted) */
+        delete: operations["engagement.destroyReply"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gifs/{catalog}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["gifBrowser.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gifs/{catalog}/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["gifBrowser.recent"];
         put?: never;
         post?: never;
         delete?: never;
@@ -179,6 +453,91 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["media.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paginated conversation list (30 per page) */
+        get: operations["messaging.inbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{conversationId}/thread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The conversation's messages, oldest first */
+        get: operations["messaging.thread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{conversationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark the conversation read */
+        post: operations["messaging.markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{conversationId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive the conversation */
+        post: operations["messaging.archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/messages/{conversationId}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a direct message. Body: { text?, media?[] } — one is required */
+        post: operations["messaging.respond"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -375,7 +734,11 @@ export interface paths {
             cookie?: never;
         };
         get: operations["postingSchedule.show"];
-        put?: never;
+        /**
+         * Replace the whole posting schedule. Body: { slots: [{weekday, hour, minute?}] }.
+         *     Duplicate weekday:hour:minute entries collapse; positions are reassigned
+         */
+        put: operations["postingSchedule.update"];
         post?: never;
         delete?: never;
         options?: never;
@@ -434,6 +797,105 @@ export interface paths {
          *     duplicate action, which redirected to the new draft's page
          */
         post: operations["posts.duplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/gifs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["replyGif.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["replyMedia.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/media/{mediaId}/alt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update an attachment's alt text. Body: { alt_text: string|null } */
+        patch: operations["replyMedia.updateAlt"];
+        trace?: never;
+    };
+    "/engagement/{replyId}/media/{mediaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["replyMedia.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/media/video-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign a video upload. Body: { content_type: 'video/mp4' } */
+        post: operations["replyVideoUpload.url"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/media/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a finished upload. Body: { key, duration_seconds, width, height, alt_text } */
+        post: operations["replyVideoUpload.store"];
         delete?: never;
         options?: never;
         head?: never;
@@ -582,14 +1044,120 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AttachGifRequest */
+        AttachGifRequest: {
+            /** @enum {string} */
+            catalog: "gif" | "sticker" | "clip";
+            slug: string;
+            title?: string | null;
+            variants: {
+                /** Format: uri */
+                url: string;
+                /** @enum {string} */
+                mime: "image/gif" | "image/webp" | "video/mp4";
+                width: number;
+                height: number;
+                bytes?: number | null;
+            }[];
+            duration_seconds?: number | null;
+            /**
+             * @description What the client currently holds attached, used as the "existing
+             *      media" set for GifAttacher's mixing-rule guard. Both surfaces need
+             *     it: a reply has no reply_id column on post_media at all, and a
+             *     post's media rows stay orphaned until the draft is next saved.
+             *     Both controllers re-resolve these ids workspace-scoped, so they
+             *     grant no access the caller doesn't already have.
+             */
+            media_ids?: string[] | null;
+        };
         /**
          * InstanceRole
          * @enum {string}
          */
         InstanceRole: "owner";
+        /** LengthAwarePaginator */
+        LengthAwarePaginator: {
+            current_page: number;
+            data: string;
+            first_page_url: string;
+            from: number | null;
+            last_page: number;
+            last_page_url: string;
+            links: {
+                [key: string]: unknown;
+            };
+            next_page_url: string;
+            path: string | null;
+            per_page: number;
+            prev_page_url: string | null;
+            to: number | null;
+            total: number;
+        };
+        /** RespondToMessageRequest */
+        RespondToMessageRequest: {
+            text?: string | null;
+            media?: string[];
+        };
+        /** RespondToReplyRequest */
+        RespondToReplyRequest: {
+            text?: string | null;
+            media?: string[];
+        };
+        /** SignConversationVideoUploadRequest */
+        SignConversationVideoUploadRequest: {
+            /** @enum {string} */
+            content_type: "video/mp4";
+        };
+        /** SignReplyVideoUploadRequest */
+        SignReplyVideoUploadRequest: {
+            /** @enum {string} */
+            content_type: "video/mp4";
+        };
+        /** StoreConversationMediaRequest */
+        StoreConversationMediaRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            file: string;
+            alt_text?: string | null;
+        };
+        /** StoreConversationVideoRequest */
+        StoreConversationVideoRequest: {
+            key: string;
+            duration_seconds: number;
+            width: number;
+            height: number;
+            alt_text?: string | null;
+        };
+        /** StoreReplyMediaRequest */
+        StoreReplyMediaRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            file: string;
+            alt_text?: string | null;
+        };
+        /** StoreReplyVideoRequest */
+        StoreReplyVideoRequest: {
+            key: string;
+            duration_seconds: number;
+            width: number;
+            height: number;
+            alt_text?: string | null;
+        };
         /** StoreWorkspaceRequest */
         StoreWorkspaceRequest: {
             name: string;
+        };
+        /** UpdatePostingScheduleRequest */
+        UpdatePostingScheduleRequest: {
+            slots?: {
+                weekday: number;
+                hour: number;
+                minute?: number | null;
+            }[];
         };
         /** User */
         User: {
@@ -799,6 +1367,109 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "analytics.report": {
+        parameters: {
+            query?: {
+                /**
+                 * @description Lookback window in days, clamped to 7–365.
+                 * @example 90
+                 */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accounts: {
+                            id: string;
+                            platform: string;
+                            handle: string;
+                            display_name: string | null;
+                            avatar_url: string | null;
+                            status: string | null;
+                            latest_followers: number | null;
+                            followers_delta: number | null;
+                            series: {
+                                at: string;
+                                followers: number | null;
+                                following: number | null;
+                            }[];
+                        }[];
+                        posts: {
+                            id: string;
+                            title: string;
+                            published_at: string | null;
+                            platforms: string[];
+                        }[];
+                        summary: {
+                            account_count: number;
+                            followers: {
+                                value: number;
+                                delta: number | null;
+                            };
+                            engagement: {
+                                value: number;
+                                delta: number | null;
+                            };
+                            posts: {
+                                value: number;
+                                delta: number | null;
+                            };
+                        };
+                        comparison: {
+                            top: {
+                                id: string;
+                                title: string;
+                                published_at: string | null;
+                                platforms: string[];
+                                engagement: number;
+                            }[];
+                            bottom: {
+                                id: string;
+                                title: string;
+                                published_at: string | null;
+                                platforms: string[];
+                                engagement: number;
+                            }[];
+                        };
+                        rangeDays: unknown;
+                        polling: {
+                            post_metrics_enabled: {
+                                [key: string]: string;
+                            };
+                            account_metrics_enabled: {
+                                [key: string]: string;
+                            };
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "authOptions.show": {
         parameters: {
             query?: {
@@ -916,6 +1587,235 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "conversationGif.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachGifRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "conversationMedia.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StoreConversationMediaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "conversationMedia.updateAlt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+                mediaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "conversationMedia.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+                mediaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "conversationVideoUpload.url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignConversationVideoUploadRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        key: string;
+                        url: string;
+                        headers: string[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "conversationVideoUpload.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreConversationVideoRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "dashboard.index": {
         parameters: {
             query?: never;
@@ -978,6 +1878,377 @@ export interface operations {
                                 attempts: number;
                             }[];
                         }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "engagement.inbox": {
+        parameters: {
+            query?: {
+                /** @description Connected account id. */
+                account?: string;
+                /** @description Platform filter (x, bluesky, linkedin, ...). */
+                platform?: string;
+                /** @description Post target id. */
+                target?: string;
+                /** @description Post id. */
+                post?: string;
+                /** @description Only unread conversations. */
+                unread?: boolean;
+                /** @description List archived conversations instead. */
+                archived?: boolean;
+                /** @description Page number (25 conversations per page). */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        replies: components["schemas"]["LengthAwarePaginator"];
+                        filters: {
+                            account: string;
+                            platform: string;
+                            target: string;
+                            post: string;
+                            unread: string;
+                            archived: boolean;
+                        };
+                        facets: {
+                            accounts: unknown[];
+                            posts: unknown[];
+                        };
+                        engagementEnabled: {
+                            x: boolean;
+                            bluesky: boolean;
+                            linkedin: boolean;
+                        };
+                        /**
+                         * @description LinkedIn engagement is off by default until the operator declares
+                         *     their app is approved for the restricted Community Management scope.
+                         *     The UI uses this to keep LinkedIn out of the "temporarily disabled"
+                         *     banner in that expected-off state.
+                         */
+                        linkedinCommunityManagementEnabled: boolean;
+                        /**
+                         * @description The reply box reuses the composer's @-mention picker, so it needs
+                         *     the same saved-mention library the composer receives.
+                         */
+                        savedMentions: unknown[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "engagement.thread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        post_excerpt: string;
+                        thread: {
+                            id: string;
+                            platform: string;
+                            remote_reply_id: string;
+                            author_handle: string;
+                            author_name: string | null;
+                            author_avatar_url: string | null;
+                            text: string;
+                            remote_created_at: string;
+                            is_read: boolean;
+                            is_liked: boolean;
+                            /**
+                             * @description `??` uses isset() semantics, so this stays safe when $target is
+                             *     null (the reply's own platform is the fallback). Not `?->`:
+                             *     Larastan reads the belongsTo as non-null and flags it redundant.
+                             */
+                            can_like: boolean;
+                            is_ours: boolean;
+                            send_status: string | null;
+                            status: string;
+                            post_target_id: string;
+                            post_id: string;
+                            post_remote_id: string | null;
+                            post_excerpt: string;
+                            account_handle: string;
+                            account_max_text_length: number;
+                            account_disabled: boolean;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "engagement.markRead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "engagement.archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "engagement.respond": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RespondToReplyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reply: {
+                            id: string;
+                            platform: string;
+                            remote_reply_id: string;
+                            author_handle: string;
+                            author_name: string | null;
+                            author_avatar_url: string | null;
+                            text: string;
+                            remote_created_at: string;
+                            is_read: boolean;
+                            is_liked: boolean;
+                            /**
+                             * @description `??` uses isset() semantics, so this stays safe when $target is
+                             *     null (the reply's own platform is the fallback). Not `?->`:
+                             *     Larastan reads the belongsTo as non-null and flags it redundant.
+                             */
+                            can_like: boolean;
+                            is_ours: boolean;
+                            send_status: string | null;
+                            status: string;
+                            post_target_id: string;
+                            post_id: string;
+                            post_remote_id: string | null;
+                            post_excerpt: string;
+                            account_handle: string;
+                            account_max_text_length: number;
+                            account_disabled: boolean;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "engagement.like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        is_liked: boolean;
+                    } | string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "engagement.unlike": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        is_liked: boolean;
+                    } | string;
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "engagement.destroyReply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "gifBrowser.index": {
+        parameters: {
+            query?: {
+                page?: number;
+            };
+            header?: never;
+            path: {
+                catalog: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: unknown[];
+                        has_next: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example GIF search is unavailable right now.
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "gifBrowser.recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: unknown[];
+                        has_next: boolean;
+                    } | {
+                        items: string[];
+                        has_next: boolean;
                     };
                 };
             };
@@ -1200,6 +2471,171 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "messaging.inbox": {
+        parameters: {
+            query?: {
+                /** @description List archived conversations instead. */
+                archived?: boolean;
+                /** @description Page number. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        conversations: components["schemas"]["LengthAwarePaginator"];
+                        filters: {
+                            archived: boolean;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "messaging.thread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        conversation: {
+                            id: string;
+                            platform: string;
+                            counterpart_handle: string | null;
+                            counterpart_name: string | null;
+                            counterpart_avatar_url: string | null;
+                            last_message_preview: string | null;
+                            last_message_at: string | null;
+                            unread_count: number;
+                            is_archived: boolean;
+                            can_reply: boolean;
+                            window_expires_at: string | null;
+                            account_handle: string;
+                        };
+                        messages: {
+                            id: string;
+                            remote_message_id: string;
+                            direction: string;
+                            text: string | null;
+                            attachments: unknown[];
+                            remote_created_at: string | null;
+                            is_ours: boolean;
+                            send_status: string | null;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "messaging.markRead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "messaging.archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "messaging.respond": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RespondToMessageRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: {
+                            id: string;
+                            remote_message_id: string;
+                            direction: string;
+                            text: string | null;
+                            attachments: unknown[];
+                            remote_created_at: string | null;
+                            is_ours: boolean;
+                            send_status: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "notifications.index": {
@@ -1977,6 +3413,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         timezone: string | null;
+                        canManage: boolean;
                         slots: {
                             weekday: number;
                             hour: number;
@@ -1986,6 +3423,40 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "postingSchedule.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpdatePostingScheduleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        timezone: string | null;
+                        canManage: boolean;
+                        slots: {
+                            weekday: number;
+                            hour: number;
+                            minute: number;
+                        }[] | string[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "posts.index": {
@@ -2607,6 +4078,234 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "replyGif.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachGifRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "replyMedia.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StoreReplyMediaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "replyMedia.updateAlt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+                mediaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "replyMedia.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+                mediaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "replyVideoUpload.url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignReplyVideoUploadRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        key: string;
+                        url: string;
+                        headers: string[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "replyVideoUpload.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreReplyVideoRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "shares.index": {

@@ -106,10 +106,21 @@ const postsNavItems: NavItem[] = [
         title: 'Queue',
         href: PostingScheduleController.show(),
         icon: ListChecks,
+        spa: true,
     },
     { title: 'Accounts', href: accountsRoute(), icon: Share2 },
-    { title: 'Engagement', href: engagementRoute(), icon: MessageCircle },
-    { title: 'Messages', href: messagesRoute(), icon: MessageSquare },
+    {
+        title: 'Engagement',
+        href: engagementRoute(),
+        icon: MessageCircle,
+        spa: true,
+    },
+    {
+        title: 'Messages',
+        href: messagesRoute(),
+        icon: MessageSquare,
+        spa: true,
+    },
 ];
 
 /**
@@ -333,7 +344,10 @@ export function AppSidebar() {
                                             analyticsRoute(),
                                         )}
                                         render={
-                                            <a href={toUrl(analyticsRoute())} />
+                                            <NavItemLink
+                                                href={analyticsRoute()}
+                                                spa
+                                            />
                                         }
                                     >
                                         <ChartColumn aria-hidden="true" />

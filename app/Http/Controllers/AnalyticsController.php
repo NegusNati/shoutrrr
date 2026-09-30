@@ -22,13 +22,28 @@ use Inertia\Response;
 
 class AnalyticsController extends Controller
 {
-    public function index(Request $request, InstanceSettings $settings): Response
+    /**
+     * No return type: the API subclass overrides this with JsonResponse.
+     *
+     * @return Response
+     */
+    public function index(Request $request, InstanceSettings $settings)
     {
         abort_unless($request->user()->can('viewAny', Post::class), 403);
 
+        return Inertia::render('analytics/index', $this->analyticsIndexData($request, $settings));
+    }
+
+    /**
+     * The analytics page payload, shared by the Inertia and API indexes.
+     *
+     * @return array{accounts: array<int, array<string, mixed>>, posts: array<int, array<string, mixed>>, summary: array<string, mixed>, comparison: array{top: array<int, array<string, mixed>>, bottom: array<int, array<string, mixed>>}, rangeDays: int, polling: array{post_metrics_enabled: array<string, bool>, account_metrics_enabled: array<string, bool>}}
+     */
+    protected function analyticsIndexData(Request $request, InstanceSettings $settings): array
+    {
         $days = max(7, min(365, (int) $request->integer('days', 90)));
 
-        return Inertia::render('analytics/index', [
+        return [
             ...$this->buildPayload($days),
             'rangeDays' => $days,
             'polling' => [
@@ -43,13 +58,13 @@ class AnalyticsController extends Controller
                     ])
                     ->all(),
             ],
-        ]);
+        ];
     }
 
     /**
      * @return array{accounts: array<int, array<string, mixed>>, posts: array<int, array<string, mixed>>, summary: array<string, mixed>, comparison: array{top: array<int, array<string, mixed>>, bottom: array<int, array<string, mixed>>}}
      */
-    private function buildPayload(int $days): array
+    protected function buildPayload(int $days): array
     {
         $from = Date::now()->subDays($days);
         $previousFrom = Date::now()->subDays($days * 2);
@@ -145,7 +160,7 @@ class AnalyticsController extends Controller
      *     posts: array{value: int, delta: int|null},
      * }
      */
-    private function buildSummary(array $accounts, int $totalEngagement, int $postsCount, CarbonInterface $previousFrom, CarbonInterface $from): array
+    protected function buildSummary(array $accounts, int $totalEngagement, int $postsCount, CarbonInterface $previousFrom, CarbonInterface $from): array
     {
         $accountsCollection = collect($accounts);
 
@@ -198,7 +213,7 @@ class AnalyticsController extends Controller
      *
      * @param  Collection<int, AccountMetric>  $metrics
      */
-    private function followerDelta(Collection $metrics): ?int
+    protected function followerDelta(Collection $metrics): ?int
     {
         if ($metrics->count() < 2) {
             return null;
@@ -222,7 +237,7 @@ class AnalyticsController extends Controller
      * @param  Collection<int, AccountMetric>  $metrics
      * @return array<int, array{at: string, followers: int|null, following: int|null}>
      */
-    private function downsampleDaily($metrics): array
+    protected function downsampleDaily($metrics): array
     {
         return $metrics
             ->groupBy(fn (AccountMetric $m): string => $m->captured_at->toDateString())
@@ -236,7 +251,7 @@ class AnalyticsController extends Controller
             ->all();
     }
 
-    private function resolveTitle(Post $post): string
+    protected function resolveTitle(Post $post): string
     {
         $first = trim((string) Str::of($post->base_text)->explode("\n")->first());
 

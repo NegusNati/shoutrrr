@@ -34,8 +34,7 @@ function applyLocalNotificationState(
     const locallyClearedUnreadCount = data.items.filter(
         (notification) =>
             !notification.read &&
-            (readIds.has(notification.id) ||
-                deletedIds.has(notification.id)),
+            (readIds.has(notification.id) || deletedIds.has(notification.id)),
     ).length;
 
     return {

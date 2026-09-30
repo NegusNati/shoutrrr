@@ -86,6 +86,34 @@ export async function apiFetch<T = unknown>(
     return parseJsonResponse<T>(response);
 }
 
+/**
+ * Multipart POST for file uploads (media attachments). Lets the browser set
+ * the multipart boundary; same session + XSRF contract as apiFetch.
+ */
+export async function apiUpload<T = unknown>(
+    path: string,
+    body: FormData | Record<string, Blob | string>,
+): Promise<T> {
+    const form = body instanceof FormData ? body : new FormData();
+    if (!(body instanceof FormData)) {
+        for (const [key, value] of Object.entries(body)) {
+            form.append(key, value);
+        }
+    }
+
+    const response = await fetch(`/api/v1/${path}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            Accept: 'application/json',
+            ...xsrfHeader(),
+        },
+        body: form,
+    });
+
+    return parseJsonResponse<T>(response);
+}
+
 export const api = {
     get: <T = unknown>(path: string) => apiFetch<T>(path),
     post: <T = unknown>(path: string, body?: unknown) =>

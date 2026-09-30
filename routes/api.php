@@ -3,21 +3,31 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\AccountSetsController;
+use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AuthOptionsController;
 use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\ConnectedAccountsController;
+use App\Http\Controllers\Api\V1\ConversationGifController;
+use App\Http\Controllers\Api\V1\ConversationMediaController;
+use App\Http\Controllers\Api\V1\ConversationVideoUploadController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\EngagementController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\MediaController;
+use App\Http\Controllers\Api\V1\MessagingController;
 use App\Http\Controllers\Api\V1\NotificationsController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\PostActionsController;
 use App\Http\Controllers\Api\V1\PostingScheduleController;
 use App\Http\Controllers\Api\V1\PostsController;
+use App\Http\Controllers\Api\V1\ReplyGifController;
+use App\Http\Controllers\Api\V1\ReplyMediaController;
+use App\Http\Controllers\Api\V1\ReplyVideoUploadController;
 use App\Http\Controllers\Api\V1\SharesController;
 use App\Http\Controllers\Api\V1\WorkspaceInvitationsController;
 use App\Http\Controllers\Api\V1\WorkspaceMentionsController;
 use App\Http\Controllers\Api\V1\WorkspacesController;
+use App\Http\Controllers\Gifs\GifBrowserController;
 use App\Http\Middleware\RecordApiUsage;
 use App\Http\Middleware\RequireWriteScope;
 use App\Http\Middleware\ResolveApiWorkspace;
@@ -66,6 +76,19 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
         Route::get('posting-schedule', [PostingScheduleController::class, 'show']);
         Route::get('posts/{id}/shares', [SharesController::class, 'index']);
 
+        Route::get('analytics', [AnalyticsController::class, 'report'])->middleware('metrics.enabled');
+
+        Route::get('engagement', [EngagementController::class, 'inbox'])->middleware('engagement.enabled');
+        Route::get('engagement/{replyId}/thread', [EngagementController::class, 'thread'])->middleware('engagement.enabled');
+
+        Route::get('messages', [MessagingController::class, 'inbox'])->middleware('messages.enabled');
+        Route::get('messages/{conversationId}/thread', [MessagingController::class, 'thread'])->middleware('messages.enabled');
+
+        Route::middleware('gifs.enabled')->group(function (): void {
+            Route::get('gifs/{catalog}', [GifBrowserController::class, 'index']);
+            Route::get('gifs/{catalog}/recent', [GifBrowserController::class, 'recent']);
+        });
+
         Route::middleware(RequireWriteScope::class)->group(function (): void {
             Route::post('posts', [PostsController::class, 'store']);
             Route::patch('posts/{id}', [PostsController::class, 'update']);
@@ -86,5 +109,41 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
             Route::post('account-sets', [AccountSetsController::class, 'store']);
             Route::patch('account-sets/{set}', [AccountSetsController::class, 'update']);
             Route::delete('account-sets/{set}', [AccountSetsController::class, 'destroy']);
+
+            Route::put('posting-schedule', [PostingScheduleController::class, 'update']);
+
+            Route::middleware('engagement.enabled')->group(function (): void {
+                Route::post('engagement/{replyId}/read', [EngagementController::class, 'markRead']);
+                Route::post('engagement/{replyId}/archive', [EngagementController::class, 'archive']);
+                Route::post('engagement/{replyId}/reply', [EngagementController::class, 'respond'])->middleware('throttle:30,1');
+
+                Route::middleware('throttle:60,1')->group(function (): void {
+                    Route::post('engagement/{replyId}/like', [EngagementController::class, 'like']);
+                    Route::delete('engagement/{replyId}/like', [EngagementController::class, 'unlike']);
+                    Route::delete('engagement/{replyId}', [EngagementController::class, 'destroyReply']);
+
+                    Route::post('engagement/{replyId}/media', [ReplyMediaController::class, 'store']);
+                    Route::patch('engagement/{replyId}/media/{mediaId}/alt', [ReplyMediaController::class, 'updateAlt']);
+                    Route::delete('engagement/{replyId}/media/{mediaId}', [ReplyMediaController::class, 'destroy']);
+                    Route::post('engagement/{replyId}/media/video-url', [ReplyVideoUploadController::class, 'url']);
+                    Route::post('engagement/{replyId}/media/video', [ReplyVideoUploadController::class, 'store']);
+                    Route::post('engagement/{replyId}/gifs', [ReplyGifController::class, 'store'])->middleware('gifs.enabled');
+                });
+            });
+
+            Route::middleware('messages.enabled')->group(function (): void {
+                Route::post('messages/{conversationId}/read', [MessagingController::class, 'markRead']);
+                Route::post('messages/{conversationId}/archive', [MessagingController::class, 'archive']);
+                Route::post('messages/{conversationId}/reply', [MessagingController::class, 'respond'])->middleware('throttle:30,1');
+
+                Route::middleware('throttle:60,1')->group(function (): void {
+                    Route::post('messages/{conversationId}/media', [ConversationMediaController::class, 'store']);
+                    Route::patch('messages/{conversationId}/media/{mediaId}/alt', [ConversationMediaController::class, 'updateAlt']);
+                    Route::delete('messages/{conversationId}/media/{mediaId}', [ConversationMediaController::class, 'destroy']);
+                    Route::post('messages/{conversationId}/media/video-url', [ConversationVideoUploadController::class, 'url']);
+                    Route::post('messages/{conversationId}/media/video', [ConversationVideoUploadController::class, 'store']);
+                    Route::post('messages/{conversationId}/gifs', [ConversationGifController::class, 'store'])->middleware('gifs.enabled');
+                });
+            });
         });
     });

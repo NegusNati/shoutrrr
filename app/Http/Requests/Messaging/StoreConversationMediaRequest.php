@@ -13,7 +13,7 @@ class StoreConversationMediaRequest extends FormRequest
         // The {conversation} binding is already scoped to the user's workspace
         // (404s otherwise), so reaching here means the conversation belongs to
         // the user. The platform check is EnsureConversationSupportsDirectMessageMedia's.
-        return $this->route('conversation') !== null;
+        return $this->route('conversation') !== null || $this->route('conversationId') !== null;
     }
 
     /**

@@ -18,8 +18,16 @@ class RespondToMessageRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        /** @var Conversation $conversation */
-        $conversation = $this->route('conversation');
+        $conversation = $this->route('conversation') ?? $this->route('conversationId');
+        // API routes pass the raw id — implicit binding does not run in the
+        // /api/v1 group, so resolve it the same way the web binder does.
+        if (! $conversation instanceof Conversation) {
+            $conversation = Conversation::query()
+                ->withoutGlobalScopes()
+                ->where('workspace_id', $this->user()?->current_workspace_id)
+                ->whereKey($conversation)
+                ->firstOrFail();
+        }
 
         // Zero on Bluesky, so `max:0` is what rejects an attachment there.
         $maxMedia = $conversation->platform->maxDirectMessageMedia();

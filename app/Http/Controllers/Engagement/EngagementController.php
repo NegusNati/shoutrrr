@@ -36,7 +36,26 @@ use Inertia\Response as InertiaResponse;
 
 class EngagementController extends Controller
 {
-    public function index(Request $request, InstanceSettings $settings): InertiaResponse
+    /**
+     * No return type: the API subclass overrides this with JsonResponse.
+     *
+     * @return InertiaResponse
+     */
+    public function index(Request $request, InstanceSettings $settings)
+    {
+        return Inertia::render('engagement/index', [
+            'replies' => Inertia::scroll(fn () => $this->conversationPaginator($this->engagementReplyFilter($request), $request))->defer(),
+            ...$this->engagementIndexProps($request, $settings),
+        ]);
+    }
+
+    /**
+     * The inbox stream's filter predicate, shared by the Inertia and API
+     * indexes so both paginate the same conversation groups.
+     *
+     * @return callable(Builder<PostTargetReply>): Builder<PostTargetReply>
+     */
+    protected function engagementReplyFilter(Request $request): callable
     {
         $account = $request->string('account')->toString();
         $platform = $request->string('platform')->toString();
@@ -45,7 +64,7 @@ class EngagementController extends Controller
         $unread = $request->boolean('unread');
         $archived = $request->boolean('archived');
 
-        $apply = fn ($query) => $query
+        return fn ($query) => $query
             ->where('is_ours', false)
             ->when(
                 $archived,
@@ -60,13 +79,29 @@ class EngagementController extends Controller
                 fn ($t) => $t->where('post_id', $post)))
             ->when($account !== '', fn ($q) => $q->whereHas('target',
                 fn ($t) => $t->where('connected_account_id', $account)));
+    }
 
-        $accounts = ConnectedAccount::query()->get(['id', 'handle', 'platform'])
+    /**
+     * The non-replies index payload — filters, facets, and feature flags —
+     * shared by the Inertia and API indexes.
+     *
+     * @return array{filters: array<string, mixed>, facets: array{accounts: list<array<string, mixed>>, posts: list<array<string, mixed>>}, engagementEnabled: array{x: bool, bluesky: bool, linkedin: bool}, linkedinCommunityManagementEnabled: bool, savedMentions: list<array<string, mixed>>}
+     */
+    protected function engagementIndexProps(Request $request, InstanceSettings $settings): array
+    {
+        $account = $request->string('account')->toString();
+        $platform = $request->string('platform')->toString();
+        $target = $request->string('target')->toString();
+        $post = $request->string('post')->toString();
+        $unread = $request->boolean('unread');
+        $archived = $request->boolean('archived');
+
+        $accounts = array_values(ConnectedAccount::query()->get(['id', 'handle', 'platform'])
             ->map(fn (ConnectedAccount $a): array => [
                 'id' => $a->id,
                 'handle' => $a->handle,
                 'platform' => $a->platform->value,
-            ])->all();
+            ])->all());
 
         // Posts with at least one live (inbound, unarchived) reply, plus a
         // running count, so the inbox can be filtered by which post drew them.
@@ -76,7 +111,7 @@ class EngagementController extends Controller
             ->where('post_target_replies.is_ours', false)
             ->where('post_target_replies.status', '!=', ReplyStatus::Archived->value);
 
-        $posts = Post::query()
+        $posts = array_values(Post::query()
             ->whereHas('replies', $liveReplies)
             ->withCount(['replies as reply_count' => $liveReplies])
             ->orderByDesc('reply_count')
@@ -86,10 +121,9 @@ class EngagementController extends Controller
                 'id' => $p->id,
                 'excerpt' => $p->excerpt(),
                 'count' => (int) $p->getAttribute('reply_count'),
-            ])->all();
+            ])->all());
 
-        return Inertia::render('engagement/index', [
-            'replies' => Inertia::scroll(fn () => $this->conversationPaginator($apply, $request))->defer(),
+        return [
             'filters' => [
                 'account' => $account,
                 'platform' => $platform,
@@ -111,13 +145,13 @@ class EngagementController extends Controller
             'linkedinCommunityManagementEnabled' => $settings->linkedinCommunityManagementEnabled(),
             // The reply box reuses the composer's @-mention picker, so it needs
             // the same saved-mention library the composer receives.
-            'savedMentions' => WorkspaceMention::withoutGlobalScopes()
+            'savedMentions' => array_values(WorkspaceMention::withoutGlobalScopes()
                 ->where('workspace_id', $request->user()->current_workspace_id)
                 ->orderBy('name')
                 ->get()
                 ->map(fn (WorkspaceMention $mention): array => WorkspaceMentionController::view($mention))
-                ->all(),
-        ]);
+                ->all()),
+        ];
     }
 
     public function thread(PostTargetReply $reply): JsonResponse
@@ -173,7 +207,7 @@ class EngagementController extends Controller
      * @param  callable(Builder<PostTargetReply>): Builder<PostTargetReply>  $apply
      * @return LengthAwarePaginator<int, non-empty-array<string, mixed>>
      */
-    private function conversationPaginator(callable $apply, Request $request): LengthAwarePaginator
+    protected function conversationPaginator(callable $apply, Request $request): LengthAwarePaginator
     {
         $perPage = 25;
         $page = LengthAwarePaginator::resolveCurrentPage();
