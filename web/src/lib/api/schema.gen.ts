@@ -120,6 +120,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["connections.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/connections/{socialAccount}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["connections.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dashboard": {
         parameters: {
             query?: never;
@@ -225,6 +257,22 @@ export interface paths {
         };
         get: operations["nextSlot.show"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["notificationPreferences.show"];
+        put: operations["notificationPreferences.update"];
         post?: never;
         delete?: never;
         options?: never;
@@ -670,6 +718,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["profile.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["profile.update"];
+        trace?: never;
+    };
+    "/settings/security": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Security settings payload: passkeys, two-factor state and the password
+         *     rules hint the client mirrors on the new-password field
+         */
+        get: operations["security.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["security.updatePassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/{id}/shares": {
         parameters: {
             query?: never;
@@ -843,11 +943,25 @@ export interface components {
          * @enum {string}
          */
         InstanceRole: "owner";
+        /** PasswordUpdateRequest */
+        PasswordUpdateRequest: {
+            current_password: string;
+            password: string;
+            password_confirmation: string;
+        };
         /**
          * PostFormat
          * @enum {string}
          */
         PostFormat: "feed" | "reels" | "story";
+        /** ProfileUpdateRequest */
+        ProfileUpdateRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 2000 kilobytes.
+             */
+            photo?: string | null;
+        };
         /** SignVideoUploadRequest */
         SignVideoUploadRequest: {
             /** @enum {string} */
@@ -898,6 +1012,13 @@ export interface components {
         /** StoreWorkspaceRequest */
         StoreWorkspaceRequest: {
             name: string;
+        };
+        /** UpdateNotificationPreferencesRequest */
+        UpdateNotificationPreferencesRequest: {
+            preferences: {
+                in_app: boolean;
+                mail: boolean;
+            }[];
         };
         /** UpdatePostImageEditRequest */
         UpdatePostImageEditRequest: {
@@ -1244,6 +1365,86 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "connections.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connections: {
+                            provider: string;
+                            label: string;
+                            connected: string;
+                            id: string | null;
+                        }[];
+                        hasPassword: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "connections.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The social account ID */
+                socialAccount: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        disconnected: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "You cannot disconnect your only sign-in method. Set a password first.";
+                    };
+                };
+            };
+        };
+    };
     "dashboard.index": {
         parameters: {
             query?: never;
@@ -1400,6 +1601,7 @@ export interface operations {
                         name: string;
                         auth: {
                             user: components["schemas"]["User"];
+                            mustVerifyEmail: string;
                         };
                         workspaces: {
                             enabled: boolean;
@@ -1624,6 +1826,66 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "notificationPreferences.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        preferences: {
+                            [key: string]: {
+                                in_app: boolean;
+                                mail: boolean;
+                            };
+                        };
+                        alwaysOn: string[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "notificationPreferences.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNotificationPreferencesRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        preferences: {
+                            [key: string]: {
+                                in_app: boolean;
+                                mail: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "notifications.index": {
@@ -3610,6 +3872,119 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    "profile.destroy": {
+        parameters: {
+            query: {
+                password: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "profile.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["ProfileUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: components["schemas"]["User"] | null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "security.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        canManageTwoFactor: boolean;
+                        canManagePasskeys: boolean;
+                        passkeys: {
+                            id: number;
+                            name: string;
+                            authenticator: string;
+                            created_at_diff: string;
+                            last_used_at_diff: string | null;
+                        }[];
+                        passwordRules: string;
+                        twoFactorEnabled: boolean;
+                        requiresConfirmation: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "security.updatePassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        updated: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "shares.index": {

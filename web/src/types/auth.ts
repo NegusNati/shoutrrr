@@ -12,6 +12,8 @@ export type User = {
 
 export type Auth = {
     user: User;
+    /** True when the instance requires email verification and the user model honors it. */
+    mustVerifyEmail?: boolean;
 };
 
 /* @chisel-passkeys */

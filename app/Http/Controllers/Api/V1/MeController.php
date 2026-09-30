@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Support\AppShellData;
 use App\Support\FeedbackConfig;
 use App\Support\InstanceSettings;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -29,7 +30,11 @@ class MeController extends Controller
 
         return response()->json([
             'name' => config('app.name'),
-            'auth' => ['user' => $user],
+            'auth' => [
+                'user' => $user,
+                'mustVerifyEmail' => config('auth.email_verification.enabled', false)
+                    && $user instanceof MustVerifyEmail,
+            ],
             'workspaces' => $shell->workspaces($user),
             'shell' => $shell->shell($user),
             'notifications' => $shell->notifications($user),

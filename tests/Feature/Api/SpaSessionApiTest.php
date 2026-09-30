@@ -32,7 +32,7 @@ test('me resolves for a session-authenticated user', function () {
         ->assertJsonPath('auth.user.id', $user->id)
         ->assertJsonPath('workspaces.current.id', $workspace->id)
         ->assertJsonStructure([
-            'auth' => ['user'],
+            'auth' => ['user', 'mustVerifyEmail'],
             'workspaces' => ['current', 'all'],
             'shell' => ['accounts', 'sets', 'limits'],
             'features',

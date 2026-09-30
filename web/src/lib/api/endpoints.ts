@@ -43,4 +43,11 @@ export const endpoints = {
     workspaceMentions: 'workspace-mentions',
     workspaceMention: (id: string) => `workspace-mentions/${id}`,
     platformLimits: 'platform-limits',
+
+    settingsProfile: 'settings/profile',
+    settingsSecurity: 'settings/security',
+    settingsPassword: 'settings/password',
+    settingsConnections: 'settings/connections',
+    settingsConnection: (id: string | number) => `settings/connections/${id}`,
+    settingsNotifications: 'settings/notifications',
 } as const;

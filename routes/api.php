@@ -22,11 +22,16 @@ use App\Http\Controllers\Api\V1\PostMediaController;
 use App\Http\Controllers\Api\V1\PostMetricsRefreshController;
 use App\Http\Controllers\Api\V1\PostsController;
 use App\Http\Controllers\Api\V1\PostVideoUploadController;
+use App\Http\Controllers\Api\V1\Settings\ConnectionsController as ConnectionsSettingsController;
+use App\Http\Controllers\Api\V1\Settings\NotificationPreferencesController as NotificationSettingsController;
+use App\Http\Controllers\Api\V1\Settings\ProfileController as ProfileSettingsController;
+use App\Http\Controllers\Api\V1\Settings\SecurityController as SecuritySettingsController;
 use App\Http\Controllers\Api\V1\SharesController;
 use App\Http\Controllers\Api\V1\WorkspaceInvitationsController;
 use App\Http\Controllers\Api\V1\WorkspaceMentionsController;
 use App\Http\Controllers\Api\V1\WorkspacesController;
 use App\Http\Middleware\RecordApiUsage;
+use App\Http\Middleware\RequireSessionAuth;
 use App\Http\Middleware\RequireWriteScope;
 use App\Http\Middleware\ResolveApiWorkspace;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +45,19 @@ Route::get('auth/options', [AuthOptionsController::class, 'show']);
 Route::middleware(['auth:api,sanctum', 'throttle:api'])->group(function (): void {
     Route::post('workspace-invitations/{invitation}/accept', [WorkspaceInvitationsController::class, 'accept']);
     Route::delete('workspace-invitations/{invitation}', [WorkspaceInvitationsController::class, 'deny']);
+});
+
+// Session-only: user settings are bound to the signed-in user, not a
+// workspace — RequireSessionAuth rejects API keys before validation runs.
+Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'])->group(function (): void {
+    Route::patch('settings/profile', [ProfileSettingsController::class, 'update']);
+    Route::delete('settings/profile', [ProfileSettingsController::class, 'destroy']);
+    Route::get('settings/security', [SecuritySettingsController::class, 'show']);
+    Route::put('settings/password', [SecuritySettingsController::class, 'updatePassword']);
+    Route::get('settings/connections', [ConnectionsSettingsController::class, 'index']);
+    Route::delete('settings/connections/{socialAccount}', [ConnectionsSettingsController::class, 'destroy']);
+    Route::get('settings/notifications', [NotificationSettingsController::class, 'show']);
+    Route::put('settings/notifications', [NotificationSettingsController::class, 'update']);
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session
