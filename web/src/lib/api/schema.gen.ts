@@ -248,6 +248,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sync/native-tracking/{account}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["nativeTracking.store"];
+        delete: operations["nativeTracking.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/next-slot": {
         parameters: {
             query?: never;
@@ -734,6 +750,22 @@ export interface paths {
         patch: operations["profile.update"];
         trace?: never;
     };
+    "/shares/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["publicShare.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/security": {
         parameters: {
             query?: never;
@@ -802,6 +834,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["syncPipelines.index"];
+        put?: never;
+        post: operations["syncPipelines.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sync/{syncPipeline}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["syncPipelines.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["syncPipelines.update"];
+        trace?: never;
+    };
+    "/settings/workspace/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaceApiKeys.index"];
+        put?: never;
+        post: operations["workspaceApiKeys.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/api-keys/{apiKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["workspaceApiKeys.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invitations/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public read of an invitation for the SPA's accept page — the JSON
+         *     equivalent of the guest half of WorkspaceController::showInvitation.
+         *     Invalid or expired tokens 404 so the page can render its dead-link
+         *     state rather than leaking whether a token ever existed
+         */
+        get: operations["workspaceInvitations.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspace-invitations/{invitation}/accept": {
         parameters: {
             query?: never;
@@ -861,6 +979,192 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["workspaceMentions.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaceSettings.overview"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete the current workspace. Same guards as the web controller: owner
+         *     only, another workspace must exist, and the initial workspace is
+         *     protected when subscriptions are enabled (it anchors the free tier)
+         */
+        delete: operations["workspaceSettings.destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["workspaceSettings.update"];
+        trace?: never;
+    };
+    "/settings/workspace/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave the current workspace. Sole owners of multi-member workspaces must
+         *     transfer ownership or delete the workspace first (mirrors the web
+         *     WorkspaceController::leave guard)
+         */
+        post: operations["workspaceSettings.leave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaceSettings.transferOwnership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/timezone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["workspaceSettings.updateTimezone"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaceSettings.members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaceSettings.invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/members/{membership}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["workspaceSettings.removeMember"];
+        options?: never;
+        head?: never;
+        patch: operations["workspaceSettings.updateMemberRole"];
+        trace?: never;
+    };
+    "/settings/workspace/invitations/{invitation}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["workspaceSettings.cancelInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaceSubscription.show"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/subscription/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaceSubscription.checkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/subscription/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaceSubscription.portal"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -943,6 +1247,13 @@ export interface components {
          * @enum {string}
          */
         InstanceRole: "owner";
+        /** InviteMemberRequest */
+        InviteMemberRequest: {
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            role: "member" | "admin";
+        };
         /** PasswordUpdateRequest */
         PasswordUpdateRequest: {
             current_password: string;
@@ -1013,6 +1324,15 @@ export interface components {
         StoreWorkspaceRequest: {
             name: string;
         };
+        /** TransferOwnershipRequest */
+        TransferOwnershipRequest: {
+            membership_id: string;
+        };
+        /** UpdateMemberRoleRequest */
+        UpdateMemberRoleRequest: {
+            /** @enum {string} */
+            role: "member" | "admin";
+        };
         /** UpdateNotificationPreferencesRequest */
         UpdateNotificationPreferencesRequest: {
             preferences: {
@@ -1039,6 +1359,19 @@ export interface components {
                 crop?: string[] | null;
             };
             alt_text?: string | null;
+        };
+        /** UpdateWorkspaceRequest */
+        UpdateWorkspaceRequest: {
+            name: string;
+            /**
+             * Format: binary
+             * @description Maximum file size: 2000 kilobytes.
+             */
+            photo?: string | null;
+        };
+        /** UpdateWorkspaceTimezoneRequest */
+        UpdateWorkspaceTimezoneRequest: {
+            timezone: string;
         };
         /** User */
         User: {
@@ -1800,6 +2133,60 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "nativeTracking.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account ID */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Native tracking enabled.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "nativeTracking.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account ID */
+                account: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Native tracking disabled.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "nextSlot.show": {
@@ -3926,6 +4313,48 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "publicShare.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        post: {
+                            base_text: string;
+                            status: string;
+                            scheduled_at: string | null;
+                            created_at: string;
+                            targets: {
+                                platform: string;
+                                sections: string[];
+                                status: string;
+                                handle: string;
+                                display_name: string | null;
+                                avatar_url: string | null;
+                            }[];
+                            media: {
+                                id: string;
+                                url: string;
+                                mime: string;
+                                alt_text: string | null;
+                            }[];
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
     "security.show": {
         parameters: {
             query?: never;
@@ -4082,6 +4511,289 @@ export interface operations {
             404: components["responses"]["ModelNotFoundException"];
         };
     };
+    "syncPipelines.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accounts: {
+                            id: string;
+                            platform: string;
+                            handle: string;
+                            display_name: string | null;
+                            avatar_url: string | null;
+                            status: string;
+                            supports_native: boolean;
+                        }[];
+                        pipelines: {
+                            id: string;
+                            name: string;
+                            enabled: boolean;
+                            source_connected_account_id: string;
+                            destination_connected_account_ids: {
+                                [key: string]: unknown;
+                            };
+                        }[];
+                        maxPipelines: number;
+                        canCreate: boolean;
+                        trackableAccounts: {
+                            id: string;
+                            platform: string;
+                            handle: string;
+                            display_name: string | null;
+                            avatar_url: string | null;
+                            status: string;
+                            supports_native: boolean;
+                        }[];
+                        trackedAccountIds: unknown[];
+                        canTrack: boolean;
+                        maxTracked: number;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "syncPipelines.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    enabled?: boolean;
+                    source_connected_account_id: string;
+                    destination_connected_account_ids: string[];
+                    track_source?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        message: "Sync pipeline created and now tracking the source account." | "Sync pipeline created.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "syncPipelines.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The sync pipeline ID */
+                syncPipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Sync pipeline deleted.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "syncPipelines.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The sync pipeline ID */
+                syncPipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    enabled?: boolean;
+                    source_connected_account_id?: string;
+                    destination_connected_account_ids?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Sync pipeline updated.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "workspaceApiKeys.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        apiKeys: {
+                            id: string;
+                            name: string;
+                            last_four: string | null;
+                            scope: string;
+                            last_used_at: string | null;
+                            expires_at: string | null;
+                            created_at: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceApiKeys.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** @enum {string} */
+                    scope: "read" | "write";
+                    /** Format: date-time */
+                    expires_at?: string | null;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        apiKey: {
+                            id: string;
+                            name: string;
+                            last_four: string | null;
+                            scope: string;
+                            last_used_at: string | null;
+                            expires_at: string | null;
+                            created_at: string;
+                        };
+                        plainTextApiKey: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "workspaceApiKeys.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The api key ID */
+                apiKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        revoked: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceInvitations.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        workspace_name: string;
+                        role: string;
+                        inviter_name: unknown;
+                        expires_at: string;
+                        user_exists: boolean;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
     "workspaceInvitations.accept": {
         parameters: {
             query?: never;
@@ -4229,6 +4941,575 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "workspaceSettings.overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workspace: {
+                            id: string;
+                            name: string;
+                            slug: string;
+                            logo: string | null;
+                            owner_id: string;
+                        };
+                        canManage: boolean;
+                        isOwner: boolean;
+                        canDelete: string;
+                        /** @enum {string|null} */
+                        deleteDisabledReason: "You can’t delete your only workspace." | "The initial workspace of this instance cannot be deleted." | null;
+                        timezone: string;
+                        timezones: unknown[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceSettings.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workspaces: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "The initial workspace of this instance cannot be deleted.";
+                        errors: {
+                            workspace: [
+                                "The initial workspace of this instance cannot be deleted."
+                            ];
+                        };
+                    } | {
+                        /** @constant */
+                        message: "Create or join another workspace before deleting this one.";
+                        errors: {
+                            workspace: [
+                                "Create or join another workspace before deleting this one."
+                            ];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "workspaceSettings.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UpdateWorkspaceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workspace: {
+                            id: string;
+                            name: string;
+                            slug: string;
+                            logo: string | null;
+                            owner_id: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "workspaceSettings.leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workspaces: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Transfer ownership or delete the workspace before leaving.";
+                        errors: {
+                            workspace: [
+                                "Transfer ownership or delete the workspace before leaving."
+                            ];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "workspaceSettings.transferOwnership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferOwnershipRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workspaces: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "workspaceSettings.updateTimezone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWorkspaceTimezoneRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        timezone: unknown;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "workspaceSettings.members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        members: {
+                            id: string;
+                            user_id: string;
+                            name: string;
+                            email: string;
+                            avatar: string;
+                            role: string;
+                            is_owner: boolean;
+                            /** Format: date-time */
+                            created_at: string | null;
+                        }[];
+                        pendingInvitations: string;
+                        canManage: boolean;
+                        availableRoles: [
+                            "member",
+                            "admin"
+                        ];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceSettings.invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteMemberRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        invitation: {
+                            id: string;
+                            email: string;
+                            role: string;
+                            invited_by: string;
+                            /** Format: date-time */
+                            expires_at: string;
+                            /** Format: date-time */
+                            created_at: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "workspaceSettings.removeMember": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The membership ID */
+                membership: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        removed: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Use “leave workspace” to remove yourself.";
+                        errors: {
+                            error: [
+                                "Use “leave workspace” to remove yourself."
+                            ];
+                        };
+                    } | {
+                        /** @constant */
+                        message: "Cannot remove the workspace owner.";
+                        errors: {
+                            error: [
+                                "Cannot remove the workspace owner."
+                            ];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "workspaceSettings.updateMemberRole": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The membership ID */
+                membership: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMemberRoleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        member: {
+                            id: string;
+                            role: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "workspaceSettings.cancelInvitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The invitation ID */
+                invitation: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cancelled: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceSubscription.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        subscribed: boolean;
+                        monthlyPrice: number;
+                        monthlyXBudgetMicrousd: string;
+                        monthlyXBudgetUsedMicrousd: string;
+                        monthlyXBudgetRemainingMicrousd: string | null;
+                        canManageSubscription: boolean;
+                        canAccessPortal: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceSubscription.checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Unable to start Stripe checkout. Check STRIPE_SUBSCRIPTION_PRICE_ID and Stripe test mode.";
+                        errors: {
+                            subscription: [
+                                "Unable to start Stripe checkout. Check STRIPE_SUBSCRIPTION_PRICE_ID and Stripe test mode."
+                            ];
+                        };
+                    } | {
+                        /** @constant */
+                        message: "Configure STRIPE_SUBSCRIPTION_PRICE_ID before starting checkout.";
+                        errors: {
+                            subscription: [
+                                "Configure STRIPE_SUBSCRIPTION_PRICE_ID before starting checkout."
+                            ];
+                        };
+                    } | {
+                        /** @constant */
+                        message: "This workspace already has an active subscription.";
+                        errors: {
+                            subscription: [
+                                "This workspace already has an active subscription."
+                            ];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "workspaceSubscription.portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "workspaces.index": {

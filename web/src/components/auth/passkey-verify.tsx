@@ -16,6 +16,11 @@ type Props = {
     loadingLabel?: string;
     separator?: string;
     showSeparator?: boolean;
+    /**
+     * Where a successful verify lands (SPA-relative path, e.g.
+     * '/settings/security'). Defaults to the dashboard for sign-in.
+     */
+    redirectTo?: Href;
 };
 
 export default function PasskeyVerify({
@@ -24,6 +29,7 @@ export default function PasskeyVerify({
     loadingLabel,
     separator,
     showSeparator = true,
+    redirectTo,
 }: Props = {}) {
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
         ...(routes && {
@@ -35,7 +41,7 @@ export default function PasskeyVerify({
         onSuccess: () => {
             // Passkey sign-in lands on the SPA dashboard; the me query is
             // refetched by the router guard on navigation.
-            window.location.href = appUrl('/dashboard');
+            window.location.href = appUrl(toUrl(redirectTo ?? '/dashboard'));
         },
     });
 
