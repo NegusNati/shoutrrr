@@ -39,6 +39,8 @@ class ShareService
 
     public function url(string $token): string
     {
-        return url("/share/{$token}");
+        // Public share links render in the SPA; the legacy /share/{token}
+        // route redirects here for links minted before the move.
+        return url("/app/share/{$token}");
     }
 }

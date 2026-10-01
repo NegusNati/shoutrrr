@@ -44,6 +44,16 @@ export const endpoints = {
     workspaceMention: (id: string) => `workspace-mentions/${id}`,
     platformLimits: 'platform-limits',
 
+    publicShare: (token: string) => `shares/${token}`,
+    invitation: (token: string) => `invitations/${token}`,
+    workspaceInvitationAccept: (id: string) =>
+        `workspace-invitations/${id}/accept`,
+
+    sync: 'sync',
+    syncPipeline: (id: string) => `sync/${id}`,
+    syncNativeTracking: (accountId: string) =>
+        `sync/native-tracking/${accountId}`,
+
     settingsProfile: 'settings/profile',
     settingsSecurity: 'settings/security',
     settingsPassword: 'settings/password',

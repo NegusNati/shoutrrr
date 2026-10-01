@@ -19,6 +19,28 @@ use Illuminate\Http\Request;
  */
 class WorkspaceInvitationsController extends Controller
 {
+    /**
+     * Public read of an invitation for the SPA's accept page — the JSON
+     * equivalent of the guest half of WorkspaceController::showInvitation.
+     * Invalid or expired tokens 404 so the page can render its dead-link
+     * state rather than leaking whether a token ever existed.
+     */
+    public function show(string $token): JsonResponse
+    {
+        $invitation = WorkspaceInvitation::findByToken($token);
+
+        abort_unless($invitation !== null && $invitation->isValid(), 404);
+
+        return response()->json([
+            'id' => $invitation->id,
+            'workspace_name' => $invitation->workspace->name,
+            'role' => $invitation->role,
+            'inviter_name' => $invitation->inviter()->value('name') ?? 'Someone',
+            'expires_at' => $invitation->expires_at->toIso8601String(),
+            'user_exists' => User::where('email', $invitation->email)->exists(),
+        ]);
+    }
+
     public function accept(Request $request, WorkspaceInvitation $invitation, WorkspaceInvitationService $service): JsonResponse
     {
         /** @var User $user */

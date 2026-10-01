@@ -107,7 +107,14 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
-        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+        // The confirm-password page lives in the SPA; forward the intended URL
+        // (stored by the password.confirm middleware) so it can navigate back.
+        Fortify::confirmPasswordView(function (Request $request) {
+            $intended = $request->session()->get('url.intended');
+            $path = is_string($intended) ? parse_url($intended, PHP_URL_PATH) : null;
+
+            return redirect('/app/confirm-password'.(is_string($path) ? '?redirect='.urlencode($path) : ''));
+        });
     }
 
     /**

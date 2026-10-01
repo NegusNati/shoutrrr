@@ -22,24 +22,29 @@ function shareFor(string $token, ?callable $state = null): PostShare
     return $factory->create();
 }
 
-it('renders a read-only view for a valid token', function (): void {
-    shareFor('good-token');
-
+it('redirects the legacy share URL into the SPA', function (): void {
     $this->get('/share/good-token')
-        ->assertOk()
-        ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
-        ->assertInertia(fn ($page) => $page
-            ->component('share/show')
-            ->where('post.base_text', 'shared body'));
+        ->assertRedirect('/app/share/good-token')
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
 });
 
-it('shows not-available for unknown / revoked / expired tokens', function (): void {
-    $this->get('/share/nope')->assertInertia(fn ($page) => $page
-        ->component('share/show')->where('post', null));
+it('serves a read-only payload for a valid token', function (): void {
+    shareFor('good-token');
+
+    $this->getJson('/api/v1/shares/good-token')
+        ->assertOk()
+        ->assertJsonPath('post.base_text', 'shared body')
+        ->assertJsonStructure([
+            'post' => ['status', 'created_at', 'targets', 'media'],
+        ]);
+});
+
+it('returns a null post for unknown / revoked / expired tokens', function (): void {
+    $this->getJson('/api/v1/shares/nope')->assertOk()->assertJsonPath('post', null);
 
     shareFor('revoked-token', fn ($f) => $f->revoked());
-    $this->get('/share/revoked-token')->assertInertia(fn ($page) => $page->where('post', null));
+    $this->getJson('/api/v1/shares/revoked-token')->assertJsonPath('post', null);
 
     shareFor('expired-token', fn ($f) => $f->expired());
-    $this->get('/share/expired-token')->assertInertia(fn ($page) => $page->where('post', null));
+    $this->getJson('/api/v1/shares/expired-token')->assertJsonPath('post', null);
 });
