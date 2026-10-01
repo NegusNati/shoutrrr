@@ -188,13 +188,21 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
         Route::post('notifications/{notification}/read', [NotificationsController::class, 'markRead']);
     });
 
-Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api', RecordApiUsage::class, 'verified'])
+// Workspace listing, creation and switching deliberately skip
+// ResolveApiWorkspace: they must work for a user with no current workspace
+// (first-workspace onboarding, or right after signing up), and they act on the
+// user's membership set rather than on one resolved workspace. The session-only
+// /workspaces/{workspace} lifecycle routes live in the group below.
+Route::middleware(['auth:api,sanctum', 'throttle:api', RecordApiUsage::class, 'verified'])
     ->group(function (): void {
-        Route::get('dashboard', [DashboardController::class, 'index']);
-
         Route::get('workspaces', [WorkspacesController::class, 'index']);
         Route::post('workspaces', [WorkspacesController::class, 'store']);
         Route::post('workspaces/switch', [WorkspacesController::class, 'switch']);
+    });
+
+Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api', RecordApiUsage::class, 'verified'])
+    ->group(function (): void {
+        Route::get('dashboard', [DashboardController::class, 'index']);
 
         Route::post('onboarding/welcomed', [OnboardingController::class, 'welcomed']);
         Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss']);
