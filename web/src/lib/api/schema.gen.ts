@@ -176,6 +176,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/command-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search the current workspace's posts by body text for the command palette */
+        get: operations["v1.commandSearch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/{postId}/compose": {
         parameters: {
             query?: never;
@@ -184,7 +201,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Full composer payload for the SPA — same shape the Inertia page received,
+         * Full composer payload for the SPA — same shape the old page received,
          *     with `metricsEnabled` instead of the deferred `stats` prop (the SPA lazy
          *     loads stats via the metrics-refresh endpoint when needed)
          */
@@ -1212,7 +1229,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Resolved equivalent of the Inertia deferred `stats` prop: metrics for a
+         * Resolved equivalent of the old deferred `stats` payload: metrics for a
          *     post once it has at least one published target, else null
          */
         get: operations["postMetrics.show"];
@@ -2713,6 +2730,38 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "v1.commandSearch": {
+        parameters: {
+            query?: {
+                /** @description Search text; shorter than two characters returns nothing. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        posts: {
+                            id: string;
+                            excerpt: string;
+                            status: string;
+                            scheduled_at: string | null;
+                        }[];
+                    } | {
+                        posts: string[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "composer.showCompose": {
