@@ -184,7 +184,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Full composer payload for the SPA — same shape the Inertia page received,
+         * Full composer payload for the SPA — same shape the old page received,
          *     with `metricsEnabled` instead of the deferred `stats` prop (the SPA lazy
          *     loads stats via the metrics-refresh endpoint when needed)
          */
@@ -1212,7 +1212,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Resolved equivalent of the Inertia deferred `stats` prop: metrics for a
+         * Resolved equivalent of the old deferred `stats` payload: metrics for a
          *     post once it has at least one published target, else null
          */
         get: operations["postMetrics.show"];
@@ -1756,6 +1756,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspace}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["workspaceLifecycle.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["workspaceLifecycle.leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaceLifecycle.transfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspace-mentions": {
         parameters: {
             query?: never;
@@ -2104,6 +2152,10 @@ export interface components {
         /** StoreWorkspaceRequest */
         StoreWorkspaceRequest: {
             name: string;
+        };
+        /** TransferOwnershipRequest */
+        TransferOwnershipRequest: {
+            membership_id: string;
         };
         /** UpdateAutoRepostRequest */
         UpdateAutoRepostRequest: {
@@ -7903,6 +7955,122 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceLifecycle.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The workspace ID */
+                workspace: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Workspace deleted.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceLifecycle.leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The workspace ID */
+                workspace: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "You left the workspace.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceLifecycle.transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The workspace ID */
+                workspace: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferOwnershipRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Ownership transferred.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "workspaceMentions.index": {

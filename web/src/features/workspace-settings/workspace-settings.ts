@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { apiFetch, apiUpload, webFetch, webPost } from '@/lib/api';
+import { apiFetch, apiUpload } from '@/lib/api';
 
 export type WorkspaceInfo = {
     id: string;
@@ -43,21 +43,20 @@ export const updateTimezone = (timezone: string) =>
         body: { timezone },
     });
 
-/**
- * Workspace lifecycle ops have no `/api/v1` endpoints yet — the SPA calls the
- * same legacy web routes the Inertia app used. Success is a redirect, which
- * resolves an empty JSON-less body; failures abort non-2xx or land back on the
- * page with errors, so callers verify state via a `me` refetch.
- */
 export const leaveWorkspace = (workspaceId: string) =>
-    webFetch(`/workspaces/${workspaceId}/leave`, { method: 'DELETE' });
+    apiFetch<{ message: string }>(`workspaces/${workspaceId}/leave`, {
+        method: 'DELETE',
+    });
 
 export const deleteWorkspace = (workspaceId: string) =>
-    webFetch(`/workspaces/${workspaceId}`, { method: 'DELETE' });
+    apiFetch<{ message: string }>(`workspaces/${workspaceId}`, {
+        method: 'DELETE',
+    });
 
 export const transferOwnership = (workspaceId: string, membershipId: string) =>
-    webPost(`/workspaces/${workspaceId}/transfer`, {
-        membership_id: membershipId,
+    apiFetch<{ message: string }>(`workspaces/${workspaceId}/transfer`, {
+        method: 'POST',
+        body: { membership_id: membershipId },
     });
 
 export type Member = {
