@@ -1,14 +1,22 @@
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { ImageEditor } from '@/components/compose/image-editor';
 import { MediaChips } from '@/components/compose/media-chips';
 import { useMeData } from '@/features/me/me';
+import { useImageEditor } from '@/hooks/compose/use-image-editor';
 import { useMediaUploads } from '@/hooks/compose/use-media-uploads';
 import { postGifAttachment } from '@/lib/compose/gifs/attach';
 import {
+    isAttachOnlyImage,
     wouldMixVideoAndImages,
     wouldViolateBlueskyGif,
 } from '@/lib/compose/media-rules';
+import {
+    defaultSettings,
+    normalizeSettings,
+    type EditSettings,
+} from '@/lib/image-editor/settings';
 import type { MediaView, PlatformName } from '@/types/compose';
 import type { GifItem } from '@/types/gifs';
 
@@ -17,7 +25,31 @@ type Endpoints = {
     videoSign: (id: string) => string;
     videoStore: (id: string) => string;
     gifStore: (id: string) => string;
+    /**
+     * When present, picked still images open the beauty editor before
+     * attaching (GIFs always upload straight through — it flattens animation).
+     */
+    imageEdit?: {
+        store: (id: string) => string;
+        update: (id: string, mediaId: string) => string;
+    };
 };
+
+/** What the image editor is currently working on (SPA has no video editor). */
+type Editing =
+    | {
+          kind: 'batch';
+          items: { file: File; url: string }[];
+          index: number;
+      }
+    | {
+          kind: 'reedit';
+          url: string;
+          settings: EditSettings;
+          mediaId: string;
+          altText: string | null;
+      }
+    | { kind: 'raw'; url: string; mediaId: string };
 
 type Args = {
     /** Owning record id — a reply id or a conversation id; only used to build endpoint URLs. */
@@ -39,8 +71,9 @@ type Args = {
 
 /**
  * The render-ready pieces the host box composes into its own layout: a hidden
- * file input, the attach trigger, the media-chips strip (null when empty), and
- * the drag-drop handlers.
+ * file input, the attach trigger, the media-chips strip (null when empty),
+ * the image-editor dialog (null unless `endpoints.imageEdit` is set and an
+ * edit session is open), and the drag-drop handlers.
  */
 type Attachments = {
     isUploading: boolean;
@@ -48,6 +81,7 @@ type Attachments = {
     openFilePicker: () => void;
     fileInput: ReactNode;
     chips: ReactNode | null;
+    editor: ReactNode;
     dropHandlers: {
         onDragOver: (e: React.DragEvent) => void;
         onDrop: (e: React.DragEvent) => void;
@@ -66,9 +100,7 @@ type Attachments = {
  * Owns a compose surface's media lifecycle and hands back render-ready pieces,
  * so the host box lays out the attach button, chips and footer however it likes.
  * Endpoints are caller-supplied, so this serves both the reply box and the DM
- * composer; all upload logic is the composer's `useMediaUploads`. Unlike the
- * Inertia version there is no image editor — picked images upload straight
- * through the same path videos take.
+ * composer; all upload logic is the composer's `useMediaUploads`.
  */
 export function useAttachments({
     ownerId,
@@ -86,6 +118,21 @@ export function useAttachments({
     );
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [editing, setEditing] = useState<Editing | null>(null);
+    // Revoke outstanding batch object URLs if the host unmounts mid-batch.
+    const editingRef = useRef(editing);
+    editingRef.current = editing;
+    useEffect(
+        () => () => {
+            const e = editingRef.current;
+            if (e?.kind === 'batch') {
+                for (const it of e.items) {
+                    URL.revokeObjectURL(it.url);
+                }
+            }
+        },
+        [],
+    );
 
     const {
         pending,
@@ -110,6 +157,17 @@ export function useAttachments({
         },
     });
 
+    const imageEditor = useImageEditor({
+        ownerId,
+        endpoints: endpoints.imageEdit ?? {
+            store: () => '',
+            update: () => '',
+        },
+        onAddMedia: (m) => onChange([...media, m]),
+        onReplaceMedia: (updated) =>
+            onChange(media.map((m) => (m.id === updated.id ? updated : m))),
+    });
+
     // The server downloads and re-hosts the chosen GIF, so this is a chip +
     // fetch rather than the local upload flow the other media handlers use.
     // Unlike the composer, ownerId is always available (no ensure-post step
@@ -131,6 +189,112 @@ export function useAttachments({
                     media.map((m) => m.id),
                 ),
         );
+    }
+
+    // --- Image editor session -------------------------------------------------
+
+    // Advance to the next batch image, or close the editor (revoking the
+    // batch's object URLs) when the batch is done. Re-edits just close.
+    function endEditingStep() {
+        if (editing?.kind === 'batch') {
+            if (editing.index + 1 < editing.items.length) {
+                setEditing({ ...editing, index: editing.index + 1 });
+
+                return;
+            }
+            for (const it of editing.items) {
+                URL.revokeObjectURL(it.url);
+            }
+        }
+        setEditing(null);
+    }
+
+    // Apply: persist the composed image, then advance the batch / close. On a
+    // failed save the editor stays open (the hook already toasted) so the user
+    // can retry — the original attachment is never dropped.
+    async function applyEditing(
+        composed: Blob,
+        settings: EditSettings,
+        altText: string,
+    ): Promise<void> {
+        if (!editing) {
+            return;
+        }
+        if (editing.kind === 'batch') {
+            const ok = await imageEditor.applyNew(
+                composed,
+                editing.items[editing.index].file,
+                settings,
+                altText,
+            );
+            if (!ok) {
+                return;
+            }
+        } else if (editing.kind === 'reedit') {
+            const ok = await imageEditor.applyEdit(
+                editing.mediaId,
+                composed,
+                settings,
+                altText,
+            );
+            if (!ok) {
+                return;
+            }
+        } else if (editing.kind === 'raw') {
+            // A plain image beautified for the first time: keep the raw image
+            // as the source, attach the composed result, drop the raw one.
+            const rawBlob = await fetch(editing.url).then((r) => r.blob());
+            const ok = await imageEditor.applyNew(
+                composed,
+                rawBlob,
+                settings,
+                altText,
+            );
+            if (!ok) {
+                return;
+            }
+            onChange(media.filter((m) => m.id !== editing.mediaId));
+        }
+        endEditingStep();
+    }
+
+    // "Continue without editing": a fresh batch image attaches as-is; re-edits
+    // just close with no change.
+    function cancelEditing() {
+        if (editing?.kind === 'batch') {
+            void handleFiles([editing.items[editing.index].file]);
+        }
+        endEditingStep();
+    }
+
+    // Discard: drop a fresh upload without attaching; remove an attached image.
+    function discardEditing() {
+        if (editing?.kind === 'reedit' || editing?.kind === 'raw') {
+            onChange(media.filter((m) => m.id !== editing.mediaId));
+        }
+        endEditingStep();
+    }
+
+    // Re-open an attached image: a beautified one rehydrates from its persisted
+    // source + settings; a plain one is beautified from scratch.
+    function openImage(mediaId: string) {
+        const m = media.find((x) => x.id === mediaId);
+        // Animated images (GIF, or a GIF-browser WebP) have no editor — the
+        // beautifier would flatten them to a still frame.
+        if (!m || m.kind === 'video' || isAttachOnlyImage(m)) {
+            return;
+        }
+        if (m.edit_settings && m.source_url) {
+            setEditing({
+                kind: 'reedit',
+                url: m.source_edit_url ?? m.edit_url,
+                settings: normalizeSettings(m.edit_settings),
+                mediaId: m.id,
+                altText: m.alt_text,
+            });
+        } else {
+            setEditing({ kind: 'raw', url: m.edit_url, mediaId: m.id });
+        }
     }
 
     // --- File handling (mirrors handleAddedFiles in composer.tsx) ----------
@@ -186,10 +350,35 @@ export function useAttachments({
         if (images.length === 0) {
             return;
         }
-        // Respect the surface's cap; `Infinity` (the reply box) keeps every image.
+
+        const capped = images.slice(0, remainingSlots);
         // Without an image-edit endpoint images take the same straight-to-upload
         // path videos do.
-        void handleFiles(images.slice(0, remainingSlots));
+        if (!endpoints.imageEdit) {
+            void handleFiles(capped);
+
+            return;
+        }
+
+        // GIFs skip the beautifier (it flattens animation); the rest open the
+        // editor as a batch, edited one at a time.
+        const gifs = capped.filter((f) => f.type === 'image/gif');
+        const editable = capped.filter((f) => f.type !== 'image/gif');
+
+        if (gifs.length > 0) {
+            void handleFiles(gifs);
+        }
+        if (editable.length === 0) {
+            return;
+        }
+        setEditing({
+            kind: 'batch',
+            items: editable.map((f) => ({
+                file: f,
+                url: URL.createObjectURL(f),
+            })),
+            index: 0,
+        });
     }
 
     const hasVideo = media.some((m) => m.kind === 'video');
@@ -234,15 +423,50 @@ export function useAttachments({
             onRemove={(id) => onChange(media.filter((m) => m.id !== id))}
             onDismissPending={dismissPending}
             onCancelPending={cancelPending}
+            onImageClick={endpoints.imageEdit ? openImage : undefined}
         />
     ) : null;
 
+    const editor =
+        endpoints.imageEdit && editing !== null ? (
+            <ImageEditor
+                open
+                sourceUrl={
+                    editing.kind === 'batch'
+                        ? editing.items[editing.index].url
+                        : editing.url
+                }
+                initialSettings={
+                    editing.kind === 'reedit'
+                        ? editing.settings
+                        : defaultSettings()
+                }
+                initialAltText={
+                    editing.kind === 'reedit' ? editing.altText : null
+                }
+                onApply={applyEditing}
+                onCancel={cancelEditing}
+                onDiscard={discardEditing}
+                variant={editing.kind === 'batch' ? 'new' : 'existing'}
+                isSaving={imageEditor.isSaving}
+                queue={
+                    editing.kind === 'batch'
+                        ? {
+                              thumbnails: editing.items.map((it) => it.url),
+                              index: editing.index,
+                          }
+                        : undefined
+                }
+            />
+        ) : null;
+
     return {
-        isUploading,
+        isUploading: isUploading || imageEditor.isSaving,
         hasMedia,
         openFilePicker: () => fileInputRef.current?.click(),
         fileInput,
         chips,
+        editor,
         dropHandlers: {
             onDragOver: (e) => e.preventDefault(),
             onDrop: (e) => {

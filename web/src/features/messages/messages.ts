@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api';
 import type {
@@ -7,10 +7,10 @@ import type {
     MessagesFilters,
 } from '@/pages/messages/types';
 
-import { INBOX_POLL_MS } from '../engagement/engagement';
+import { INBOX_POLL_MS, type Paginator } from '../engagement/engagement';
 
 export type MessagesIndexData = {
-    conversations: { data: ConversationItem[] };
+    conversations: Paginator<ConversationItem>;
     filters: MessagesFilters;
 };
 
@@ -19,13 +19,19 @@ export type MessagesThreadData = {
     messages: MessageItem[];
 };
 
+/** Infinite query so the stream merges pages on scroll, like `Inertia::scroll()`. */
 export const messagesQuery = (filters: MessagesFilters) =>
-    queryOptions({
+    infiniteQueryOptions({
         queryKey: ['messages', filters],
-        queryFn: () =>
+        queryFn: ({ pageParam }) =>
             apiFetch<MessagesIndexData>(
-                `messages${filters.archived ? '?archived=1' : ''}`,
+                `messages?${filters.archived ? 'archived=1&' : ''}page=${pageParam}`,
             ),
+        initialPageParam: 1,
+        getNextPageParam: (last) =>
+            last.conversations.current_page < last.conversations.last_page
+                ? last.conversations.current_page + 1
+                : undefined,
         refetchInterval: INBOX_POLL_MS,
     });
 

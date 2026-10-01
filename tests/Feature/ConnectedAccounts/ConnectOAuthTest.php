@@ -330,9 +330,7 @@ test('callback surfaces a friendly message when the user declines on the provide
     ownerActingIn();
 
     test()->get('/accounts/callback/x?error=access_denied')
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'declined')
-            && str_contains($message, 'X'));
+        ->assertRedirect('/app/accounts?'.http_build_query(['error' => 'You declined to connect your X account.']));
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });
@@ -348,8 +346,7 @@ test('callback maps a scope failure to a friendly permission message', function 
     Socialite::shouldReceive('driver')->with('x')->andReturn($provider);
 
     test()->get('/accounts/callback/x')
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'permission'));
+        ->assertRedirect('/app/accounts?'.http_build_query(['error' => "Your X app is missing a required permission. Check the app's configured scopes/permissions, then try again."]));
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });

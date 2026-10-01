@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api';
 import type {
@@ -9,8 +9,16 @@ import type {
 } from '@/pages/engagement/types';
 import type { PlatformName, WorkspaceMention } from '@/types/compose';
 
+/** Slice of Laravel's LengthAwarePaginator JSON the pages actually read. */
+export type Paginator<T> = {
+    current_page: number;
+    last_page: number;
+    total: number;
+    data: T[];
+};
+
 export type EngagementIndexData = {
-    replies: { data: ReplyItem[] };
+    replies: Paginator<ReplyItem>;
     filters: EngagementFilters;
     facets: { accounts: AccountFacet[]; posts: PostFacet[] };
     engagementEnabled: Record<PlatformName, boolean>;
@@ -26,7 +34,7 @@ export type EngagementThreadData = {
 /** Matches the app chrome's 60s poll — the inbox rides the same cadence. */
 export const INBOX_POLL_MS = 60_000;
 
-const replyParams = (filters: EngagementFilters): string => {
+const replyParams = (filters: EngagementFilters, page = 1): string => {
     const params = new URLSearchParams();
     if (filters.account !== '') {
         params.set('account', filters.account);
@@ -46,16 +54,31 @@ const replyParams = (filters: EngagementFilters): string => {
     if (filters.archived) {
         params.set('archived', '1');
     }
+    if (page > 1) {
+        params.set('page', String(page));
+    }
     const query = params.toString();
 
     return query === '' ? '' : `?${query}`;
 };
 
+/**
+ * Infinite query so the stream merges pages as the reader scrolls — matching
+ * the legacy `Inertia::scroll()` behavior. The poll cadence refetches every
+ * loaded page.
+ */
 export const engagementQuery = (filters: EngagementFilters) =>
-    queryOptions({
+    infiniteQueryOptions({
         queryKey: ['engagement', filters],
-        queryFn: () =>
-            apiFetch<EngagementIndexData>(`engagement${replyParams(filters)}`),
+        queryFn: ({ pageParam }) =>
+            apiFetch<EngagementIndexData>(
+                `engagement${replyParams(filters, pageParam)}`,
+            ),
+        initialPageParam: 1,
+        getNextPageParam: (last) =>
+            last.replies.current_page < last.replies.last_page
+                ? last.replies.current_page + 1
+                : undefined,
         refetchInterval: INBOX_POLL_MS,
     });
 
@@ -64,6 +87,16 @@ export const engagementThreadQuery = (replyId: string) =>
         queryKey: ['engagement', 'thread', replyId],
         queryFn: () =>
             apiFetch<EngagementThreadData>(`engagement/${replyId}/thread`),
+    });
+
+/** Save a new mention to the workspace library (POST /workspace-mentions). */
+export const createWorkspaceMention = (body: {
+    name: string;
+    handles: Record<string, string>;
+}) =>
+    apiFetch<{ mention: WorkspaceMention }>('workspace-mentions', {
+        method: 'POST',
+        body,
     });
 
 // --- Conversation-pane actions (plain JSON, like the legacy useHttp islands) ---

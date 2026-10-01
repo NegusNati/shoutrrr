@@ -7,16 +7,18 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\Api\ApiKeyManager;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ApiKeysController extends Controller
 {
-    public function __construct(private readonly ApiKeyManager $manager) {}
+    public function __construct(protected readonly ApiKeyManager $manager) {}
 
     public function index(Request $request): Response
     {
@@ -26,7 +28,15 @@ class ApiKeysController extends Controller
         abort_if($workspace === null, 404);
         $this->authorizeManage($user, $workspace->id);
 
-        $keys = ApiKey::query()
+        return Inertia::render('settings/workspace/api-keys', ['apiKeys' => $this->keysPayload($workspace)]);
+    }
+
+    /**
+     * @return Collection<int, array{id: string, name: string, last_four: string|null, scope: string, last_used_at: string|null, expires_at: string|null, created_at: string}>
+     */
+    protected function keysPayload(Workspace $workspace): Collection
+    {
+        return ApiKey::query()
             ->where('workspace_id', $workspace->id)
             ->whereNull('revoked_at')
             ->latest()
@@ -40,8 +50,6 @@ class ApiKeysController extends Controller
                 'expires_at' => $key->expires_at?->toIso8601String(),
                 'created_at' => $key->created_at->toIso8601String(),
             ]);
-
-        return Inertia::render('settings/workspace/api-keys', ['apiKeys' => $keys]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -79,7 +87,7 @@ class ApiKeysController extends Controller
         return back()->with('success', 'API key revoked.');
     }
 
-    private function authorizeManage(User $user, string $workspaceId): void
+    protected function authorizeManage(User $user, string $workspaceId): void
     {
         abort_unless($user->hasAllPermissions(['workspace.settings.manage'], $workspaceId), 403);
     }

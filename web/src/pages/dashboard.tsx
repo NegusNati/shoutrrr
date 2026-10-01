@@ -15,6 +15,7 @@ import {
 import { Plug } from '@/components/ui/icons';
 import { useMeData } from '@/features/me/me';
 import { dashboardQuery } from '@/features/posts/posts';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { shouldShowDashboardNoAccountsNotice } from '@/lib/dashboard/accounts';
 import { index as accountsRoute } from '@/routes/accounts';
 
@@ -57,6 +58,7 @@ function NoAccountsNotice() {
 }
 
 export default function DashboardPage() {
+    useDocumentTitle('Dashboard');
     const me = useMeData();
     const { data, isLoading } = useQuery(dashboardQuery);
 

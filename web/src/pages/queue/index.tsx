@@ -8,10 +8,12 @@ import {
     postingScheduleQuery,
     updatePostingSchedule,
 } from '@/features/queue/queue';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { queryClient } from '@/lib/query-client';
 import { normalizeSlots, type Slot } from '@/lib/queue/queue-schedule';
 
 export default function QueueIndexPage() {
+    useDocumentTitle('Queue');
     const { data, isPending } = useQuery(postingScheduleQuery);
 
     const mutation = useMutation({

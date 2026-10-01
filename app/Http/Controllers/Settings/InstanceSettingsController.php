@@ -22,6 +22,9 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
@@ -36,6 +39,14 @@ class InstanceSettingsController extends Controller
         $user = $request->user();
         abort_unless($user?->isInstanceOwner(), 403);
 
+        return Inertia::render('settings/instance', $this->instancePayload($settings));
+    }
+
+    /**
+     * @return array{settings: array<string, mixed>, workspaces_enabled: bool}
+     */
+    protected function instancePayload(InstanceSettings $settings): array
+    {
         $workspacesEnabled = (bool) config('kit.workspaces.enabled');
         $instanceSettings = $settings->all();
 
@@ -43,10 +54,10 @@ class InstanceSettingsController extends Controller
             $instanceSettings['workspace_creation_enabled'] = false;
         }
 
-        return Inertia::render('settings/instance', [
+        return [
             'settings' => $instanceSettings,
             'workspaces_enabled' => $workspacesEnabled,
-        ]);
+        ];
     }
 
     public function admins(Request $request): Response
@@ -56,39 +67,56 @@ class InstanceSettingsController extends Controller
         abort_unless($user?->isInstanceOwner(), 403);
 
         $search = $request->string('search')->trim()->toString();
-
-        $users = $search === ''
-            ? collect()
-            : User::query()
-                ->select(['id', 'name', 'email'])
-                ->whereNull('instance_role')
-                ->whereLike('email', "%{$search}%")
-                ->orderBy('email')
-                ->limit(10)
-                ->get()
-                ->map(fn (User $user): array => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'avatar' => $user->avatar,
-                ]);
+        $users = $this->searchableUsers($search);
 
         return Inertia::render('settings/instance-admins', [
-            'owners' => User::query()
-                ->select(['id', 'name', 'email', 'created_at'])
-                ->where('instance_role', InstanceRole::Owner->value)
-                ->orderBy('email')
-                ->get()
-                ->map(fn (User $owner): array => [
-                    'id' => $owner->id,
-                    'name' => $owner->name,
-                    'email' => $owner->email,
-                    'avatar' => $owner->avatar,
-                    'created_at' => $owner->created_at,
-                ]),
+            'owners' => $this->instanceOwners(),
             'users' => $users,
             'search' => $search,
         ]);
+    }
+
+    /**
+     * @return Collection<int, array{id: string, name: string, email: string, avatar: string, created_at: Carbon|null}>
+     */
+    protected function instanceOwners(): Collection
+    {
+        return User::query()
+            ->select(['id', 'name', 'email', 'created_at'])
+            ->where('instance_role', InstanceRole::Owner->value)
+            ->orderBy('email')
+            ->get()
+            ->map(fn (User $owner): array => [
+                'id' => $owner->id,
+                'name' => $owner->name,
+                'email' => $owner->email,
+                'avatar' => $owner->avatar,
+                'created_at' => $owner->created_at,
+            ]);
+    }
+
+    /**
+     * @return Collection<int, array{id: string, name: string, email: string, avatar: string}>
+     */
+    protected function searchableUsers(string $search): Collection
+    {
+        if ($search === '') {
+            return collect();
+        }
+
+        return User::query()
+            ->select(['id', 'name', 'email'])
+            ->whereNull('instance_role')
+            ->whereLike('email', "%{$search}%")
+            ->orderBy('email')
+            ->limit(10)
+            ->get()
+            ->map(fn (User $user): array => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+            ]);
     }
 
     public function polling(Request $request, InstanceSettings $settings): Response
@@ -97,7 +125,15 @@ class InstanceSettingsController extends Controller
         $user = $request->user();
         abort_unless($user?->isInstanceOwner(), 403);
 
-        return Inertia::render('settings/instance-polling', [
+        return Inertia::render('settings/instance-polling', $this->pollingPayload($settings));
+    }
+
+    /**
+     * @return array{settings: array<string, mixed>, sections: array<string, list<array{platform: string, label: string}>>}
+     */
+    protected function pollingPayload(InstanceSettings $settings): array
+    {
+        return [
             'settings' => $settings->polling(),
             'sections' => collect(['engagement', 'post_metrics', 'account_metrics'])
                 ->mapWithKeys(fn (string $section): array => [
@@ -109,7 +145,7 @@ class InstanceSettingsController extends Controller
                         Platform::pollingSectionPlatforms($section),
                     ),
                 ])->all(),
-        ]);
+        ];
     }
 
     public function platforms(Request $request, InstanceSettings $settings): Response
@@ -118,9 +154,17 @@ class InstanceSettingsController extends Controller
         $user = $request->user();
         abort_unless($user?->isInstanceOwner(), 403);
 
+        return Inertia::render('settings/instance-platforms', $this->platformsPayload($settings));
+    }
+
+    /**
+     * @return array{platforms: list<array{platform: string, label: string, enabled: bool, configured: bool}>, linkedin_community_management_enabled: bool}
+     */
+    protected function platformsPayload(InstanceSettings $settings): array
+    {
         $enabled = $settings->platformsEnabled();
 
-        return Inertia::render('settings/instance-platforms', [
+        return [
             'platforms' => array_map(fn (Platform $platform): array => [
                 'platform' => $platform->value,
                 'label' => $platform->label(),
@@ -128,7 +172,7 @@ class InstanceSettingsController extends Controller
                 'configured' => $platform->isConfigured(),
             ], Platform::cases()),
             'linkedin_community_management_enabled' => $settings->linkedinCommunityManagementEnabled(),
-        ]);
+        ];
     }
 
     public function updatePlatforms(UpdateInstancePlatformsRequest $request, InstanceSettings $settings): RedirectResponse
@@ -147,6 +191,29 @@ class InstanceSettingsController extends Controller
         $user = $request->user();
         abort_unless($user?->isInstanceOwner(), 403);
 
+        $search = $request->string('search')->trim()->toString();
+        $sort = $request->string('sort')->toString() === 'name' ? 'name' : 'spend';
+        $workspaceId = $request->string('workspace')->trim()->toString() ?: null;
+        $defaultDollars = (int) config('subscriptions.monthly_x_budget_cents') / 100;
+
+        return Inertia::render('settings/instance-usage', [
+            ...$this->usagePayload($request, $pricing, $settings, $gate),
+            ...($workspaceId === null
+                ? []
+                : ['drilldown' => fn () => $this->workspaceDrilldown($workspaceId, $pricing, $gate, $settings, $defaultDollars)]),
+        ]);
+    }
+
+    /**
+     * Everything the usage report shares between the Inertia page and the API:
+     * filters echo, per-workspace rows, and the instance-wide summary. The
+     * drilldown stays out — Inertia requests it lazily via `only`, the API
+     * calls workspaceDrilldown() eagerly on a `?workspace=` query.
+     *
+     * @return array{filters: array{search: ?string, sort: string, workspace: ?string}, instance_summary: array{workspace_count: int, x_estimated_cost_usd: float}, workspace_usage: LengthAwarePaginator<int, array{id: string, name: string, x_estimated_cost_usd: float, x_previous_cost_usd: float, x_cost_delta_usd: float, quota: array{kind: string, dollars: float|null}, percent_used: float|null}>, pricing_source: ?string, pricing_currency: string, x_usage_available: bool}
+     */
+    protected function usagePayload(Request $request, UsagePricing $pricing, InstanceSettings $settings, WorkspaceSubscriptionGate $gate): array
+    {
         $search = $request->string('search')->trim()->toString();
         $sort = $request->string('sort')->toString() === 'name' ? 'name' : 'spend';
         $workspaceId = $request->string('workspace')->trim()->toString() ?: null;
@@ -193,19 +260,19 @@ class InstanceSettingsController extends Controller
             ->where('period_start', $currentPeriodStart)
             ->get();
 
-        return Inertia::render('settings/instance-usage', [
+        // Renamed from 'instance' to avoid colliding with the shared top-level
+        // `instance` prop (HandleInertiaRequests::share -> instance.isOwner),
+        // which Inertia would otherwise merge over with this page's array.
+        //
+        // Note on time windows: this header total is calendar-month
+        // (UsagePeriodCounter, period_start = start of this month), while a
+        // subscribed workspace's per-row x_estimated_cost_usd below is
+        // billing-cycle-anchored (WorkspaceSubscriptionGate::currentXCostMicrousd).
+        // Under subscriptions.enabled the sum of rows may not equal this total;
+        // they reconcile exactly when subscriptions are disabled, since both are
+        // calendar-month in that case.
+        return [
             'filters' => ['search' => $search === '' ? null : $search, 'sort' => $sort, 'workspace' => $workspaceId],
-            // Renamed from 'instance' to avoid colliding with the shared top-level
-            // `instance` prop (HandleInertiaRequests::share -> instance.isOwner),
-            // which Inertia would otherwise merge over with this page's array.
-            //
-            // Note on time windows: this header total is calendar-month
-            // (UsagePeriodCounter, period_start = start of this month), while a
-            // subscribed workspace's per-row x_estimated_cost_usd below is
-            // billing-cycle-anchored (WorkspaceSubscriptionGate::currentXCostMicrousd).
-            // Under subscriptions.enabled the sum of rows may not equal this total;
-            // they reconcile exactly when subscriptions are disabled, since both are
-            // calendar-month in that case.
             'instance_summary' => [
                 'workspace_count' => Workspace::query()->count(),
                 'x_estimated_cost_usd' => $this->estimateCountersCost($pricing, $instanceXRows),
@@ -214,16 +281,13 @@ class InstanceSettingsController extends Controller
             'pricing_source' => config('usage_pricing.source_url'),
             'pricing_currency' => config('usage_pricing.platforms.x.currency', 'USD'),
             'x_usage_available' => (string) config('services.x.bearer_token', '') !== '',
-            ...($workspaceId === null
-                ? []
-                : ['drilldown' => fn () => $this->workspaceDrilldown($workspaceId, $pricing, $gate, $settings, $defaultDollars)]),
-        ]);
+        ];
     }
 
     /**
      * @return array{workspace: array{id: string, name: string, quota: array{kind: string, dollars: float|null}}, counters: list<array<string, mixed>>, error_events: list<array<string, mixed>>}|null
      */
-    private function workspaceDrilldown(string $workspaceId, UsagePricing $pricing, WorkspaceSubscriptionGate $gate, InstanceSettings $settings, float $defaultDollars): ?array
+    protected function workspaceDrilldown(string $workspaceId, UsagePricing $pricing, WorkspaceSubscriptionGate $gate, InstanceSettings $settings, float $defaultDollars): ?array
     {
         $workspace = Workspace::query()
             ->select(['id', 'name', 'is_initial', 'owner_id'])
@@ -284,7 +348,7 @@ class InstanceSettingsController extends Controller
     /**
      * @return array{kind: string, dollars: float|null}
      */
-    private function xQuotaFor(Workspace $workspace, WorkspaceSubscriptionGate $gate, InstanceSettings $settings, float $defaultDollars): array
+    protected function xQuotaFor(Workspace $workspace, WorkspaceSubscriptionGate $gate, InstanceSettings $settings, float $defaultDollars): array
     {
         $override = $settings->xWorkspaceBudget($workspace->id);
         // Reuse the gate's single definition of "no X ceiling" so the badge shown
@@ -352,7 +416,7 @@ class InstanceSettingsController extends Controller
         return response()->json($usage);
     }
 
-    private function estimateCountersCost(UsagePricing $pricing, mixed $counters): float
+    protected function estimateCountersCost(UsagePricing $pricing, mixed $counters): float
     {
         $total = 0.0;
 
@@ -402,17 +466,30 @@ class InstanceSettingsController extends Controller
         abort_unless($user?->isInstanceOwner(), 403);
         abort_unless($owner->isInstanceOwner(), 404);
 
-        if ($owner->is($user)) {
-            return back()->withErrors(['owner' => 'You cannot remove yourself as an instance owner.']);
-        }
-
-        if (User::query()->where('instance_role', InstanceRole::Owner->value)->count() <= 1) {
-            return back()->withErrors(['owner' => 'At least one instance owner is required.']);
+        if (($error = $this->ownerRemovalError($user, $owner)) !== null) {
+            return back()->withErrors(['owner' => $error]);
         }
 
         $owner->update(['instance_role' => null]);
 
         return back()->with('success', 'Instance owner removed.');
+    }
+
+    /**
+     * The reason an owner removal is refused, or null when it may proceed.
+     * Shared by the web redirect flow and the JSON API.
+     */
+    protected function ownerRemovalError(User $actor, User $owner): ?string
+    {
+        if ($owner->is($actor)) {
+            return 'You cannot remove yourself as an instance owner.';
+        }
+
+        if (User::query()->where('instance_role', InstanceRole::Owner->value)->count() <= 1) {
+            return 'At least one instance owner is required.';
+        }
+
+        return null;
     }
 
     public function storeAdmin(StoreInstanceOwnerRequest $request): RedirectResponse

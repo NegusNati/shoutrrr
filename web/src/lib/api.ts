@@ -57,6 +57,23 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 }
 
 /**
+ * User-facing error text for toasts. 4xx keeps the server's message (validation,
+ * throttling); 5xx+ and anything else gets the fallback so a raw framework
+ * exception ("No query results for model …") never reaches the user.
+ */
+export function errorMessage(error: unknown, fallback: string): string {
+    if (
+        error instanceof ApiError &&
+        error.status < 500 &&
+        error.message.trim() !== ''
+    ) {
+        return error.message;
+    }
+
+    return fallback;
+}
+
+/**
  * Thin fetch wrapper for the first-party API. Session-authenticated (cookie +
  * XSRF header); returns parsed JSON and throws ApiError on non-2xx so callers
  * can pattern-match on `status` (401 → login redirect, 422 → field errors).

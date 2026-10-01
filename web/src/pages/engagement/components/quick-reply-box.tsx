@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
+import { toast } from 'sonner';
 
 import { EmojiPopover } from '@/components/compose/emoji-popover';
 import { GifPopover } from '@/components/compose/gif-popover';
@@ -16,9 +17,11 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { createWorkspaceMention } from '@/features/engagement/engagement';
 import { useMeData } from '@/features/me/me';
 import { useAttachments } from '@/hooks/compose/use-attachments';
 import { useEmojiPreferences } from '@/hooks/compose/use-emoji-preferences';
+import { errorMessage } from '@/lib/api';
 import {
     replaceMentionTokens,
     savedMentionToPlaceholder,
@@ -42,6 +45,45 @@ export const QUICK_REPLY_SEND_SHORTCUT = '⌘/Ctrl↵';
  * attachments on a comment. Same approach as `lib/compose/platform-newlines.ts`.
  */
 const REPLY_MEDIA_PLATFORMS: PlatformName[] = ['x', 'bluesky'];
+
+/** Tail of the text before the caret that counts as "currently typing a mention". */
+const TYPING_MENTION = /@([A-Za-z0-9_.-]*)$/;
+
+function MentionSuggestionRow({
+    active,
+    name,
+    detail,
+    onPick,
+}: {
+    active: boolean;
+    name: string;
+    detail?: string;
+    onPick: () => void;
+}) {
+    return (
+        // mousedown so the textarea keeps focus while a suggestion is picked.
+        <button
+            type="button"
+            onMouseDown={(e) => {
+                e.preventDefault();
+                onPick();
+            }}
+            className={cn(
+                'flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm',
+                active
+                    ? 'bg-accent text-foreground'
+                    : 'text-popover-foreground',
+            )}
+        >
+            <span className="truncate font-medium">{name}</span>
+            {detail ? (
+                <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
+                    {detail}
+                </span>
+            ) : null}
+        </button>
+    );
+}
 
 type Props = {
     replyId: string;
@@ -79,6 +121,13 @@ export function QuickReplyBox({
     const [media, setMedia] = useState<MediaView[]>([]);
     const [mentions, setMentions] = useState<MentionPlaceholder[]>([]);
     const [savedMentions, setSavedMentions] = useState(initialSavedMentions);
+    // Active "@query" at the caret — drives the typeahead dropdown.
+    const [typeahead, setTypeahead] = useState<{
+        start: number;
+        query: string;
+    } | null>(null);
+    const [typeaheadIndex, setTypeaheadIndex] = useState(0);
+    const [savingMention, setSavingMention] = useState(false);
     useEffect(() => {
         setSavedMentions(initialSavedMentions);
     }, [initialSavedMentions]);
@@ -96,6 +145,11 @@ export function QuickReplyBox({
             videoSign: (id) => `engagement/${id}/media/video-url`,
             videoStore: (id) => `engagement/${id}/media/video`,
             gifStore: (id) => `engagement/${id}/gifs`,
+            imageEdit: {
+                store: (id) => `engagement/${id}/image-edit`,
+                update: (id, mediaId) =>
+                    `engagement/${id}/image-edit/${mediaId}`,
+            },
         },
     });
 
@@ -141,6 +195,94 @@ export function QuickReplyBox({
         setMentions((current) =>
             syncMentionsFromText(next, current, savedMentions),
         );
+        refreshTypeahead(
+            next,
+            editorRef.current?.selectionStart ?? next.length,
+        );
+    }
+
+    /** Detect "@partial" right before the caret and open the suggestion list. */
+    function refreshTypeahead(next: string, caret: number) {
+        const match = TYPING_MENTION.exec(next.slice(0, caret));
+        setTypeahead(
+            match ? { start: caret - match[0].length, query: match[1] } : null,
+        );
+        setTypeaheadIndex(0);
+    }
+
+    const typeaheadMatches = typeahead
+        ? savedMentions
+              .filter((mention) => {
+                  const query = typeahead.query.toLowerCase();
+                  return (
+                      mention.name.toLowerCase().includes(query) ||
+                      (mention.handles[platform] ?? '')
+                          .toLowerCase()
+                          .includes(query)
+                  );
+              })
+              .slice(0, 6)
+        : [];
+    // "Save to library" row shows for any non-empty query the library can't
+    // resolve exactly — the parity affordance from the composer picker.
+    const typeaheadCanCreate =
+        typeahead !== null &&
+        typeahead.query !== '' &&
+        !savedMentions.some(
+            (m) =>
+                m.name.toLowerCase() === `@${typeahead.query.toLowerCase()}` ||
+                (m.handles[platform] ?? '').toLowerCase() ===
+                    typeahead.query.toLowerCase(),
+        );
+    const typeaheadCount =
+        typeaheadMatches.length + (typeaheadCanCreate ? 1 : 0);
+
+    /** Replace the in-progress "@query" text with a saved mention's label. */
+    function applyMention(saved: WorkspaceMention) {
+        if (!typeahead) {
+            return;
+        }
+        const end = typeahead.start + 1 + typeahead.query.length;
+        const insert = `${saved.name} `;
+        const next = text.slice(0, typeahead.start) + insert + text.slice(end);
+        setTypeahead(null);
+        setText(next);
+        setMentions((current) => [
+            ...syncMentionsFromText(next, current, savedMentions),
+            savedMentionToPlaceholder(saved),
+        ]);
+        const caret = typeahead.start + insert.length;
+        requestAnimationFrame(() => {
+            editorRef.current?.focus();
+            editorRef.current?.setSelectionRange(caret, caret);
+        });
+    }
+
+    async function saveMentionToLibrary() {
+        if (!typeahead || savingMention) {
+            return;
+        }
+        setSavingMention(true);
+        try {
+            const { mention } = await createWorkspaceMention({
+                name: `@${typeahead.query}`,
+                handles: { [platform]: typeahead.query },
+            });
+            setSavedMentions((current) => [...current, mention]);
+            applyMention(mention);
+        } catch (error) {
+            toast.error(errorMessage(error, 'Could not save the mention.'));
+        } finally {
+            setSavingMention(false);
+        }
+    }
+
+    function activateTypeahead(index: number) {
+        if (index < typeaheadMatches.length) {
+            applyMention(typeaheadMatches[index]);
+        } else {
+            void saveMentionToLibrary();
+        }
     }
 
     // Insert a saved mention's label token at the caret and register the
@@ -186,40 +328,106 @@ export function QuickReplyBox({
             {...(canAttachMedia ? rm.dropHandlers : {})}
         >
             {canAttachMedia ? rm.fileInput : null}
+            {rm.editor}
 
-            <Textarea
-                ref={editorRef}
-                value={text}
-                onChange={(e) => handleText(e.target.value)}
-                onPaste={(e) => {
-                    if (canAttachMedia && e.clipboardData.files.length > 0) {
-                        e.preventDefault();
-                        void rm.handleAddedFiles(e.clipboardData.files);
+            <div className="relative">
+                {typeahead && typeaheadCount > 0 ? (
+                    <div className="absolute bottom-full left-0 z-20 mb-1 max-h-56 w-64 overflow-y-auto rounded-md border bg-popover py-1 shadow-md">
+                        {typeaheadMatches.map((mention, i) => (
+                            <MentionSuggestionRow
+                                key={mention.id}
+                                active={i === typeaheadIndex}
+                                name={mention.name}
+                                detail={mention.handles[platform]}
+                                onPick={() => applyMention(mention)}
+                            />
+                        ))}
+                        {typeaheadCanCreate ? (
+                            <MentionSuggestionRow
+                                active={
+                                    typeaheadIndex === typeaheadMatches.length
+                                }
+                                name={`Save “@${typeahead.query}” to library`}
+                                onPick={() => void saveMentionToLibrary()}
+                            />
+                        ) : null}
+                    </div>
+                ) : null}
+                <Textarea
+                    ref={editorRef}
+                    value={text}
+                    onChange={(e) => handleText(e.target.value)}
+                    onSelect={(e) =>
+                        refreshTypeahead(text, e.currentTarget.selectionStart)
                     }
-                }}
-                onKeyDown={(e) => {
-                    // Escape releases the editor so the ↑/↓/a/r triage shortcuts
-                    // work again without a stray keystroke landing in the reply.
-                    if (e.key === 'Escape') {
-                        e.currentTarget.blur();
+                    onPaste={(e) => {
+                        if (
+                            canAttachMedia &&
+                            e.clipboardData.files.length > 0
+                        ) {
+                            e.preventDefault();
+                            void rm.handleAddedFiles(e.clipboardData.files);
+                        }
+                    }}
+                    onKeyDown={(e) => {
+                        if (
+                            e.key === 'Enter' &&
+                            (e.metaKey || e.ctrlKey) &&
+                            !e.shiftKey
+                        ) {
+                            e.preventDefault();
+                            void send();
 
-                        return;
+                            return;
+                        }
+                        if (typeahead && typeaheadCount > 0) {
+                            if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setTypeaheadIndex(
+                                    (i) => (i + 1) % typeaheadCount,
+                                );
+
+                                return;
+                            }
+                            if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setTypeaheadIndex(
+                                    (i) =>
+                                        (i - 1 + typeaheadCount) %
+                                        typeaheadCount,
+                                );
+
+                                return;
+                            }
+                            if (e.key === 'Enter' || e.key === 'Tab') {
+                                e.preventDefault();
+                                activateTypeahead(typeaheadIndex);
+
+                                return;
+                            }
+                        }
+                        // Escape releases the editor so the ↑/↓/a/r triage
+                        // shortcuts work again without a stray keystroke
+                        // landing in the reply.
+                        if (e.key === 'Escape') {
+                            if (typeahead) {
+                                setTypeahead(null);
+                            } else {
+                                e.currentTarget.blur();
+                            }
+
+                            return;
+                        }
+                    }}
+                    disabled={disabled || sending}
+                    placeholder={
+                        replyingTo
+                            ? `Reply to ${replyingTo}…`
+                            : 'Write a reply…'
                     }
-                    if (
-                        e.key === 'Enter' &&
-                        (e.metaKey || e.ctrlKey) &&
-                        !e.shiftKey
-                    ) {
-                        e.preventDefault();
-                        void send();
-                    }
-                }}
-                disabled={disabled || sending}
-                placeholder={
-                    replyingTo ? `Reply to ${replyingTo}…` : 'Write a reply…'
-                }
-                className="min-h-16"
-            />
+                    className="min-h-16"
+                />
+            </div>
 
             {canAttachMedia && rm.chips ? (
                 <div className="mt-2">{rm.chips}</div>

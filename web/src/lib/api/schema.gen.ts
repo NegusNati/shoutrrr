@@ -140,6 +140,139 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/connected-accounts/connect/bluesky": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["connectedAccounts.connectBluesky"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/connect/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["connectedAccounts.connectDiscord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/{accountId}/toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["connectedAccounts.toggle"];
+        trace?: never;
+    };
+    "/connected-accounts/{accountId}/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["connectedAccounts.makeDefault"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/{accountId}/auto-repost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["connectedAccounts.autoRepost"];
+        trace?: never;
+    };
+    "/connected-accounts/{accountId}/refresh-x-tier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["connectedAccounts.refreshXAccountTier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/{accountId}/reconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Credential re-checks for non-OAuth accounts: Bluesky app password and
+         *     Discord webhook. OAuth reconnects re-run the provider flow — a browser
+         *     redirect, so the SPA links to the web route instead of calling this
+         */
+        post: operations["connectedAccounts.reconnect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["connectedAccounts.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/messages/{conversationId}/gifs": {
         parameters: {
             query?: never;
@@ -410,6 +543,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/instance-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instanceSettings.show"];
+        put: operations["instanceSettings.updateSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instance-settings/polling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instanceSettings.showPolling"];
+        put: operations["instanceSettings.updatePollingSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instance-settings/platforms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instanceSettings.showPlatforms"];
+        put: operations["instanceSettings.updatePlatformSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instance-settings/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instanceSettings.showUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instance-settings/usage/x": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instanceSettings.xUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instance-settings/admins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instanceSettings.listAdmins"];
+        put?: never;
+        post: operations["instanceSettings.addAdmin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instance-settings/usage/workspaces/{workspace}/budget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["instanceSettings.updateBudget"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instance-settings/admins/{owner}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["instanceSettings.removeAdmin"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/connect/linkedin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["linkedInConnect.pending"];
+        put?: never;
+        post: operations["linkedInConnect.submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -537,6 +814,22 @@ export interface paths {
         put?: never;
         /** Send a direct message. Body: { text?, media?[] } — one is required */
         post: operations["messaging.respond"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-accounts/connect/meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["metaConnect.pending"];
+        put?: never;
+        post: operations["metaConnect.submit"];
         delete?: never;
         options?: never;
         head?: never;
@@ -819,6 +1112,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/engagement/{replyId}/image-edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["replyImageEdit.store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/engagement/{replyId}/image-edit/{mediaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replyImageEdit.update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/engagement/{replyId}/media": {
         parameters: {
             query?: never;
@@ -975,7 +1300,7 @@ export interface paths {
         };
         get: operations["workspaceMentions.index"];
         put?: never;
-        post?: never;
+        post: operations["workspaceMentions.store"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1070,6 +1395,23 @@ export interface components {
              */
             media_ids?: string[] | null;
         };
+        /** ConnectBlueskyRequest */
+        ConnectBlueskyRequest: {
+            identifier: string;
+            app_password: string;
+            /** Format: uri */
+            pds_url?: string | null;
+            /**
+             * @description "This app password has DM access" — Bluesky has no OAuth scopes to
+             *     inspect, so the operator self-declares it at connect time instead.
+             */
+            dm_access?: boolean;
+        };
+        /** ConnectDiscordRequest */
+        ConnectDiscordRequest: {
+            /** Format: uri */
+            webhook_url: string;
+        };
         /**
          * InstanceRole
          * @enum {string}
@@ -1130,6 +1472,36 @@ export interface components {
             height: number;
             alt_text?: string | null;
         };
+        /** StoreInstanceOwnerRequest */
+        StoreInstanceOwnerRequest: {
+            /** Format: email */
+            email: string;
+        };
+        /** StoreReplyImageEditRequest */
+        StoreReplyImageEditRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            composed: string;
+            settings: {
+                version: number;
+                background: string[];
+                padding: number;
+                radius: number;
+                shadow: string;
+                aspect: string;
+                zoom: number;
+                tilt: string[];
+                crop?: string[] | null;
+            };
+            alt_text?: string | null;
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            source: string;
+        };
         /** StoreReplyMediaRequest */
         StoreReplyMediaRequest: {
             /**
@@ -1151,6 +1523,88 @@ export interface components {
         StoreWorkspaceRequest: {
             name: string;
         };
+        /** UpdateAutoRepostRequest */
+        UpdateAutoRepostRequest: {
+            enabled: boolean;
+            min_percentile?: number;
+        };
+        /** UpdateInstancePlatformsRequest */
+        UpdateInstancePlatformsRequest: {
+            platforms: {
+                x: boolean;
+                bluesky: boolean;
+                linkedin: boolean;
+                facebook: boolean;
+                instagram: boolean;
+                threads: boolean;
+                discord: boolean;
+            };
+            linkedin_community_management_enabled: boolean;
+        };
+        /** UpdateInstancePollingSettingsRequest */
+        UpdateInstancePollingSettingsRequest: {
+            metrics_enabled: boolean;
+            engagement_enabled: boolean;
+            messages_enabled: boolean;
+            direct_messages_enabled: boolean;
+            engagement: {
+                enabled: {
+                    x: boolean;
+                    bluesky: boolean;
+                    linkedin: boolean;
+                    facebook: boolean;
+                    instagram: boolean;
+                    threads: boolean;
+                };
+                x: number;
+                bluesky: number;
+                linkedin: number;
+                facebook: number;
+                instagram: number;
+                threads: number;
+            };
+            post_metrics: {
+                enabled: {
+                    x: boolean;
+                    bluesky: boolean;
+                    linkedin: boolean;
+                    facebook: boolean;
+                    instagram: boolean;
+                    threads: boolean;
+                    discord: boolean;
+                };
+                x: number;
+                bluesky: number;
+                linkedin: number;
+                facebook: number;
+                instagram: number;
+                threads: number;
+                discord: number;
+            };
+            account_metrics: {
+                enabled: {
+                    x: boolean;
+                    bluesky: boolean;
+                    linkedin: boolean;
+                    facebook: boolean;
+                    instagram: boolean;
+                    threads: boolean;
+                };
+                x: number;
+                bluesky: number;
+                linkedin: number;
+                facebook: number;
+                instagram: number;
+                threads: number;
+            };
+        };
+        /** UpdateInstanceSettingsRequest */
+        UpdateInstanceSettingsRequest: {
+            registrations_enabled: boolean;
+            workspace_creation_enabled: boolean;
+            usage_tracking_enabled: boolean;
+            quote_tweets_enabled: boolean;
+        };
         /** UpdatePostingScheduleRequest */
         UpdatePostingScheduleRequest: {
             slots?: {
@@ -1158,6 +1612,31 @@ export interface components {
                 hour: number;
                 minute?: number | null;
             }[];
+        };
+        /** UpdateReplyImageEditRequest */
+        UpdateReplyImageEditRequest: {
+            /**
+             * Format: binary
+             * @description Maximum file size: 8192 kilobytes.
+             */
+            composed: string;
+            settings: {
+                version: number;
+                background: string[];
+                padding: number;
+                radius: number;
+                shadow: string;
+                aspect: string;
+                zoom: number;
+                tilt: string[];
+                crop?: string[] | null;
+            };
+            alt_text?: string | null;
+        };
+        /** UpdateWorkspaceXBudgetRequest */
+        UpdateWorkspaceXBudgetRequest: {
+            unlimited: boolean;
+            dollars?: number | null;
         };
         /** User */
         User: {
@@ -1556,9 +2035,7 @@ export interface operations {
     };
     "connectedAccounts.index": {
         parameters: {
-            query?: {
-                per_page?: number | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -1571,20 +2048,358 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: {
-                            [key: string]: string;
-                        };
-                        pagination: {
-                            per_page: number;
-                            next_cursor: string | null;
-                            prev_cursor: string | null;
-                            has_more: boolean;
-                        };
+                        accounts: {
+                            id: string;
+                            platform: string;
+                            /** @enum {string} */
+                            platform_label: "X" | "Bluesky" | "LinkedIn" | "Facebook" | "Instagram" | "Threads" | "Discord";
+                            handle: string;
+                            display_name: string | null;
+                            avatar_url: string | null;
+                            status: string;
+                            /** @enum {string} */
+                            status_label: "Active" | "Needs attention";
+                            auth_method: string;
+                            connected_by: string | null;
+                            token_expires_at: string | null;
+                            max_text_length: number;
+                            max_video_duration_seconds: number;
+                            x_premium: boolean;
+                            x_subscription_tier: string | null;
+                            /** @enum {string|null} */
+                            x_subscription_label: "X Premium Basic" | "X Premium" | "X Premium+" | "Free" | null;
+                            x_subscription_checked_at: string | null;
+                            is_linkedin_page: boolean;
+                            is_default: boolean;
+                            disabled: boolean;
+                            pds_url: string | null;
+                            auto_repost_enabled: boolean;
+                        }[];
+                        capabilities: unknown[];
+                        can_manage: boolean;
                     };
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "connectedAccounts.connectBluesky": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectBlueskyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connected: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "connectedAccounts.connectDiscord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectDiscordRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connected: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "connectedAccounts.toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        disabled: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "connectedAccounts.makeDefault": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        is_default: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "connectedAccounts.autoRepost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAutoRepostRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        auto_repost_enabled: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "connectedAccounts.refreshXAccountTier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string|null} */
+                        x_subscription_label: "X Premium Basic" | "X Premium" | "X Premium+" | "Free" | null;
+                        max_text_length: number;
+                        max_video_duration_seconds: number;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    } | {
+                        /** @constant */
+                        message: "Only X accounts have a subscription tier.";
+                    };
+                };
+            };
+        };
+    };
+    "connectedAccounts.reconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    webhook_url: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        reconnected: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "connectedAccounts.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "conversationGif.store": {
@@ -2255,6 +3070,575 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
         };
     };
+    "instanceSettings.show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        settings: {
+                            registrations_enabled: boolean;
+                            workspace_creation_enabled: boolean;
+                            usage_tracking_enabled: boolean;
+                            quote_tweets_enabled: boolean;
+                        };
+                        workspaces_enabled: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "instanceSettings.updateSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateInstanceSettingsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        settings: {
+                            registrations_enabled: boolean;
+                            workspace_creation_enabled: boolean;
+                            usage_tracking_enabled: boolean;
+                            quote_tweets_enabled: boolean;
+                        };
+                        workspaces_enabled: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "instanceSettings.showPolling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        settings: {
+                            engagement: {
+                                enabled: {
+                                    [key: string]: boolean;
+                                } | number;
+                            } & {
+                                [key: string]: number;
+                            };
+                            post_metrics: {
+                                enabled: {
+                                    [key: string]: boolean;
+                                } | number;
+                            } & {
+                                [key: string]: number;
+                            };
+                            account_metrics: {
+                                enabled: {
+                                    [key: string]: boolean;
+                                } | number;
+                            } & {
+                                [key: string]: number;
+                            };
+                            /**
+                             * @description Instance-wide master switches: when off, the sections above are moot
+                             *     (nothing polls regardless of their per-platform settings).
+                             */
+                            metrics_enabled: boolean;
+                            engagement_enabled: boolean;
+                            messages_enabled: boolean;
+                            direct_messages_enabled: boolean;
+                        };
+                        sections: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "instanceSettings.updatePollingSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateInstancePollingSettingsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        settings: {
+                            engagement: {
+                                enabled: {
+                                    [key: string]: boolean;
+                                } | number;
+                            } & {
+                                [key: string]: number;
+                            };
+                            post_metrics: {
+                                enabled: {
+                                    [key: string]: boolean;
+                                } | number;
+                            } & {
+                                [key: string]: number;
+                            };
+                            account_metrics: {
+                                enabled: {
+                                    [key: string]: boolean;
+                                } | number;
+                            } & {
+                                [key: string]: number;
+                            };
+                            /**
+                             * @description Instance-wide master switches: when off, the sections above are moot
+                             *     (nothing polls regardless of their per-platform settings).
+                             */
+                            metrics_enabled: boolean;
+                            engagement_enabled: boolean;
+                            messages_enabled: boolean;
+                            direct_messages_enabled: boolean;
+                        };
+                        sections: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "instanceSettings.showPlatforms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        platforms: unknown[];
+                        linkedin_community_management_enabled: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "instanceSettings.updatePlatformSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateInstancePlatformsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        platforms: unknown[];
+                        linkedin_community_management_enabled: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "instanceSettings.showUsage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        filters: {
+                            search: string | null;
+                            /** @enum {string} */
+                            sort: "name" | "spend";
+                            workspace: string | null;
+                        };
+                        instance_summary: {
+                            workspace_count: number;
+                            x_estimated_cost_usd: number;
+                        };
+                        workspace_usage: components["schemas"]["LengthAwarePaginator"];
+                        pricing_source: string;
+                        pricing_currency: string;
+                        x_usage_available: boolean;
+                        drilldown: {
+                            workspace: {
+                                id: string;
+                                name: string;
+                                is_initial: boolean;
+                                quota: {
+                                    /** @enum {string} */
+                                    kind: "unlimited" | "custom" | "default";
+                                    dollars: null | number;
+                                };
+                                owner: {
+                                    name: string;
+                                    email: string;
+                                    avatar: string;
+                                } | null;
+                            };
+                            counters: unknown[];
+                            error_events: unknown[];
+                        } | null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "instanceSettings.xUsage": {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: unknown;
+                        fetched_at: string;
+                        /** @constant */
+                        source: "https://api.x.com/2/usage/tweets";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            422: components["responses"]["ValidationException"];
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Unable to fetch X API usage.";
+                        status: string;
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    "instanceSettings.listAdmins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        owners: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            avatar: string;
+                            /** Format: date-time */
+                            created_at: string | null;
+                        }[];
+                        users: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            avatar: string;
+                        }[] | string[];
+                        search: string;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "instanceSettings.addAdmin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreInstanceOwnerRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        owner: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            avatar: string;
+                            /** Format: date-time */
+                            created_at: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "instanceSettings.updateBudget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The workspace ID */
+                workspace: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWorkspaceXBudgetRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Workspace X budget updated.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "instanceSettings.removeAdmin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The owner ID */
+                owner: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Instance owner removed.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string|null} */
+                        message: "At least one instance owner is required." | "You cannot remove yourself as an instance owner." | null;
+                        errors: {
+                            owner: [
+                                "At least one instance owner is required." | "You cannot remove yourself as an instance owner." | null
+                            ];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "linkedInConnect.pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        person: string | null;
+                        organizations: unknown[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Your LinkedIn connection expired. Please try again.";
+                    };
+                };
+            };
+        };
+    };
+    "linkedInConnect.submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connected: number | null;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Your LinkedIn connection expired. Please try again.";
+                    };
+                };
+            };
+        };
+    };
     "me.show": {
         parameters: {
             query?: never;
@@ -2636,6 +4020,95 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "metaConnect.pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        assets: {
+                            key: string;
+                            pageId: string;
+                            pageName: string;
+                            igUserId: string;
+                            igUsername: string;
+                            igAvatarUrl: string;
+                            platforms: string[];
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Your Facebook connection expired. Please try again.";
+                    };
+                };
+            };
+        };
+    };
+    "metaConnect.submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connected: number;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Your Facebook connection expired. Please try again.";
+                    };
+                };
+            };
         };
     };
     "notifications.index": {
@@ -4124,6 +5597,95 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "replyImageEdit.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StoreReplyImageEditRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
+    "replyImageEdit.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+                mediaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UpdateReplyImageEditRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        media: {
+                            id: string;
+                            url: string;
+                            mime: string;
+                            kind: string;
+                            duration_seconds: number | null;
+                            alt_text: string | null;
+                            position: number;
+                            edit_settings: {
+                                [key: string]: unknown;
+                            } | null;
+                            source_url: string | null;
+                            edit_url: string;
+                            source_edit_url: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "replyMedia.store": {
         parameters: {
             query?: never;
@@ -4490,6 +6052,42 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "workspaceMentions.store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    handles: string[];
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        mention: {
+                            id: string;
+                            name: string;
+                            handles: {
+                                [key: string]: string;
+                            };
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "workspaceMentions.destroy": {

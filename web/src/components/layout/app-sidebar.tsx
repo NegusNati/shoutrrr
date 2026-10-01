@@ -108,7 +108,7 @@ const postsNavItems: NavItem[] = [
         icon: ListChecks,
         spa: true,
     },
-    { title: 'Accounts', href: accountsRoute(), icon: Share2 },
+    { title: 'Accounts', href: accountsRoute(), icon: Share2, spa: true },
     {
         title: 'Engagement',
         href: engagementRoute(),
@@ -430,8 +430,9 @@ export function AppSidebar() {
                                                 tooltip={item.title}
                                                 isActive={isItemActive(item)}
                                                 render={
-                                                    <a
-                                                        href={toUrl(item.href)}
+                                                    <NavItemLink
+                                                        href={item.href}
+                                                        spa
                                                     />
                                                 }
                                             >

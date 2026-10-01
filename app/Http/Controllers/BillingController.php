@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Cashier\Checkout;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\InvalidRequestException;
 
@@ -26,11 +27,19 @@ class BillingController extends Controller
 
         $this->authorizeManageBilling($request, $workspace);
 
+        return Inertia::render('settings/workspace/subscription', $this->billingPayload($workspace));
+    }
+
+    /**
+     * @return array{subscribed: bool, monthlyPrice: int, monthlyXBudgetMicrousd: int|null, monthlyXBudgetUsedMicrousd: int, monthlyXBudgetRemainingMicrousd: int|null, canManageSubscription: bool, canAccessPortal: bool}
+     */
+    protected function billingPayload(Workspace $workspace): array
+    {
         $subscribed = $workspace->subscribed('default');
         $subscriptionGate = app(WorkspaceSubscriptionGate::class);
         $remainingBudget = $subscriptionGate->remainingXBudgetMicrousd($workspace);
 
-        return Inertia::render('settings/workspace/subscription', [
+        return [
             'subscribed' => $subscribed,
             'monthlyPrice' => (int) config('subscriptions.monthly_price_cents'),
             'monthlyXBudgetMicrousd' => $subscriptionGate->monthlyXBudgetMicrousd($workspace),
@@ -38,7 +47,7 @@ class BillingController extends Controller
             'monthlyXBudgetRemainingMicrousd' => $remainingBudget === PHP_INT_MAX ? null : $remainingBudget,
             'canManageSubscription' => $subscribed,
             'canAccessPortal' => $workspace->hasStripeId(),
-        ]);
+        ];
     }
 
     public function checkout(Request $request): RedirectResponse
@@ -52,14 +61,30 @@ class BillingController extends Controller
 
         $this->authorizeManageBilling($request, $workspace);
 
+        $checkout = $this->startCheckout($workspace, $user);
+
+        if (! $checkout instanceof Checkout) {
+            return back()->with('error', $checkout);
+        }
+
+        return $checkout->redirect();
+    }
+
+    /**
+     * Build a Stripe Checkout session for the workspace subscription. Returns
+     * the Checkout object, or an error message string when checkout can't
+     * start. Shared by the web checkout redirect and the API endpoint.
+     */
+    protected function startCheckout(Workspace $workspace, User $user): Checkout|string
+    {
         if ($workspace->subscribed('default')) {
-            return back()->with('error', 'This workspace already has an active subscription.');
+            return 'This workspace already has an active subscription.';
         }
 
         $priceId = $this->configuredPriceId();
 
         if ($priceId === null) {
-            return back()->with('error', 'Configure STRIPE_SUBSCRIPTION_PRICE_ID before starting checkout.');
+            return 'Configure STRIPE_SUBSCRIPTION_PRICE_ID before starting checkout.';
         }
 
         $hadStripeCustomer = $workspace->hasStripeId();
@@ -97,14 +122,13 @@ class BillingController extends Controller
                         'workspace_id' => $workspace->id,
                         'workspace_name' => $workspace->name,
                     ],
-                ], $customerOptions)
-                ->redirect();
+                ], $customerOptions);
         } catch (ApiErrorException) {
             if (! $hadStripeCustomer) {
                 $this->forgetIncompleteStripeCustomer($workspace);
             }
 
-            return back()->with('error', 'Unable to start Stripe checkout. Check STRIPE_SUBSCRIPTION_PRICE_ID and Stripe test mode.');
+            return 'Unable to start Stripe checkout. Check STRIPE_SUBSCRIPTION_PRICE_ID and Stripe test mode.';
         }
     }
 
@@ -131,7 +155,7 @@ class BillingController extends Controller
      * swap the payment method, and download past invoices. Only owners and admins
      * may reach any billing action.
      */
-    private function authorizeManageBilling(Request $request, Workspace $workspace): void
+    protected function authorizeManageBilling(Request $request, Workspace $workspace): void
     {
         $user = $request->user();
 
@@ -141,7 +165,7 @@ class BillingController extends Controller
         );
     }
 
-    private function configuredPriceId(): ?string
+    protected function configuredPriceId(): ?string
     {
         $priceId = (string) config('subscriptions.stripe_price_id');
 
@@ -152,7 +176,7 @@ class BillingController extends Controller
         return $priceId;
     }
 
-    private function forgetIncompleteStripeCustomer(Workspace $workspace): void
+    protected function forgetIncompleteStripeCustomer(Workspace $workspace): void
     {
         if ($workspace->subscribed('default')) {
             return;
@@ -166,7 +190,7 @@ class BillingController extends Controller
         ])->save();
     }
 
-    private function currentWorkspace(Request $request): ?Workspace
+    protected function currentWorkspace(Request $request): ?Workspace
     {
         $workspaceId = $request->user()?->current_workspace_id;
 

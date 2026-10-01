@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { authOptionsQuery, resetPassword } from '@/features/auth/auth';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { ApiError } from '@/lib/api';
 import { fieldString } from '@/lib/forms';
 
@@ -19,6 +20,7 @@ export default function ResetPasswordPage({
     token: string;
     email: string;
 }) {
+    useDocumentTitle('Reset password');
     const navigate = useNavigate();
     const { data: options } = useQuery(authOptionsQuery());
     const [errors, setErrors] = useState<Record<string, string | undefined>>(

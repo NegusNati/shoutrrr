@@ -32,10 +32,30 @@ class ConnectionsController extends Controller
             ->values()
             ->all();
 
-        return Inertia::render('settings/connections', [
+        return Inertia::render('settings/connections', $this->connectionsPayload($user));
+    }
+
+    /**
+     * @return array{connections: array<int, array<string, mixed>>, hasPassword: bool}
+     */
+    protected function connectionsPayload(User $user): array
+    {
+        $linkedAccounts = $user->socialAccounts()->get(['id', 'provider'])->keyBy('provider');
+
+        $connections = collect(SocialProvider::enabledProviders())
+            ->map(fn (string $key): array => [
+                'provider' => $key,
+                'label' => SocialProvider::from($key)->label(),
+                'connected' => $linkedAccounts->has($key),
+                'id' => $linkedAccounts->get($key)?->id,
+            ])
+            ->values()
+            ->all();
+
+        return [
             'connections' => $connections,
             'hasPassword' => $user->hasPassword(),
-        ]);
+        ];
     }
 
     public function destroy(Request $request, SocialAccount $socialAccount): RedirectResponse
@@ -44,10 +64,23 @@ class ConnectionsController extends Controller
 
         // Lock the user row so concurrent disconnect requests can't both pass the
         // last-method check and leave the account with no way to sign in.
-        $deleted = DB::transaction(function () use ($request, $socialAccount): bool {
-            $user = User::query()->whereKey($request->user()->id)->lockForUpdate()->first();
+        if (! $this->disconnectAccount($request->user(), $socialAccount)) {
+            return back()->with('error', 'You cannot disconnect your only sign-in method. Set a password first.');
+        }
 
-            if (! $user || $user->loginMethodCount() <= 1) {
+        return back()->with('success', 'Account disconnected.');
+    }
+
+    /**
+     * Delete the social account unless it is the user's only sign-in method.
+     * Locks the user row so concurrent disconnects can't both pass the check.
+     */
+    protected function disconnectAccount(User $user, SocialAccount $socialAccount): bool
+    {
+        return DB::transaction(function () use ($user, $socialAccount): bool {
+            $locked = User::query()->whereKey($user->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->loginMethodCount() <= 1) {
                 return false;
             }
 
@@ -55,11 +88,5 @@ class ConnectionsController extends Controller
 
             return true;
         });
-
-        if (! $deleted) {
-            return back()->with('error', 'You cannot disconnect your only sign-in method. Set a password first.');
-        }
-
-        return back()->with('success', 'Account disconnected.');
     }
 }

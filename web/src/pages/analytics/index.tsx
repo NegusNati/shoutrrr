@@ -16,6 +16,7 @@ import {
 import { PauseCircle, TrendingUp } from '@/components/ui/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { analyticsQuery } from '@/features/analytics/analytics';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { dayjs } from '@/lib/datetime/dayjs';
 import { disabledPlatformLabels } from '@/lib/platforms';
 import { cn } from '@/lib/utils';
@@ -192,6 +193,7 @@ export default function AnalyticsIndexPage({
 }: {
     search: AnalyticsSearch;
 }) {
+    useDocumentTitle('Analytics');
     const { data, isPending } = useQuery(analyticsQuery(search.days));
 
     if (isPending || !data) {

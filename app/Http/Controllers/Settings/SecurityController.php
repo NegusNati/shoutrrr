@@ -18,6 +18,14 @@ class SecurityController extends Controller
      */
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
+        return Inertia::render('settings/security', $this->securityPayload($request));
+    }
+
+    /**
+     * @return array{canManageTwoFactor: bool, canManagePasskeys: bool, passkeys: array<int, array<string, mixed>>, passwordRules: string, twoFactorEnabled?: bool, requiresConfirmation?: bool}
+     */
+    protected function securityPayload(TwoFactorAuthenticationRequest $request): array
+    {
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'canManagePasskeys' => Features::canManagePasskeys(),
@@ -41,13 +49,15 @@ class SecurityController extends Controller
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
-            $request->ensureStateIsValid();
+            if ($request->hasSession()) {
+                $request->ensureStateIsValid();
+            }
 
             $props['twoFactorEnabled'] = $request->user()->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
         }
 
-        return Inertia::render('settings/security', $props);
+        return $props;
     }
 
     /**

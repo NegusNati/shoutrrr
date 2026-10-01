@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { toast } from 'sonner';
@@ -25,8 +25,10 @@ import {
     messagesThreadQuery,
     respondToMessage,
 } from '@/features/messages/messages';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ApiError } from '@/lib/api';
+import { errorMessage } from '@/lib/api';
 import { platformLabel } from '@/lib/platforms';
 import { cn } from '@/lib/utils';
 import type { MediaView } from '@/types/compose';
@@ -117,15 +119,6 @@ function ConversationPrompt() {
             </div>
         </Empty>
     );
-}
-
-/** Server message for a failed inbox action, or the fallback on any non-API error. */
-function errorMessage(error: unknown, fallback: string): string {
-    if (error instanceof ApiError && error.message.trim() !== '') {
-        return error.message;
-    }
-
-    return fallback;
 }
 
 type ConversationOverride = Partial<
@@ -315,10 +308,17 @@ export default function MessagesIndexPage({
 }: {
     search: MessagesSearch;
 }) {
+    useDocumentTitle('Messages');
     const isMobile = useIsMobile();
     const invalidateMe = useInvalidateMe();
     const navigate = useNavigate();
-    const { data, isPending } = useQuery(messagesQuery(search));
+    const { data, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } =
+        useInfiniteQuery(messagesQuery(search));
+    const sentinelRef = useInfiniteScroll(() => {
+        if (!isFetchingNextPage) {
+            void fetchNextPage();
+        }
+    }, hasNextPage);
     const [selected, setSelected] = useState<ConversationItem | null>(null);
     const messageEditorRef = useRef<HTMLTextAreaElement>(null);
     // Client-side overlay over the query result: archiving, marking read, or
@@ -345,7 +345,7 @@ export default function MessagesIndexPage({
         setOverrides({});
     }
 
-    const items = (data?.conversations.data ?? [])
+    const items = (data?.pages.flatMap((p) => p.conversations.data) ?? [])
         .filter((c) => !overrides[c.id]?.archived)
         .map((c) => {
             const override = overrides[c.id];
@@ -518,6 +518,14 @@ export default function MessagesIndexPage({
                             onSelect={selectConversation}
                         />
                     )}
+                    {items.length > 0 && hasNextPage ? (
+                        <div ref={sentinelRef} aria-hidden="true" />
+                    ) : null}
+                    {isFetchingNextPage ? (
+                        <div className="flex justify-center py-3">
+                            <Skeleton className="h-4 w-24" />
+                        </div>
+                    ) : null}
                 </div>
                 {items.length > 0 ? (
                     <div className="hidden shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t px-3 py-2 md:flex">

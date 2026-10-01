@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Settings;
 use App\Enums\NotificationType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\UpdateNotificationPreferencesRequest;
+use App\Models\User;
 use App\Support\Notifications\NotificationPreferences;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,14 +21,22 @@ class NotificationPreferencesController extends Controller
      */
     public function edit(Request $request): Response
     {
-        return Inertia::render('settings/notifications', [
-            'preferences' => $request->user()->notificationPreferences()->toArray(),
+        return Inertia::render('settings/notifications', $this->preferencesPayload($request->user()));
+    }
+
+    /**
+     * @return array{preferences: array<string, mixed>, alwaysOn: array<int, string>}
+     */
+    protected function preferencesPayload(User $user): array
+    {
+        return [
+            'preferences' => $user->notificationPreferences()->toArray(),
             'alwaysOn' => collect(NotificationType::cases())
                 ->filter(fn (NotificationType $t): bool => $t->inAppAlwaysOn())
                 ->map(fn (NotificationType $t): string => $t->value)
                 ->values()
                 ->all(),
-        ]);
+        ];
     }
 
     /**

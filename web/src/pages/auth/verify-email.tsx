@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { resendVerificationEmail } from '@/features/auth/auth';
 import { logout } from '@/features/auth/logout';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 
 export default function VerifyEmailPage() {
+    useDocumentTitle('Verify email');
     const [status, setStatus] = useState<string>();
     const [processing, setProcessing] = useState(false);
 

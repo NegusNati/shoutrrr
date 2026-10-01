@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { toast } from 'sonner';
@@ -47,8 +47,10 @@ import {
     unlikeReply,
 } from '@/features/engagement/engagement';
 import { useInvalidateMe } from '@/features/me/me';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ApiError } from '@/lib/api';
+import { errorMessage } from '@/lib/api';
 import {
     disabledPlatformLabels,
     platformKeys,
@@ -236,15 +238,6 @@ function EngagementDisabledBanner({
             </div>
         </div>
     );
-}
-
-/** Server message for a failed inbox action, or the fallback on any non-API error. */
-function errorMessage(error: unknown, fallback: string): string {
-    if (error instanceof ApiError && error.message.trim() !== '') {
-        return error.message;
-    }
-
-    return fallback;
 }
 
 type RightPaneProps = {
@@ -549,12 +542,19 @@ export default function EngagementIndexPage({
 }: {
     search: EngagementSearch;
 }) {
+    useDocumentTitle('Engagement');
     const isMobile = useIsMobile();
     const invalidateMe = useInvalidateMe();
     const navigate = useNavigate();
     // The poll refetches continuously; rows only move when the reader asks —
     // nothing reshuffles under a cursor that is mid-triage.
-    const { data, isPending } = useQuery(engagementQuery(search));
+    const { data, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } =
+        useInfiniteQuery(engagementQuery(search));
+    const sentinelRef = useInfiniteScroll(() => {
+        if (!isFetchingNextPage) {
+            void fetchNextPage();
+        }
+    }, hasNextPage);
 
     function applyFilters(patch: Partial<EngagementFilters>) {
         void navigate({
@@ -588,10 +588,11 @@ export default function EngagementIndexPage({
         archived: filterArchived,
     } = filters;
 
-    const incoming = data?.replies.data ?? [];
-    const facets = data?.facets ?? { accounts: [], posts: [] };
-    const engagementEnabled = data?.engagementEnabled ?? EMPTY_ENGAGEMENT;
-    const savedMentions = data?.savedMentions ?? [];
+    const incoming = data?.pages.flatMap((p) => p.replies.data) ?? [];
+    const facets = data?.pages[0]?.facets ?? { accounts: [], posts: [] };
+    const engagementEnabled =
+        data?.pages[0]?.engagementEnabled ?? EMPTY_ENGAGEMENT;
+    const savedMentions = data?.pages[0]?.savedMentions ?? [];
 
     // Filter changes come back as a different query key; stale overrides would
     // wrongly hide rows in, say, the archived view. Reset during render (not an
@@ -641,7 +642,8 @@ export default function EngagementIndexPage({
     // LinkedIn reply polling stays off until the operator enables the restricted
     // Community Management scope in instance settings. That's the expected default,
     // not a temporary pause, so keep it out of the banner unless the scope is on.
-    const bannerDisabledPlatforms = data?.linkedinCommunityManagementEnabled
+    const bannerDisabledPlatforms = data?.pages[0]
+        ?.linkedinCommunityManagementEnabled
         ? disabledPlatforms
         : disabledPlatforms.filter(
               (label) => label !== platformLabel('linkedin'),
@@ -825,6 +827,14 @@ export default function EngagementIndexPage({
                                 onSelect={setSelected}
                             />
                         )}
+                        {items.length > 0 && hasNextPage ? (
+                            <div ref={sentinelRef} aria-hidden="true" />
+                        ) : null}
+                        {isFetchingNextPage ? (
+                            <div className="flex justify-center py-3">
+                                <Skeleton className="h-4 w-24" />
+                            </div>
+                        ) : null}
                     </div>
                 </div>
                 {items.length > 0 ? (
