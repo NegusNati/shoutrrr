@@ -27,12 +27,12 @@ test('toggling disables then re-enables an account', function () {
         'connected_by_user_id' => $user->id,
     ]);
 
-    test()->actingAs($user)->patch("/accounts/{$account->id}/toggle")
-        ->assertRedirect(route('accounts.index'));
+    test()->actingAs($user)->patchJson("/api/v1/connected-accounts/{$account->id}/toggle")
+        ->assertOk()->assertJsonPath('disabled', true);
     expect($account->fresh()->isDisabled())->toBeTrue();
 
-    test()->actingAs($user)->patch("/accounts/{$account->id}/toggle")
-        ->assertRedirect(route('accounts.index'));
+    test()->actingAs($user)->patchJson("/api/v1/connected-accounts/{$account->id}/toggle")
+        ->assertOk()->assertJsonPath('disabled', false);
     expect($account->fresh()->isDisabled())->toBeFalse();
 });
 
@@ -44,7 +44,8 @@ test('disabling the workspace default clears the default', function () {
     ]);
     $workspace->forceFill(['default_connected_account_id' => $account->id])->save();
 
-    test()->actingAs($user)->patch("/accounts/{$account->id}/toggle");
+    test()->actingAs($user)->patchJson("/api/v1/connected-accounts/{$account->id}/toggle")
+        ->assertOk();
 
     expect($account->fresh()->isDisabled())->toBeTrue()
         ->and($workspace->fresh()->default_connected_account_id)->toBeNull();
@@ -65,7 +66,7 @@ test('a member without account-manage permission cannot toggle', function () {
     ]);
     $member->forceFill(['current_workspace_id' => $workspace->id])->save();
 
-    test()->actingAs($member)->patch("/accounts/{$account->id}/toggle")
+    test()->actingAs($member)->patchJson("/api/v1/connected-accounts/{$account->id}/toggle")
         ->assertForbidden();
     expect($account->fresh()->isDisabled())->toBeFalse();
 });

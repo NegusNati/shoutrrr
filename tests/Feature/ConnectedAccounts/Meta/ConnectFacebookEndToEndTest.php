@@ -37,7 +37,7 @@ test('posting a stashed page selection creates a facebook connected account and 
 
     expect(Platform::launchedMetaGraphPlatforms())->toBe([Platform::Facebook, Platform::Instagram]);
 
-    test()->withSession(['accounts.meta.connect' => [
+    test()->withHeaders(['Referer' => 'http://localhost'])->withSession(['accounts.meta.connect' => [
         'assets' => [
             'PAGE1' => [
                 'pageId' => 'PAGE1',
@@ -49,12 +49,11 @@ test('posting a stashed page selection creates a facebook connected account and 
             ],
         ],
         'userTokenExpiresAt' => null,
-    ]])->post(route('accounts.meta.store'), [
+    ]])->postJson('/api/v1/connected-accounts/connect/meta', [
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'facebook'],
         ],
-    ])->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success', '1 account connected.');
+    ])->assertCreated()->assertJsonPath('connected', 1);
 
     $account = ConnectedAccount::withoutGlobalScopes()->sole();
 

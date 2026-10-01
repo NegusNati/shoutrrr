@@ -118,11 +118,11 @@ test('bluesky connect records dm_enabled from the dm_access checkbox', function 
         ]),
     ]);
 
-    test()->post('/accounts/connect/bluesky', [
+    test()->postJson('/api/v1/connected-accounts/connect/bluesky', [
         'identifier' => 'dm.bsky.social',
         'app_password' => 'app-pass-1234',
         'dm_access' => true,
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertCreated()->assertJsonPath('connected', true);
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'did:plc:dm');
     expect($account->capabilities['dm_enabled'])->toBeTrue()
@@ -153,10 +153,10 @@ test('bluesky connect defaults dm_enabled to false without the checkbox', functi
         ]),
     ]);
 
-    test()->post('/accounts/connect/bluesky', [
+    test()->postJson('/api/v1/connected-accounts/connect/bluesky', [
         'identifier' => 'nodm.bsky.social',
         'app_password' => 'app-pass-1234',
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertCreated()->assertJsonPath('connected', true);
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', 'did:plc:nodm');
     expect($account->capabilities['dm_enabled'])->toBeFalse()

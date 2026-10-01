@@ -155,7 +155,7 @@ test('callback surfaces a friendly message when the graph api fails', function (
 test('store rejects instagram for a page with no linked instagram account', function () {
     metaOwnerActingIn();
 
-    test()->withSession(['accounts.meta.connect' => [
+    test()->withHeaders(['Referer' => 'http://localhost'])->withSession(['accounts.meta.connect' => [
         'assets' => [
             'PAGE1' => [
                 'pageId' => 'PAGE1',
@@ -167,11 +167,11 @@ test('store rejects instagram for a page with no linked instagram account', func
             ],
         ],
         'userTokenExpiresAt' => null,
-    ]])->post(route('accounts.meta.store'), [
+    ]])->postJson('/api/v1/connected-accounts/connect/meta', [
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'instagram'],
         ],
-    ])->assertSessionHasErrors('selected');
+    ])->assertJsonValidationErrors('selected');
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });
@@ -181,7 +181,7 @@ test('store creates a facebook connected account now that facebook is launched',
 
     metaOwnerActingIn();
 
-    test()->withSession(['accounts.meta.connect' => [
+    test()->withHeaders(['Referer' => 'http://localhost'])->withSession(['accounts.meta.connect' => [
         'assets' => [
             'PAGE1' => [
                 'pageId' => 'PAGE1',
@@ -193,12 +193,11 @@ test('store creates a facebook connected account now that facebook is launched',
             ],
         ],
         'userTokenExpiresAt' => null,
-    ]])->post(route('accounts.meta.store'), [
+    ]])->postJson('/api/v1/connected-accounts/connect/meta', [
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'facebook'],
         ],
-    ])->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success', '1 account connected.');
+    ])->assertCreated()->assertJsonPath('connected', 1);
 
     $account = ConnectedAccount::withoutGlobalScopes()->sole();
     expect($account->platform)->toBe(Platform::Facebook)
@@ -210,7 +209,7 @@ test('store creates an instagram connected account now that instagram is launche
 
     metaOwnerActingIn();
 
-    test()->withSession(['accounts.meta.connect' => [
+    test()->withHeaders(['Referer' => 'http://localhost'])->withSession(['accounts.meta.connect' => [
         'assets' => [
             'PAGE1' => [
                 'pageId' => 'PAGE1',
@@ -222,12 +221,11 @@ test('store creates an instagram connected account now that instagram is launche
             ],
         ],
         'userTokenExpiresAt' => null,
-    ]])->post(route('accounts.meta.store'), [
+    ]])->postJson('/api/v1/connected-accounts/connect/meta', [
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'instagram'],
         ],
-    ])->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success', '1 account connected.');
+    ])->assertCreated()->assertJsonPath('connected', 1);
 
     $account = ConnectedAccount::withoutGlobalScopes()->sole();
     expect($account->platform)->toBe(Platform::Instagram)
@@ -240,7 +238,7 @@ test('store rejects a threads selection since threads never uses the shared meta
     // member of launchedMetaGraphPlatforms(), regardless of its own launch state.
     metaOwnerActingIn();
 
-    test()->withSession(['accounts.meta.connect' => [
+    test()->withHeaders(['Referer' => 'http://localhost'])->withSession(['accounts.meta.connect' => [
         'assets' => [
             'PAGE1' => [
                 'pageId' => 'PAGE1',
@@ -252,11 +250,11 @@ test('store rejects a threads selection since threads never uses the shared meta
             ],
         ],
         'userTokenExpiresAt' => null,
-    ]])->post(route('accounts.meta.store'), [
+    ]])->postJson('/api/v1/connected-accounts/connect/meta', [
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'threads'],
         ],
-    ])->assertSessionHasErrors('selected.0.platform');
+    ])->assertJsonValidationErrors('selected.0.platform');
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });
@@ -264,14 +262,14 @@ test('store rejects a threads selection since threads never uses the shared meta
 test('store rejects an unknown asset key', function () {
     metaOwnerActingIn();
 
-    test()->withSession(['accounts.meta.connect' => [
+    test()->withHeaders(['Referer' => 'http://localhost'])->withSession(['accounts.meta.connect' => [
         'assets' => [],
         'userTokenExpiresAt' => null,
-    ]])->post(route('accounts.meta.store'), [
+    ]])->postJson('/api/v1/connected-accounts/connect/meta', [
         'selected' => [
             ['assetKey' => 'BOGUS', 'platform' => 'facebook'],
         ],
-    ])->assertSessionHasErrors('selected.0.assetKey');
+    ])->assertJsonValidationErrors('selected.0.assetKey');
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });
@@ -286,7 +284,7 @@ test('store is forbidden for a workspace member', function () {
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
-    test()->actingAs($user)->post(route('accounts.meta.store'), [
+    test()->actingAs($user)->postJson('/api/v1/connected-accounts/connect/meta', [
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'facebook'],
         ],

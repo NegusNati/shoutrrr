@@ -7,10 +7,8 @@ namespace App\Http\Controllers\ConnectedAccounts;
 use App\Dto\ConnectedAccount\ConnectedAccountData;
 use App\Enums\Platform;
 use App\Http\Controllers\Controller;
-use App\Models\ConnectedAccount;
 use App\Services\ConnectedAccounts\AccountConnectionService;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -27,27 +25,10 @@ class LinkedInPageConnectionController extends Controller
 
     public function __construct(private readonly AccountConnectionService $connections) {}
 
-    public function store(Request $request): RedirectResponse
-    {
-        $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
-
-        $created = $this->connectSelected($request);
-
-        if ($created === null) {
-            return redirect()->route('accounts.index')->with('error', 'Your LinkedIn connection expired. Please try again.');
-        }
-
-        return redirect()->route('accounts.index')->with(
-            'success',
-            $created === 1 ? '1 account connected.' : "{$created} accounts connected.",
-        );
-    }
-
     /**
      * Persists every picker selection from the session stash and clears it.
      * Returns the count of connected accounts, or null when the stash is
-     * missing/expired. Shared by the Inertia store and the API
-     * connect-linkedin endpoint (which returns JSON instead of a redirect).
+     * missing/expired. Used by the API connect-linkedin endpoint.
      */
     protected function connectSelected(Request $request): ?int
     {

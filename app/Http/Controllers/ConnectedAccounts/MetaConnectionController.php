@@ -166,23 +166,10 @@ class MetaConnectionController extends Controller
         return $this->renderAssetPicker($request);
     }
 
-    public function store(Request $request): RedirectResponse
-    {
-        $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
-
-        $created = $this->connectSelected($request);
-
-        return redirect()->route('accounts.index')->with(
-            'success',
-            $created === 1 ? '1 account connected.' : "{$created} accounts connected.",
-        );
-    }
-
     /**
      * Validates the picker's `selected` pairs against the session stash,
      * persists each as a ConnectedAccount, and clears the stash. Returns how
-     * many accounts were connected. Shared by the Inertia store and the API
-     * connect-meta endpoint (which returns JSON instead of a redirect).
+     * many accounts were connected. Used by the API connect-meta endpoint.
      */
     protected function connectSelected(Request $request): int
     {

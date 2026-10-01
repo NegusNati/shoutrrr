@@ -31,8 +31,8 @@ test('an owner connects a Discord webhook and the URL is sealed in the secret', 
         'id' => '999', 'name' => 'Releases', 'channel_id' => '5', 'guild_id' => '7',
     ])]);
 
-    test()->post('/accounts/connect/discord', ['webhook_url' => $url])
-        ->assertRedirect(route('accounts.index'));
+    test()->postJson('/api/v1/connected-accounts/connect/discord', ['webhook_url' => $url])
+        ->assertCreated()->assertJsonPath('connected', true);
 
     $account = ConnectedAccount::withoutGlobalScopes()->firstWhere('remote_account_id', '999');
     expect($account->platform)->toBe(Platform::Discord)
@@ -47,8 +47,8 @@ test('an invalid webhook URL redirects back with an error and connects nothing',
     discordOwner();
     Http::fake();
 
-    test()->post('/accounts/connect/discord', ['webhook_url' => 'https://evil.com/api/webhooks/1/t'])
-        ->assertRedirect()->assertSessionHas('error');
+    test()->postJson('/api/v1/connected-accounts/connect/discord', ['webhook_url' => 'https://evil.com/api/webhooks/1/t'])
+        ->assertUnprocessable();
 
     expect(ConnectedAccount::withoutGlobalScopes()->count())->toBe(0);
 });
@@ -63,7 +63,7 @@ test('a member cannot connect a Discord webhook', function () {
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
-    test()->actingAs($user)->post('/accounts/connect/discord', [
+    test()->actingAs($user)->postJson('/api/v1/connected-accounts/connect/discord', [
         'webhook_url' => 'https://discord.com/api/webhooks/1/t',
     ])->assertForbidden();
 });
@@ -71,6 +71,6 @@ test('a member cannot connect a Discord webhook', function () {
 test('the webhook_url is required', function () {
     discordOwner();
 
-    test()->post('/accounts/connect/discord', [])
-        ->assertSessionHasErrors('webhook_url');
+    test()->postJson('/api/v1/connected-accounts/connect/discord', [])
+        ->assertJsonValidationErrors('webhook_url');
 });

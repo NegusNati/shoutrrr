@@ -49,11 +49,11 @@ test('reconnecting a bluesky account preserves its id and clears needs_attention
         ]),
     ]);
 
-    test()->post("/accounts/{$account->id}/reconnect", [
+    test()->postJson("/api/v1/connected-accounts/{$account->id}/reconnect", [
         'identifier' => 'ada.bsky.social',
         'app_password' => 'fresh-pass',
         'pds_url' => 'https://bsky.social',
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertOk()->assertJsonPath('reconnected', true);
 
     $fresh = $account->fresh();
     expect($fresh->id)->toBe($account->id)
@@ -80,10 +80,10 @@ test('reconnect is rejected when the submitted credentials resolve to a differen
         ]),
     ]);
 
-    test()->post("/accounts/{$account->id}/reconnect", [
+    test()->postJson("/api/v1/connected-accounts/{$account->id}/reconnect", [
         'identifier' => 'someone.bsky.social',
         'app_password' => 'pass',
-    ])->assertRedirect()->assertSessionHasErrors('identifier');
+    ])->assertUnprocessable()->assertJsonValidationErrors('identifier');
 });
 
 test('reconnecting a discord webhook adopts a recreated webhook onto the same account in place', function () {
@@ -107,9 +107,9 @@ test('reconnecting a discord webhook adopts a recreated webhook onto the same ac
         'id' => '222222', 'name' => 'Releases', 'channel_id' => '5', 'guild_id' => '7',
     ])]);
 
-    test()->post("/accounts/{$account->id}/reconnect", ['webhook_url' => $newUrl])
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success');
+    test()->postJson("/api/v1/connected-accounts/{$account->id}/reconnect", ['webhook_url' => $newUrl])
+        ->assertOk()
+        ->assertJsonPath('reconnected', true);
 
     $fresh = $account->fresh();
     expect($fresh->id)->toBe($account->id)
@@ -127,8 +127,8 @@ test('reconnecting a discord webhook requires a webhook url', function () {
         'connected_by_user_id' => $user->id,
     ]);
 
-    test()->post("/accounts/{$account->id}/reconnect", [])
-        ->assertSessionHasErrors('webhook_url');
+    test()->postJson("/api/v1/connected-accounts/{$account->id}/reconnect", [])
+        ->assertJsonValidationErrors('webhook_url');
 });
 
 test('reconnecting a discord webhook with an invalid url flashes an error and changes nothing', function () {
@@ -141,18 +141,16 @@ test('reconnecting a discord webhook with an invalid url flashes an error and ch
         'connected_by_user_id' => $user->id,
     ]);
 
-    test()->post("/accounts/{$account->id}/reconnect", [
+    test()->postJson("/api/v1/connected-accounts/{$account->id}/reconnect", [
         'webhook_url' => 'https://evil.com/api/webhooks/1/t',
-    ])->assertRedirect()->assertSessionHas('error');
+    ])->assertUnprocessable();
 
     expect($account->fresh()->remote_account_id)->toBe('keep-me')
         ->and($account->fresh()->status)->toBe(ConnectedAccountStatus::NeedsAttention);
 });
 
-test('reconnecting a facebook account restarts the shared meta login flow, not the generic route', function () {
+test('reconnecting an OAuth account is rejected — the SPA links to the provider flow instead', function () {
     [$user, $workspace] = ownerWithWorkspace();
-    config()->set('services.facebook.client_id', 'cid');
-    config()->set('services.facebook.client_secret', 'secret');
 
     $account = ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
@@ -161,8 +159,9 @@ test('reconnecting a facebook account restarts the shared meta login flow, not t
     ]);
     ConnectedAccountSecret::factory()->create(['connected_account_id' => $account->id]);
 
-    test()->post("/accounts/{$account->id}/reconnect")
-        ->assertRedirect(route('accounts.meta.redirect'));
+    test()->postJson("/api/v1/connected-accounts/{$account->id}/reconnect")
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'OAuth accounts reconnect through the provider flow.');
 });
 
 test('disconnect removes both the account and its secret row', function () {
@@ -173,9 +172,9 @@ test('disconnect removes both the account and its secret row', function () {
     ]);
     ConnectedAccountSecret::factory()->create(['connected_account_id' => $account->id]);
 
-    test()->delete("/accounts/{$account->id}")
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success');
+    test()->deleteJson("/api/v1/connected-accounts/{$account->id}")
+        ->assertOk()
+        ->assertJsonPath('deleted', true);
 
     expect(ConnectedAccount::withoutGlobalScopes()->find($account->id))->toBeNull()
         ->and(ConnectedAccountSecret::find($account->id))->toBeNull();
@@ -194,7 +193,7 @@ test('a member cannot disconnect an account', function () {
     ]);
     $member->forceFill(['current_workspace_id' => $workspace->id])->save();
 
-    test()->actingAs($member)->delete("/accounts/{$account->id}")->assertForbidden();
+    test()->actingAs($member)->deleteJson("/api/v1/connected-accounts/{$account->id}")->assertForbidden();
 });
 
 test('an account from another workspace is not found scoped out', function () {
@@ -202,5 +201,5 @@ test('an account from another workspace is not found scoped out', function () {
     $otherWorkspace = Workspace::factory()->create();
     $foreign = ConnectedAccount::factory()->create(['workspace_id' => $otherWorkspace->id]);
 
-    test()->delete("/accounts/{$foreign->id}")->assertNotFound();
+    test()->deleteJson("/api/v1/connected-accounts/{$foreign->id}")->assertNotFound();
 });
