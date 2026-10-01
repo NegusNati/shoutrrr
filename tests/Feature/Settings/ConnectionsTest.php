@@ -53,9 +53,8 @@ test('a provider can be disconnected when another login method remains', functio
     $account = SocialAccount::factory()->create(['user_id' => $user->id, 'provider' => 'google']);
 
     $this->actingAs($user)
-        ->delete(route('connections.destroy', $account))
-        ->assertRedirect()
-        ->assertSessionHas('success');
+        ->deleteJson("/api/v1/settings/connections/{$account->id}")
+        ->assertOk();
 
     expect(SocialAccount::find($account->id))->toBeNull();
 });
@@ -65,8 +64,8 @@ test('disconnecting the only login method is rejected', function () {
     $account = SocialAccount::factory()->create(['user_id' => $user->id, 'provider' => 'google']);
 
     $this->actingAs($user)
-        ->delete(route('connections.destroy', $account))
-        ->assertSessionHas('error');
+        ->deleteJson("/api/v1/settings/connections/{$account->id}")
+        ->assertUnprocessable();
 
     expect(SocialAccount::find($account->id))->not->toBeNull();
 });
@@ -76,6 +75,6 @@ test('a user cannot disconnect another users social account', function () {
     $otherAccount = SocialAccount::factory()->create();
 
     $this->actingAs($user)
-        ->delete(route('connections.destroy', $otherAccount))
-        ->assertForbidden();
+        ->deleteJson("/api/v1/settings/connections/{$otherAccount->id}")
+        ->assertNotFound();
 });

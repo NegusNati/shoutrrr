@@ -32,11 +32,19 @@ test('the feed returns only the first page and a cursor when more exist', functi
     $user->forceFill(['current_workspace_id' => $ws->id])->save();
     seedNotifications($user, $ws->id, NotificationPresenter::PER_PAGE + 5);
 
-    $this->actingAs($user)
-        ->getJson(route('notifications.index'))
+    $firstPage = $this->actingAs($user)
+        ->getJson("/api/v1/notifications")
         ->assertOk()
         ->assertJsonCount(NotificationPresenter::PER_PAGE, 'items')
-        ->assertJsonPath('nextCursor', fn ($cursor) => is_string($cursor) && $cursor !== '');
+        ->assertJsonPath('nextCursor', fn ($cursor) => is_string($cursor) && $cursor !== '')
+        ->json();
+
+    $secondPage = $this->actingAs($user)
+        ->getJson("/api/v1/notifications?cursor=" . $firstPage['nextCursor'])
+        ->assertOk()
+        ->assertJsonCount($total - NotificationPresenter::PER_PAGE, 'items')
+        ->assertJsonPath('nextCursor', null)
+        ->json();
 });
 
 test('following the cursor returns the remaining notifications and then stops', function () {
@@ -47,11 +55,11 @@ test('following the cursor returns the remaining notifications and then stops', 
     seedNotifications($user, $ws->id, $total);
 
     $firstPage = $this->actingAs($user)
-        ->getJson(route('notifications.index'))
+        ->getJson("/api/v1/notifications")
         ->json();
 
     $secondPage = $this->actingAs($user)
-        ->getJson(route('notifications.index', ['cursor' => $firstPage['nextCursor']]))
+        ->getJson("/api/v1/notifications?cursor=" . $firstPage['nextCursor'])
         ->assertOk()
         ->assertJsonCount($total - NotificationPresenter::PER_PAGE, 'items')
         ->assertJsonPath('nextCursor', null)
@@ -72,7 +80,7 @@ test('the feed is scoped to the current workspace', function () {
     seedNotifications($user, $wsB->id, 3);
 
     $this->actingAs($user)
-        ->getJson(route('notifications.index'))
+        ->getJson("/api/v1/notifications")
         ->assertOk()
         ->assertJsonCount(2, 'items');
 });
@@ -97,10 +105,10 @@ test('a foreign cursor on another cursor-paginated page does not break the notif
         ->assertRedirect('/app/posts?cursor='.$foreignCursor);
 
     $this->actingAs($user)
-        ->getJson(route('notifications.index'))
+        ->getJson("/api/v1/notifications")
         ->assertOk();
 });
 
 test('the feed requires authentication', function () {
-    $this->getJson(route('notifications.index'))->assertUnauthorized();
+    $this->getJson("/api/v1/notifications")->assertUnauthorized();
 });

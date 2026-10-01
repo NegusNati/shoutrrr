@@ -25,7 +25,7 @@ beforeEach(function () {
 test('updating a draft persists the auto_repost override', function (): void {
     $post = Post::factory()->create(['workspace_id' => $this->workspace->id, 'auto_repost' => null]);
 
-    $response = $this->actingAs($this->user)->putJson(route('posts.update', $post), [
+    $response = $this->actingAs($this->user)->patchJson("/api/v1/posts/{$post->id}", [
         'segments' => ['hello'],
         'destination' => ['kind' => 'account', 'id' => $this->account->id],
         'media_ids' => [],
@@ -39,7 +39,7 @@ test('updating a draft persists the auto_repost override', function (): void {
 });
 
 test('creating a draft persists an explicit auto_repost value', function (): void {
-    $response = $this->actingAs($this->user)->postJson(route('posts.store'), [
+    $response = $this->actingAs($this->user)->postJson('/api/v1/posts', [
         'segments' => ['hello'],
         'destination' => ['kind' => 'account', 'id' => $this->account->id],
         'auto_repost' => false,

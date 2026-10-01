@@ -23,7 +23,7 @@ beforeEach(function (): void {
 });
 
 it('requires authentication', function (): void {
-    $this->getJson(route('command-search', ['q' => 'hello']))
+    $this->getJson("/api/v1/command-search?q=hello")
         ->assertUnauthorized();
 });
 
@@ -38,7 +38,7 @@ it('matches posts by base_text within the current workspace', function (): void 
     ]);
 
     $this->actingAs($this->user)
-        ->getJson(route('command-search', ['q' => 'launch']))
+        ->getJson("/api/v1/command-search?q=launch")
         ->assertOk()
         ->assertJsonCount(1, 'posts')
         ->assertJsonPath('posts.0.excerpt', 'Launch announcement draft');
@@ -52,7 +52,7 @@ it('excludes deleted posts', function (): void {
     ]);
 
     $this->actingAs($this->user)
-        ->getJson(route('command-search', ['q' => 'launch']))
+        ->getJson("/api/v1/command-search?q=launch")
         ->assertOk()
         ->assertJsonCount(0, 'posts');
 });
@@ -65,7 +65,7 @@ it('never returns another workspace posts', function (): void {
     ]);
 
     $this->actingAs($this->user)
-        ->getJson(route('command-search', ['q' => 'launch']))
+        ->getJson("/api/v1/command-search?q=launch")
         ->assertOk()
         ->assertJsonCount(0, 'posts');
 });
@@ -77,7 +77,7 @@ it('returns nothing for queries shorter than two characters', function (): void 
     ]);
 
     $this->actingAs($this->user)
-        ->getJson(route('command-search', ['q' => 'a']))
+        ->getJson("/api/v1/command-search?q=a")
         ->assertOk()
         ->assertExactJson(['posts' => []]);
 });
@@ -89,7 +89,7 @@ it('caps results at eight posts', function (): void {
     ]);
 
     $this->actingAs($this->user)
-        ->getJson(route('command-search', ['q' => 'launch']))
+        ->getJson("/api/v1/command-search?q=launch")
         ->assertOk()
         ->assertJsonCount(8, 'posts');
 });

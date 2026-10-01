@@ -42,7 +42,7 @@ it('hard-deletes a draft and dispatches no remote-delete job', function (): void
         'author_id' => $user->id, 'status' => PostStatus::Draft->value,
     ]);
 
-    $this->actingAs($user)->delete(route('posts.destroy', $post))->assertRedirect();
+    $this->actingAs($user)->deleteJson("/api/v1/posts/{$post->id}")->assertOk();
 
     expect(Post::query()->whereKey($post->id)->exists())->toBeFalse();
     Queue::assertNothingPushed();
@@ -55,7 +55,7 @@ it('hard-deletes a scheduled post and dispatches no remote-delete job', function
         'author_id' => $user->id, 'status' => PostStatus::Scheduled->value,
     ]);
 
-    $this->actingAs($user)->delete(route('posts.destroy', $post))->assertRedirect();
+    $this->actingAs($user)->deleteJson("/api/v1/posts/{$post->id}")->assertOk();
 
     expect(Post::query()->whereKey($post->id)->exists())->toBeFalse();
     Queue::assertNothingPushed();
@@ -69,9 +69,8 @@ it('redirects to the posts index after deleting the post currently being viewed'
     ]);
 
     $this->actingAs($user)
-        ->from(route('posts.show', $post))
-        ->delete(route('posts.destroy', $post))
-        ->assertRedirect(route('posts.index'));
+        ->deleteJson("/api/v1/posts/{$post->id}")
+        ->assertOk();
 
     expect(Post::query()->whereKey($post->id)->exists())->toBeFalse();
 });
@@ -89,7 +88,7 @@ it('soft-deletes a published post and dispatches remote delete per target with a
         'status' => PostTargetStatus::Pending->value, 'remote_id' => null,
     ]);
 
-    $this->actingAs($user)->delete(route('posts.destroy', $post))->assertRedirect();
+    $this->actingAs($user)->deleteJson("/api/v1/posts/{$post->id}")->assertOk();
 
     $post->refresh();
     expect($post->status)->toBe(PostStatus::Deleted)
@@ -109,7 +108,7 @@ it('does not show a soft-deleted post', function (): void {
         'status' => PostTargetStatus::Published->value, 'remote_id' => 'remote-1',
     ]);
 
-    $this->actingAs($user)->delete(route('posts.destroy', $post))->assertRedirect();
+    $this->actingAs($user)->deleteJson("/api/v1/posts/{$post->id}")->assertOk();
 
     // The legacy GET is now an SPA redirect; the deleted post 404s client-side.
     $this->actingAs($user)->get(route('posts.show', $post))
@@ -126,7 +125,7 @@ it('soft-deletes partial and failed posts via the remote-delete path', function 
         'status' => PostTargetStatus::Published->value, 'remote_id' => 'remote-x',
     ]);
 
-    $this->actingAs($user)->delete(route('posts.destroy', $post))->assertRedirect();
+    $this->actingAs($user)->deleteJson("/api/v1/posts/{$post->id}")->assertOk();
 
     $post->refresh();
     expect($post->status)->toBe(PostStatus::Deleted)
@@ -154,7 +153,7 @@ it('stops publishing targets before soft-deleting a publishing post', function (
         'remote_ids' => null,
     ]);
 
-    $this->actingAs($user)->delete(route('posts.destroy', $post))->assertRedirect();
+    $this->actingAs($user)->deleteJson("/api/v1/posts/{$post->id}")->assertOk();
 
     $post->refresh();
     expect($post->status)->toBe(PostStatus::Deleted)
@@ -177,7 +176,7 @@ it('soft-deletes a published post with no remote ids and dispatches nothing', fu
         'status' => PostTargetStatus::Failed->value, 'remote_id' => null,
     ]);
 
-    $this->actingAs($user)->delete(route('posts.destroy', $post))->assertRedirect();
+    $this->actingAs($user)->deleteJson("/api/v1/posts/{$post->id}")->assertOk();
 
     expect($post->refresh()->status)->toBe(PostStatus::Deleted);
     Queue::assertNothingPushed();
@@ -196,7 +195,7 @@ it('forbids deleting a post for a non-member of the workspace', function (): voi
     // An authenticated user pointed at the workspace but with no membership.
     $intruder = User::factory()->create(['current_workspace_id' => $workspace->id]);
 
-    $this->actingAs($intruder)->delete(route('posts.destroy', $post))->assertForbidden();
+    $this->actingAs($intruder)->deleteJson("/api/v1/posts/{$post->id}")->assertForbidden();
 
     expect($post->refresh()->status)->toBe(PostStatus::Published);
     Queue::assertNothingPushed();

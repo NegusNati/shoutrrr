@@ -47,7 +47,7 @@ test('a text-only reply still posts synchronously (no job)', function (): void {
     $registry->shouldReceive('for')->andReturn($connector);
     app()->instance(EngagementConnectorRegistry::class, $registry);
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => 'hi'])->assertCreated();
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => 'hi'])->assertCreated();
     Queue::assertNothingPushed();
     expect($this->reply->fresh()->status->value)->toBe('responded');
 });
@@ -57,7 +57,7 @@ test('a text-only reply still posts synchronously (no job)', function (): void {
 test('a reply with media creates a sending row and dispatches SendReply', function (): void {
     Queue::fake();
 
-    $this->postJson(route('engagement.respond', $this->reply), [
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", [
         'text' => 'with pic', 'media' => [$this->media->id],
     ])->assertCreated()->assertJsonPath('reply.is_ours', true);
 
@@ -69,7 +69,7 @@ test('a reply with media creates a sending row and dispatches SendReply', functi
 test('a media-only reply with empty text is accepted', function (): void {
     Queue::fake();
 
-    $this->postJson(route('engagement.respond', $this->reply), [
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", [
         'text' => '', 'media' => [$this->media->id],
     ])->assertCreated();
 
@@ -79,7 +79,7 @@ test('a media-only reply with empty text is accepted', function (): void {
 test('a reply with neither text nor media is rejected', function (): void {
     Queue::fake();
 
-    $this->postJson(route('engagement.respond', $this->reply), [])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", [])
         ->assertJsonValidationErrors('text');
 
     Queue::assertNothingPushed();
@@ -91,7 +91,7 @@ test('a foreign-workspace media id is rejected', function (): void {
     $otherWorkspace = Workspace::factory()->create();
     $foreignMedia = PostMedia::factory()->create(['workspace_id' => $otherWorkspace->id, 'kind' => 'image']);
 
-    $this->postJson(route('engagement.respond', $this->reply), [
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", [
         'text' => 'with pic', 'media' => [$foreignMedia->id],
     ])->assertJsonValidationErrors('media.0');
 

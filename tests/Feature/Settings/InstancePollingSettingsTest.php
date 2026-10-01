@@ -58,7 +58,7 @@ test('the update request rejects a payload missing a supported platform', functi
     pollingOwner();
 
     // engagement omits facebook/instagram/threads (now required) -> invalid.
-    test()->put(route('instance-settings.polling.update'), [
+    test()->put("/api/v1/instance-settings/polling", [
         'engagement' => ['enabled' => ['x' => true, 'bluesky' => true, 'linkedin' => true], 'x' => 15, 'bluesky' => 15, 'linkedin' => 15],
         'post_metrics' => ['enabled' => ['x' => true, 'bluesky' => true, 'facebook' => true, 'instagram' => true, 'threads' => true, 'discord' => true], 'x' => 15, 'bluesky' => 15, 'facebook' => 15, 'instagram' => 15, 'threads' => 15, 'discord' => 15],
         'account_metrics' => ['enabled' => ['x' => true, 'bluesky' => true, 'facebook' => true, 'instagram' => true, 'threads' => true], 'x' => 15, 'bluesky' => 15, 'facebook' => 15, 'instagram' => 15, 'threads' => 15],
@@ -68,6 +68,6 @@ test('the update request rejects a payload missing a supported platform', functi
 test('the update request rejects an out-of-range interval', function () {
     pollingOwner();
 
-    test()->put(route('instance-settings.polling.update'), fullPollingPayload(['post_metrics.discord' => 4]))
+    test()->put("/api/v1/instance-settings/polling", fullPollingPayload(['post_metrics.discord' => 4]))
         ->assertSessionHasErrors('post_metrics.discord');
 });

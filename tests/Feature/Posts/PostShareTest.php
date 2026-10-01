@@ -23,7 +23,7 @@ beforeEach(function (): void {
 
 it('mints a share and returns the plaintext url once', function (): void {
     $this->actingAs($this->user)
-        ->postJson(route('posts.shares.store', $this->post), ['expires_at' => null])
+        ->postJson("/api/v1/posts/{$this->post->id}/shares", ['expires_at' => null])
         ->assertOk()
         ->assertJsonStructure(['id', 'url', 'expires_at']);
 
@@ -36,7 +36,7 @@ it('lists only active shares', function (): void {
     PostShare::factory()->for($this->post)->expired()->create();
 
     $this->actingAs($this->user)
-        ->getJson(route('posts.shares.index', $this->post))
+        ->getJson("/api/v1/posts/{$this->post->id}/shares")
         ->assertOk()
         ->assertJsonCount(1);
 });
@@ -45,7 +45,7 @@ it('revokes a share', function (): void {
     $share = PostShare::factory()->for($this->post)->create();
 
     $this->actingAs($this->user)
-        ->deleteJson(route('posts.shares.destroy', ['post' => $this->post, 'share' => $share->id]))
+        ->deleteJson("/api/v1/posts/{$this->post->id}/shares/{$share->id}")
         ->assertNoContent();
 
     expect($share->fresh()->revoked_at)->not->toBeNull();

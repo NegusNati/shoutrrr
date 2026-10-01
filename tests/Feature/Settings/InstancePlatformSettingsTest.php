@@ -63,7 +63,7 @@ it('persists platform toggles for an owner', function () {
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.updatePlatforms'), [
+        ->putJson('/api/v1/instance-settings/platforms', [
             'platforms' => [
                 'x' => false,
                 'bluesky' => true,
@@ -86,7 +86,7 @@ it('persists the linkedin community management toggle from the platforms page', 
     expect(app(InstanceSettings::class)->linkedinCommunityManagementEnabled())->toBeFalse();
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.updatePlatforms'), [
+        ->putJson('/api/v1/instance-settings/platforms', [
             'platforms' => [
                 'x' => true,
                 'bluesky' => true,
@@ -107,7 +107,7 @@ it('rejects a platforms update missing the linkedin community management field',
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.updatePlatforms'), [
+        ->putJson('/api/v1/instance-settings/platforms', [
             'platforms' => [
                 'x' => true,
                 'bluesky' => true,
@@ -118,5 +118,5 @@ it('rejects a platforms update missing the linkedin community management field',
                 'discord' => true,
             ],
         ])
-        ->assertSessionHasErrors('linkedin_community_management_enabled');
+        ->assertJsonValidationErrors('linkedin_community_management_enabled');
 });

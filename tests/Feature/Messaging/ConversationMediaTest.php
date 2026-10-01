@@ -87,7 +87,7 @@ beforeEach(function (): void {
 
 test('uploading an image creates orphan media on the conversation workspace', function () {
     $this->actingAs($this->user)
-        ->postJson(route('messages.media.store', $this->conversation), [
+        ->postJson("/api/v1/messages/{$this->conversation->id}/media", [
             'file' => UploadedFile::fake()->image('pic.jpg', 200, 200),
             'alt_text' => 'a picture',
         ])
@@ -104,7 +104,7 @@ test('updating alt text on conversation media persists it', function () {
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id, 'alt_text' => null]);
 
     $this->actingAs($this->user)
-        ->patchJson(route('messages.media.alt', ['conversation' => $this->conversation, 'media' => $media]), [
+        ->patchJson("/api/v1/messages/{$this->conversation->id}/media/{$media->id}/alt", [
             'alt_text' => 'described for screen readers',
         ])
         ->assertOk()
@@ -117,7 +117,7 @@ test('deleting conversation media removes the row', function () {
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $this->actingAs($this->user)
-        ->deleteJson(route('messages.media.destroy', ['conversation' => $this->conversation, 'media' => $media]))
+        ->deleteJson("/api/v1/messages/{$this->conversation->id}/media/{$media->id}")
         ->assertOk()
         ->assertJsonPath('deleted', true);
 
@@ -143,13 +143,13 @@ test('media already claimed by a sent message 404s on alt and delete', function 
     ]);
 
     $this->actingAs($this->user)
-        ->patchJson(route('messages.media.alt', ['conversation' => $this->conversation, 'media' => $claimed]), [
+        ->patchJson("/api/v1/messages/{$this->conversation->id}/media/{$claimed->id}/alt", [
             'alt_text' => 'nope',
         ])
         ->assertNotFound();
 
     $this->actingAs($this->user)
-        ->deleteJson(route('messages.media.destroy', ['conversation' => $this->conversation, 'media' => $claimed]))
+        ->deleteJson("/api/v1/messages/{$this->conversation->id}/media/{$claimed->id}")
         ->assertNotFound();
 
     expect($claimed->refresh()->alt_text)->toBe('original');
@@ -158,7 +158,7 @@ test('media already claimed by a sent message 404s on alt and delete', function 
 
 test('presign returns a workspace-scoped mp4 key', function () {
     $res = $this->actingAs($this->user)
-        ->postJson(route('messages.media.video-url', $this->conversation), ['content_type' => 'video/mp4'])
+        ->postJson("/api/v1/messages/{$this->conversation->id}/media/video-url", ['content_type' => 'video/mp4'])
         ->assertOk()
         ->json();
 
@@ -171,12 +171,12 @@ test('confirming a video upload rejects non-mp4 bytes and accepts a real contain
     $key = 'tmp/media/'.$this->workspace->id.'/'.Str::uuid().'.mp4';
 
     $disk->put($key, 'not-an-mp4-file-at-all');
-    $this->actingAs($this->user)->postJson(route('messages.media.video', $this->conversation), [
+    $this->actingAs($this->user)->postJson("/api/v1/messages/{$this->conversation->id}/media/video", [
         'key' => $key, 'duration_seconds' => 5, 'width' => 100, 'height' => 100,
     ])->assertStatus(422);
 
     $disk->put($key, "\x00\x00\x00\x18ftypmp42extra-bytes-here");
-    $this->actingAs($this->user)->postJson(route('messages.media.video', $this->conversation), [
+    $this->actingAs($this->user)->postJson("/api/v1/messages/{$this->conversation->id}/media/video", [
         'key' => $key, 'duration_seconds' => 5, 'width' => 100, 'height' => 100,
     ])->assertCreated();
 
@@ -185,7 +185,7 @@ test('confirming a video upload rejects non-mp4 bytes and accepts a real contain
 
 test('attaching a gif to a conversation returns a media view', function () {
     $this->actingAs($this->user)
-        ->postJson(route('messages.gifs.store', $this->conversation), conversationGifPayload())
+        ->postJson("/api/v1/messages/{$this->conversation->id}/gifs", conversationGifPayload())
         ->assertCreated()
         ->assertJsonPath('media.kind', 'image')
         ->assertJsonPath('media.mime', 'image/gif')
@@ -198,7 +198,7 @@ test('a client-declared existing image blocks a second conversation attachment w
     ]);
 
     $this->actingAs($this->user)
-        ->postJson(route('messages.gifs.store', $this->conversation), conversationGifPayload([
+        ->postJson("/api/v1/messages/{$this->conversation->id}/gifs", conversationGifPayload([
             'media_ids' => [$existingImage->id],
         ]))
         ->assertStatus(422);
@@ -220,11 +220,11 @@ test('every attachment endpoint 404s on a bluesky conversation', function () {
     }
 
     $this->actingAs($this->user)
-        ->patchJson(route('messages.media.alt', ['conversation' => $bluesky, 'media' => $media]), ['alt_text' => 'nope'])
+        ->patchJson("/api/v1/messages/{$bluesky->id}/media/{$media->id}/alt", ['alt_text' => 'nope'])
         ->assertNotFound();
 
     $this->actingAs($this->user)
-        ->deleteJson(route('messages.media.destroy', ['conversation' => $bluesky, 'media' => $media]))
+        ->deleteJson("/api/v1/messages/{$bluesky->id}/media/{$media->id}")
         ->assertNotFound();
 
     expect($media->refresh()->alt_text)->not->toBe('nope');
@@ -250,13 +250,13 @@ test('media belonging to another workspace 404s on alt and delete', function () 
     $foreignMedia = PostMedia::factory()->create(['workspace_id' => Workspace::factory()->create()->id]);
 
     $this->actingAs($this->user)
-        ->patchJson(route('messages.media.alt', ['conversation' => $this->conversation, 'media' => $foreignMedia]), [
+        ->patchJson("/api/v1/messages/{$this->conversation->id}/media/{$foreignMedia->id}/alt", [
             'alt_text' => 'nope',
         ])
         ->assertNotFound();
 
     $this->actingAs($this->user)
-        ->deleteJson(route('messages.media.destroy', ['conversation' => $this->conversation, 'media' => $foreignMedia]))
+        ->deleteJson("/api/v1/messages/{$this->conversation->id}/media/{$foreignMedia->id}")
         ->assertNotFound();
 
     expect(PostMedia::withoutGlobalScopes()->whereKey($foreignMedia->id)->exists())->toBeTrue();
@@ -266,7 +266,7 @@ test('the gif route 404s when gifs are not configured', function () {
     config()->set('services.klipy.key', null);
 
     $this->actingAs($this->user)
-        ->postJson(route('messages.gifs.store', $this->conversation), conversationGifPayload())
+        ->postJson("/api/v1/messages/{$this->conversation->id}/gifs", conversationGifPayload())
         ->assertNotFound();
 });
 

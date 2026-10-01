@@ -28,7 +28,7 @@ beforeEach(function (): void {
 
 test('uploading an image creates orphan media on the reply workspace', function () {
     $this->actingAs($this->user)
-        ->postJson(route('engagement.media.store', $this->reply), [
+        ->postJson("/api/v1/engagement/{$this->reply->id}/media", [
             'file' => UploadedFile::fake()->image('pic.jpg', 200, 200),
             'alt_text' => 'a picture',
         ])
@@ -45,7 +45,7 @@ test('updating alt text on reply media persists it', function () {
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id, 'alt_text' => null]);
 
     $this->actingAs($this->user)
-        ->patchJson(route('engagement.media.alt', ['reply' => $this->reply, 'media' => $media]), [
+        ->patchJson("/api/v1/engagement/{$this->reply->id}/media/{$media->id}/alt", [
             'alt_text' => 'described for screen readers',
         ])
         ->assertOk()
@@ -58,7 +58,7 @@ test('updating alt text on media from another workspace 404s', function () {
     $foreignMedia = PostMedia::factory()->create(['workspace_id' => Workspace::factory()->create()->id]);
 
     $this->actingAs($this->user)
-        ->patchJson(route('engagement.media.alt', ['reply' => $this->reply, 'media' => $foreignMedia]), [
+        ->patchJson("/api/v1/engagement/{$this->reply->id}/media/{$foreignMedia->id}/alt", [
             'alt_text' => 'nope',
         ])
         ->assertNotFound();
@@ -68,7 +68,7 @@ test('a foreign-workspace reply 404s', function () {
     $foreign = PostTargetReply::factory()->create(['workspace_id' => '11111111-1111-1111-1111-111111111111']);
 
     $this->actingAs($this->user)
-        ->postJson(route('engagement.media.store', $foreign), [
+        ->postJson("/api/v1/engagement/{$foreign->id}/media", [
             'file' => UploadedFile::fake()->image('pic.jpg'),
         ])
         ->assertNotFound();

@@ -12,7 +12,7 @@ it('saves a mention library item for the current workspace', function () {
     Context::add('workspace_id', $workspace->id);
 
     $this->actingAs($user)
-        ->postJson(route('workspace-mentions.store'), [
+        ->postJson("/api/v1/workspace-mentions", [
             'name' => '@taylor',
             'handles' => [
                 'x' => '@taylorotwell',
@@ -39,7 +39,7 @@ it('updates an existing saved mention by workspace and name', function () {
     ]);
 
     $this->actingAs($user)
-        ->postJson(route('workspace-mentions.store'), [
+        ->postJson("/api/v1/workspace-mentions", [
             'name' => '@taylor',
             'handles' => ['x' => '@new'],
         ])
@@ -57,7 +57,7 @@ it('preserves saved handles as submitted', function () {
     Context::add('workspace_id', $workspace->id);
 
     $this->actingAs($user)
-        ->postJson(route('workspace-mentions.store'), [
+        ->postJson("/api/v1/workspace-mentions", [
             'name' => '@taylor',
             'handles' => ['x' => 'taylorotwell'],
         ])
@@ -72,7 +72,7 @@ it('preserves saved display text for people without a platform mention', functio
     Context::add('workspace_id', $workspace->id);
 
     $this->actingAs($user)
-        ->postJson(route('workspace-mentions.store'), [
+        ->postJson("/api/v1/workspace-mentions", [
             'name' => '@taylor',
             'handles' => ['linkedin' => 'Taylor Otwell'],
         ])
@@ -87,7 +87,7 @@ it('round-trips Meta platform handles on create', function () {
     Context::add('workspace_id', $workspace->id);
 
     $this->actingAs($user)
-        ->postJson(route('workspace-mentions.store'), [
+        ->postJson("/api/v1/workspace-mentions", [
             'name' => '@company-x',
             'handles' => [
                 'facebook' => 'Company X',
@@ -116,7 +116,7 @@ it('persists an edited Meta plain-text value on update', function () {
     ]);
 
     $this->actingAs($user)
-        ->postJson(route('workspace-mentions.store'), [
+        ->postJson("/api/v1/workspace-mentions", [
             'name' => '@company-x',
             'handles' => ['facebook' => 'Company X Inc.'],
         ])
@@ -139,7 +139,7 @@ it('deletes a saved mention for the current workspace', function () {
     ]);
 
     $this->actingAs($user)
-        ->deleteJson(route('workspace-mentions.destroy', $mention))
+        ->deleteJson("/api/v1/workspace-mentions/{$mention->id}")
         ->assertSuccessful();
 
     expect(WorkspaceMention::query()->withoutGlobalScopes()->find($mention->id))
@@ -159,7 +159,7 @@ it('cannot delete a mention belonging to another workspace', function () {
     ]);
 
     $this->actingAs($user)
-        ->deleteJson(route('workspace-mentions.destroy', $foreignMention))
+        ->deleteJson("/api/v1/workspace-mentions/{$foreignMention->id}")
         ->assertNotFound();
 
     expect(WorkspaceMention::query()->withoutGlobalScopes()->find($foreignMention->id))
@@ -173,7 +173,7 @@ it('normalizes a saved LinkedIn org reference into a canonical URN', function ()
     Context::add('workspace_id', $workspace->id);
 
     $this->actingAs($user)
-        ->postJson(route('workspace-mentions.store'), [
+        ->postJson("/api/v1/workspace-mentions", [
             'name' => '@coolify',
             'handles' => [
                 'linkedin' => 'Coolify',
@@ -192,7 +192,7 @@ it('drops an unresolvable LinkedIn org reference (vanity slug needs the lookup A
     Context::add('workspace_id', $workspace->id);
 
     $this->actingAs($user)
-        ->postJson(route('workspace-mentions.store'), [
+        ->postJson("/api/v1/workspace-mentions", [
             'name' => '@coolify',
             'handles' => [
                 'linkedin' => 'Coolify',

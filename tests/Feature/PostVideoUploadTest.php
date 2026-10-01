@@ -10,6 +10,7 @@ use App\Models\PostMedia;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -22,7 +23,7 @@ function memberWithVideoPost(): array
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
     test()->actingAs($user);
     ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'platform' => Platform::X->value]);
-    $postData = test()->postJson('/posts', ['base_text' => '', 'segments' => [''], 'destination' => ['kind' => 'all']])->json('post');
+    $postData = test()->postJson('/api/v1/posts', ['base_text' => '', 'segments' => [''], 'destination' => ['kind' => 'all']])->json('post');
     $post = Post::findOrFail($postData['id']);
 
     return [$user, $workspace, $post];
@@ -48,7 +49,7 @@ test('url endpoint returns a key under the workspace tmp prefix', function (): v
 
     [, $workspace, $post] = memberWithVideoPost();
 
-    $response = test()->postJson(route('posts.media.video-url', $post), [
+    $response = test()->postJson("/api/v1/posts/{$post->id}/media/video-url", [
         'content_type' => 'video/mp4',
     ]);
 
@@ -68,7 +69,7 @@ test('url endpoint rejects non-mp4 content_type', function (): void {
     Storage::fake(config('filesystems.default'));
     [, , $post] = memberWithVideoPost();
 
-    test()->postJson(route('posts.media.video-url', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video-url", [
         'content_type' => 'image/png',
     ])->assertStatus(422);
 });
@@ -77,7 +78,7 @@ test('url endpoint requires authentication', function (): void {
     $workspace = Workspace::factory()->create();
     $post = Post::factory()->create(['workspace_id' => $workspace->id]);
 
-    test()->postJson(route('posts.media.video-url', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video-url", [
         'content_type' => 'video/mp4',
     ])->assertStatus(401);
 });
@@ -87,13 +88,13 @@ test('url endpoint rejects a post that is no longer editable', function (): void
     [, , $post] = memberWithVideoPost();
     $post->forceFill(['status' => 'published'])->save();
 
-    test()->postJson(route('posts.media.video-url', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video-url", [
         'content_type' => 'video/mp4',
     ])->assertStatus(422);
 });
 
 test('video upload routes are rate limited', function (): void {
-    $middleware = Route::getRoutes()->getByName('posts.media.video-url')->gatherMiddleware();
+    $middleware = Route::getRoutes()->match(Request::create('/api/v1/posts/x/media/video-url', 'POST'))->gatherMiddleware();
 
     expect(collect($middleware)->contains(fn (string $m): bool => str_contains($m, 'throttle')))->toBeTrue();
 });
@@ -111,7 +112,7 @@ test('store endpoint moves the tmp object, creates a PostMedia row, and returns 
     $key = 'tmp/media/'.$workspace->id.'/'.$uuid.'.mp4';
     Storage::disk($disk)->put($key, mp4Bytes());
 
-    $response = test()->postJson(route('posts.media.video', $post), [
+    $response = test()->postJson("/api/v1/posts/{$post->id}/media/video", [
         'key' => $key,
         'duration_seconds' => 30,
         'width' => 1920,
@@ -145,7 +146,7 @@ test('store endpoint rejects a post that is no longer editable', function (): vo
     $key = 'tmp/media/'.$workspace->id.'/'.Str::uuid().'.mp4';
     Storage::disk($disk)->put($key, str_repeat('x', 1024));
 
-    test()->postJson(route('posts.media.video', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video", [
         'key' => $key,
         'duration_seconds' => 30,
         'width' => 1920,
@@ -164,7 +165,7 @@ test('store endpoint rejects content that is not a valid MP4', function (): void
     // Valid key + exists + within size, but the bytes are not an MP4 container.
     Storage::disk($disk)->put($key, str_repeat('x', 1024));
 
-    test()->postJson(route('posts.media.video', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video", [
         'key' => $key,
         'duration_seconds' => 30,
         'width' => 1920,
@@ -185,7 +186,7 @@ test('store endpoint rejects a key outside the post workspace tmp prefix', funct
     $otherWorkspaceId = (string) Str::uuid();
     $evilKey = 'tmp/media/'.$otherWorkspaceId.'/'.Str::uuid().'.mp4';
 
-    test()->postJson(route('posts.media.video', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video", [
         'key' => $evilKey,
         'duration_seconds' => 5,
         'width' => 640,
@@ -204,7 +205,7 @@ test('store endpoint rejects a key that bypasses the tmp prefix entirely', funct
     $permanentKey = 'media/'.$workspace->id.'/'.Str::uuid().'.mp4';
     Storage::disk($disk)->put($permanentKey, str_repeat('x', 512));
 
-    test()->postJson(route('posts.media.video', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video", [
         'key' => $permanentKey,
         'duration_seconds' => 5,
         'width' => 640,
@@ -221,7 +222,7 @@ test('store endpoint rejects a key with path traversal', function (): void {
 
     $traversalKey = 'tmp/media/'.$workspace->id.'/../other-workspace/'.Str::uuid().'.mp4';
 
-    test()->postJson(route('posts.media.video', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video", [
         'key' => $traversalKey,
         'duration_seconds' => 5,
         'width' => 640,
@@ -239,7 +240,7 @@ test('store endpoint returns 422 when the upload object is missing', function ()
     $key = 'tmp/media/'.$workspace->id.'/'.Str::uuid().'.mp4';
     // Do NOT put any file — simulates a client that never completed the upload.
 
-    test()->postJson(route('posts.media.video', $post), [
+    test()->postJson("/api/v1/posts/{$post->id}/media/video", [
         'key' => $key,
         'duration_seconds' => 5,
         'width' => 640,
@@ -267,7 +268,7 @@ test('store endpoint returns 422 and deletes the tmp object when the file exceed
         ->with($disk)
         ->andReturn($mockDisk);
 
-    $response = test()->postJson(route('posts.media.video', $post), [
+    $response = test()->postJson("/api/v1/posts/{$post->id}/media/video", [
         'key' => $key,
         'duration_seconds' => 30,
         'width' => 1920,

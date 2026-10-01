@@ -76,16 +76,13 @@ test('password can be updated', function () {
 
     $response = $this
         ->actingAs($user)
-        ->from(route('security.edit'))
-        ->put(route('user-password.update'), [
+        ->putJson("/api/v1/settings/password", [
             'current_password' => 'password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
         ]);
 
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('security.edit'));
+    $response->assertOk();
 
     $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
 });
@@ -95,14 +92,11 @@ test('correct password must be provided to update password', function () {
 
     $response = $this
         ->actingAs($user)
-        ->from(route('security.edit'))
-        ->put(route('user-password.update'), [
+        ->putJson("/api/v1/settings/password", [
             'current_password' => 'wrong-password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
         ]);
 
-    $response
-        ->assertSessionHasErrors('current_password')
-        ->assertRedirect(route('security.edit'));
+    $response->assertJsonValidationErrors('current_password');
 });

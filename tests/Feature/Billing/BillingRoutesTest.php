@@ -151,7 +151,7 @@ test('portal is unavailable for a workspace that never became a stripe customer'
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
     $this->actingAs($user)
-        ->post(route('billing.portal'))
+        ->postJson("/api/v1/billing/portal")
         ->assertNotFound();
 });
 
@@ -179,8 +179,8 @@ test('checkout is rejected when the workspace already has an active subscription
     ]);
 
     $this->actingAs($user)
-        ->post(route('billing.checkout'))
-        ->assertSessionHas('error', 'This workspace already has an active subscription.');
+        ->postJson("/api/v1/billing/checkout")
+        ->assertJsonValidationErrors(['billing' => 'This workspace already has an active subscription.']);
 });
 
 test('workspace stripe customer email comes from its owner', function () {
@@ -275,8 +275,8 @@ test('checkout rejects the placeholder stripe price before creating a customer',
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
     $this->actingAs($user)
-        ->post(route('billing.checkout'))
-        ->assertSessionHas('error', 'Configure STRIPE_SUBSCRIPTION_PRICE_ID before starting checkout.');
+        ->postJson("/api/v1/billing/checkout")
+        ->assertJsonValidationErrors(['billing' => 'Configure STRIPE_SUBSCRIPTION_PRICE_ID before starting checkout.']);
 
     expect($workspace->refresh()->stripe_id)->toBeNull();
 });

@@ -38,7 +38,7 @@ beforeEach(function (): void {
 
 test('storing a beautified image creates media on the reply workspace', function () {
     $this->actingAs($this->user)
-        ->post(route('engagement.image-edit.store', $this->reply), [
+        ->post("/api/v1/engagement/{$this->reply->id}/image-edit", [
             'composed' => UploadedFile::fake()->image('out.png')->mimeType('image/png'),
             'source' => UploadedFile::fake()->image('in.jpg'),
             'settings' => editSettings(),
@@ -52,7 +52,7 @@ test('the reply store endpoint accepts a compact composed image', function (stri
     // The editor rasterizes to a compressed JPEG/WebP sized to fit the cap; a
     // lossless PNG of a photo would 422, blanking the reply media (#126).
     $this->actingAs($this->user)
-        ->post(route('engagement.image-edit.store', $this->reply), [
+        ->post("/api/v1/engagement/{$this->reply->id}/image-edit", [
             'composed' => UploadedFile::fake()->image($file, 800, 600),
             'source' => UploadedFile::fake()->image('in.jpg'),
             'settings' => editSettings(),
@@ -70,7 +70,7 @@ test('the reply update endpoint rejects editing an animated gif', function () {
     ]);
 
     $this->actingAs($this->user)
-        ->put(route('engagement.image-edit.update', ['reply' => $this->reply, 'media' => $gif->id]), [
+        ->put("/api/v1/engagement/{$this->reply->id}/image-edit/{$gif->id}", [
             'composed' => UploadedFile::fake()->image('out.webp', 900, 600),
             'settings' => editSettings(),
         ])
@@ -79,14 +79,14 @@ test('the reply update endpoint rejects editing an animated gif', function () {
 
 test('the reply update endpoint accepts a compact composed image', function () {
     $mediaId = $this->actingAs($this->user)
-        ->post(route('engagement.image-edit.store', $this->reply), [
+        ->post("/api/v1/engagement/{$this->reply->id}/image-edit", [
             'composed' => UploadedFile::fake()->image('out.png')->mimeType('image/png'),
             'source' => UploadedFile::fake()->image('in.jpg'),
             'settings' => editSettings(),
         ])->json('media.id');
 
     $this->actingAs($this->user)
-        ->put(route('engagement.image-edit.update', ['reply' => $this->reply, 'media' => $mediaId]), [
+        ->put("/api/v1/engagement/{$this->reply->id}/image-edit/{$mediaId}", [
             'composed' => UploadedFile::fake()->image('out.webp', 900, 600),
             'settings' => editSettings(),
         ])

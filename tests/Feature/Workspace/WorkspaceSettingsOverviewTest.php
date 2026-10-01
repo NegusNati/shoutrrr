@@ -16,8 +16,8 @@ test('owner can view and update workspace', function () {
     $this->actingAs($owner)->get(route('settings.workspace'))
         ->assertRedirect('/app/settings/workspace');
 
-    $this->actingAs($owner)->patch(route('settings.workspace.update'), ['name' => 'New'])
-        ->assertRedirect();
+    $this->actingAs($owner)->patch("/api/v1/settings/workspace", ['name' => 'New'])
+        ->assertOk();
 
     $this->assertSame('New', $workspace->fresh()->name);
 });
@@ -34,10 +34,10 @@ test('owner can upload a workspace photo', function () {
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
     $photo = UploadedFile::fake()->image('workspace.jpg');
 
-    $this->actingAs($owner)->patch(route('settings.workspace.update'), [
+    $this->actingAs($owner)->patch("/api/v1/settings/workspace", [
         'name' => 'New',
         'photo' => $photo,
-    ])->assertSessionHasNoErrors()->assertRedirect();
+    ])->assertOk();
 
     $workspace->refresh();
 
@@ -60,10 +60,10 @@ test('workspace photo uses the configured public image disk', function () {
     $owner = User::factory()->create(['current_workspace_id' => $workspace->id]);
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->patch(route('settings.workspace.update'), [
+    $this->actingAs($owner)->patch("/api/v1/settings/workspace", [
         'name' => 'New',
         'photo' => UploadedFile::fake()->image('workspace.jpg'),
-    ])->assertSessionHasNoErrors()->assertRedirect();
+    ])->assertOk();
 
     $workspace->refresh();
     $logo = $workspace->getRawOriginal('logo');
@@ -82,13 +82,12 @@ test('workspace photo must be an image', function () {
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
 
     $this->actingAs($owner)
-        ->from(route('settings.workspace'))
-        ->patch(route('settings.workspace.update'), [
+        ->patch("/api/v1/settings/workspace", [
             'name' => 'Old',
             'photo' => UploadedFile::fake()->create('workspace.txt', 1, 'text/plain'),
         ])
-        ->assertSessionHasErrors('photo')
-        ->assertRedirect(route('settings.workspace'));
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('photo');
 
     expect($workspace->refresh()->getRawOriginal('logo'))->toBeNull();
 });
@@ -98,7 +97,7 @@ test('member cannot update workspace', function () {
     $member = User::factory()->create(['current_workspace_id' => $workspace->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $member->id]);
 
-    $this->actingAs($member)->patch(route('settings.workspace.update'), ['name' => 'New'])
+    $this->actingAs($member)->patch("/api/v1/settings/workspace", ['name' => 'New'])
         ->assertForbidden();
 
     $this->assertSame('Old', $workspace->fresh()->name);
