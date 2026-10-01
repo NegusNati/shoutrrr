@@ -2,7 +2,6 @@ import { router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 import PostingScheduleController from '@/actions/App/Http/Controllers/Posts/PostingScheduleController';
-import InstanceSettingsController from '@/actions/App/Http/Controllers/Settings/InstanceSettingsController';
 import WorkspaceSettingsController from '@/actions/App/Http/Controllers/Settings/WorkspaceSettingsController';
 import {
     Command,
@@ -308,12 +307,10 @@ export function CommandPalette() {
                                 {showSettings && instance.isOwner && (
                                     <CommandItem
                                         value="instance settings"
-                                        onSelect={run(() =>
-                                            router.visit(
-                                                InstanceSettingsController.edit()
-                                                    .url,
-                                            ),
-                                        )}
+                                        onSelect={run(() => {
+                                            window.location.href =
+                                                '/app/settings/instance';
+                                        })}
                                     >
                                         <Wrench
                                             className="size-4"

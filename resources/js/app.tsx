@@ -16,7 +16,6 @@ initSentry();
 installDiagnostics();
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
-import InstanceSettingsLayout from '@/layouts/settings/instance-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import WorkspaceSettingsLayout from '@/layouts/settings/workspace-layout';
 
@@ -37,12 +36,6 @@ void createInertiaApp({
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
-            case name === 'settings/instance' ||
-                name === 'settings/instance-polling' ||
-                name === 'settings/instance-platforms' ||
-                name === 'settings/instance-usage' ||
-                name === 'settings/instance-admins':
-                return [AppLayout, InstanceSettingsLayout];
             case name.startsWith('settings/workspace'):
                 return [AppLayout, WorkspaceSettingsLayout];
             case name.startsWith('settings/'):

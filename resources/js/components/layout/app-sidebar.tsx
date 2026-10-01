@@ -373,7 +373,7 @@ export function AppSidebar() {
                                                 tooltip={item.title}
                                                 isActive={isItemActive(item)}
                                                 render={
-                                                    <Link href={item.href} />
+                                                    <a href={item.href} />
                                                 }
                                             >
                                                 <Icon aria-hidden="true" />

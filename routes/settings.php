@@ -3,7 +3,6 @@
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Settings\ApiKeysController;
 use App\Http\Controllers\Settings\ConnectionsController;
-use App\Http\Controllers\Settings\InstanceSettingsController;
 use App\Http\Controllers\Settings\NativeTrackingController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -46,18 +45,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/notifications', [NotificationPreferencesController::class, 'edit'])->name('notifications.preferences');
     Route::put('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('notifications.preferences.update');
 
-    Route::get('settings/instance', [InstanceSettingsController::class, 'edit'])->name('instance-settings.edit');
-    Route::put('settings/instance', [InstanceSettingsController::class, 'update'])->name('instance-settings.update');
-    Route::get('settings/instance/polling', [InstanceSettingsController::class, 'polling'])->name('instance-settings.polling');
-    Route::put('settings/instance/polling', [InstanceSettingsController::class, 'updatePolling'])->name('instance-settings.polling.update');
-    Route::get('settings/instance/platforms', [InstanceSettingsController::class, 'platforms'])->name('instance-settings.platforms');
-    Route::put('settings/instance/platforms', [InstanceSettingsController::class, 'updatePlatforms'])->name('instance-settings.updatePlatforms');
-    Route::get('settings/instance/usage', [InstanceSettingsController::class, 'usage'])->name('instance-settings.usage');
-    Route::get('settings/instance/usage/x', [InstanceSettingsController::class, 'xUsage'])->name('instance-settings.usage.x');
-    Route::put('settings/instance/usage/workspaces/{workspace}/budget', [InstanceSettingsController::class, 'updateWorkspaceBudget'])->name('instance-settings.usage.budget');
-    Route::get('settings/instance/admins', [InstanceSettingsController::class, 'admins'])->name('instance-settings.admins');
-    Route::post('settings/instance/admins', [InstanceSettingsController::class, 'storeAdmin'])->name('instance-settings.admins.store');
-    Route::delete('settings/instance/admins/{owner}', [InstanceSettingsController::class, 'destroyAdmin'])->name('instance-settings.admins.destroy');
+    // Instance settings now live in the SPA (/app/*) — keep the old URLs
+    // working for bookmarks and stale links.
+    Route::redirect('settings/instance', '/app/settings/instance');
+    Route::redirect('settings/instance/polling', '/app/settings/instance/polling');
+    Route::redirect('settings/instance/platforms', '/app/settings/instance/platforms');
+    Route::redirect('settings/instance/usage', '/app/settings/instance/usage');
+    Route::redirect('settings/instance/admins', '/app/settings/instance/admins');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

@@ -1,7 +1,3 @@
-import type { Link } from '@inertiajs/react';
-
-import InstanceSettingsController from '@/actions/App/Http/Controllers/Settings/InstanceSettingsController';
-
 export type InstanceSettingsNavKey =
     | 'general'
     | 'polling'
@@ -12,35 +8,39 @@ export type InstanceSettingsNavKey =
 export type InstanceSettingsNavItem = {
     key: InstanceSettingsNavKey;
     title: string;
-    href: NonNullable<Parameters<typeof Link>[0]['href']>;
+    href: string;
 };
 
+/**
+ * Instance settings live in the standalone SPA (/app/*) — these are plain
+ * string URLs, not Inertia routes.
+ */
 export function instanceSettingsNavItems(): InstanceSettingsNavItem[] {
     return [
         {
             key: 'general',
             title: 'General',
-            href: InstanceSettingsController.edit(),
+            href: '/app/settings/instance',
         },
         {
             key: 'polling',
             title: 'Polling',
-            href: InstanceSettingsController.polling(),
+            href: '/app/settings/instance/polling',
         },
         {
             key: 'platforms',
             title: 'Platforms',
-            href: InstanceSettingsController.platforms(),
+            href: '/app/settings/instance/platforms',
         },
         {
             key: 'usage',
             title: 'Usage',
-            href: InstanceSettingsController.usage(),
+            href: '/app/settings/instance/usage',
         },
         {
             key: 'admins',
             title: 'Admins',
-            href: InstanceSettingsController.admins(),
+            href: '/app/settings/instance/admins',
         },
     ];
 }
