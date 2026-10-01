@@ -101,7 +101,12 @@ const versionBadgeClassName =
 
 const postsNavItems: NavItem[] = [
     { title: 'Posts', href: postsRoute(), icon: Inbox, spa: true },
-    { title: 'Calendar', href: calendarRoute(), icon: CalendarDays },
+    {
+        title: 'Calendar',
+        href: calendarRoute(),
+        icon: CalendarDays,
+        spa: true,
+    },
     {
         title: 'Queue',
         href: PostingScheduleController.show(),
