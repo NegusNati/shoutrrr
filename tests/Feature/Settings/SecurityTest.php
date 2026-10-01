@@ -18,7 +18,11 @@ test('security page is displayed', function () {
     $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
+        ->withHeaders(['Referer' => 'http://localhost'])
+        ->postJson('/user/confirm-password', ['password' => 'password'])
+        ->assertCreated();
+
+    $this->withHeaders(['Referer' => 'http://localhost'])
         ->getJson('/api/v1/settings/security')
         ->assertOk()
         ->assertJsonPath('canManagePasskeys', true)
@@ -51,7 +55,11 @@ test('security page renders without two factor when feature is disabled', functi
     $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
+        ->withHeaders(['Referer' => 'http://localhost'])
+        ->postJson('/user/confirm-password', ['password' => 'password'])
+        ->assertCreated();
+
+    $this->withHeaders(['Referer' => 'http://localhost'])
         ->getJson('/api/v1/settings/security')
         ->assertOk()
         ->assertJsonPath('canManagePasskeys', false)

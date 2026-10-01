@@ -7,18 +7,18 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 test('profile show returns mustVerifyEmail flag', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/settings/profile')
         ->assertOk()
         ->assertJsonStructure(['mustVerifyEmail']);
 });
 
 test('profile update changes name and email', function () {
-    [$user, $workspace, $token] = issuedKey();
+    [$user, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/settings/profile', [
             'name' => 'Renamed Dev',
             'email' => 'renamed@example.com',
@@ -29,17 +29,27 @@ test('profile update changes name and email', function () {
 });
 
 test('profile update rejects invalid payload', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/settings/profile', ['email' => 'not-an-email'])
         ->assertUnprocessable();
 });
 
 test('security show returns passkey and password payload', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    // RequireConfirmedPassword gates the read until the session confirms its
+    // password — the Referer marks the request stateful so the session is bound.
+    $headers = ['Referer' => 'http://localhost'];
+
+    $this->withHeaders($headers)
+        ->getJson('/api/v1/settings/security')->assertStatus(423);
+
+    $this->postJson('/user/confirm-password', ['password' => 'password'])
+        ->assertCreated();
+
+    $this->withHeaders($headers)
         ->getJson('/api/v1/settings/security')
         ->assertOk()
         ->assertJsonStructure([
@@ -51,9 +61,9 @@ test('security show returns passkey and password payload', function () {
 });
 
 test('password update changes the user password', function () {
-    [$user, $workspace, $token] = issuedKey();
+    [$user, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/settings/password', [
             'current_password' => 'password',
             'password' => 'new-secure-password-123',
@@ -66,9 +76,9 @@ test('password update changes the user password', function () {
 });
 
 test('password update rejects wrong current password', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/settings/password', [
             'current_password' => 'wrong-password',
             'password' => 'new-secure-password-123',
@@ -78,22 +88,22 @@ test('password update rejects wrong current password', function () {
 });
 
 test('connections show lists enabled providers', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/settings/connections')
         ->assertOk()
         ->assertJsonStructure(['connections', 'hasPassword']);
 });
 
 test('connections remove deletes an owned social account', function () {
-    [$user, $workspace, $token] = issuedKey();
+    [$user, $workspace] = ownerActingIn();
     $social = SocialAccount::factory()->for($user)->create();
 
     // A second sign-in method must exist for the last-method guard to pass.
     $user->forceFill(['password' => bcrypt('password')])->save();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/settings/connections/{$social->id}")
         ->assertOk();
 
@@ -101,27 +111,27 @@ test('connections remove deletes an owned social account', function () {
 });
 
 test('connections remove on a foreign account 404s', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $social = SocialAccount::factory()->for(User::factory())->create();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/settings/connections/{$social->id}")
         ->assertNotFound();
 });
 
 test('notifications show returns preferences and always-on list', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/settings/notifications')
         ->assertOk()
         ->assertJsonStructure(['preferences', 'alwaysOn']);
 });
 
 test('notifications update persists preferences', function () {
-    [$user, $workspace, $token] = issuedKey();
+    [$user, $workspace] = ownerActingIn();
 
-    $payload = $this->withToken($token)
+    $payload = $this
         ->getJson('/api/v1/settings/notifications')
         ->assertOk()
         ->json('preferences');
@@ -129,15 +139,16 @@ test('notifications update persists preferences', function () {
     $key = array_key_first($payload);
     $payload[$key]['in_app'] = ! ($payload[$key]['in_app'] ?? true);
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/settings/notifications', ['preferences' => $payload])
         ->assertOk();
 });
 
 test('read-scope key cannot mutate settings', function () {
-    [, $workspace, $token] = issuedKey('read');
+    [, $workspace] = ownerActingIn();
+    [, , $token] = issuedKey('read');
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/settings/profile')
         ->assertOk();
 

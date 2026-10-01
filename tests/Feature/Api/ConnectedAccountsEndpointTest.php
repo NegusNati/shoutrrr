@@ -5,11 +5,11 @@ use App\Models\ConnectedAccount;
 use App\Models\Workspace;
 
 test('lists connected accounts for the bound workspace only', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $mine = ConnectedAccount::factory()->for($workspace)->create();
     $other = ConnectedAccount::factory()->create(); // different workspace
 
-    $response = $this->withToken($token)->getJson('/api/v1/connected-accounts')->assertOk();
+    $response = $this->getJson('/api/v1/connected-accounts')->assertOk();
 
     $ids = collect($response->json('accounts'))->pluck('id');
     expect($ids)->toContain($mine->id)->not->toContain($other->id);
@@ -18,11 +18,11 @@ test('lists connected accounts for the bound workspace only', function () {
 });
 
 test('toggle disables an account and clears it as the default', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->for($workspace)->create();
     $workspace->forceFill(['default_connected_account_id' => $account->id])->save();
 
-    $this->withToken($token)
+    $this
         ->patchJson("/api/v1/connected-accounts/{$account->id}/toggle")
         ->assertOk()
         ->assertJson(['disabled' => true]);
@@ -32,10 +32,10 @@ test('toggle disables an account and clears it as the default', function () {
 });
 
 test('makeDefault marks the account as default for the workspace', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->for($workspace)->create();
 
-    $this->withToken($token)
+    $this
         ->postJson("/api/v1/connected-accounts/{$account->id}/default")
         ->assertOk()
         ->assertJson(['is_default' => true]);
@@ -44,13 +44,13 @@ test('makeDefault marks the account as default for the workspace', function () {
 });
 
 test('autoRepost writes the capability without clobbering other keys', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->for($workspace)->create([
         'platform' => Platform::X,
         'capabilities' => ['other_key' => 1],
     ]);
 
-    $this->withToken($token)
+    $this
         ->patchJson("/api/v1/connected-accounts/{$account->id}/auto-repost", ['enabled' => true])
         ->assertOk()
         ->assertJson(['auto_repost_enabled' => true]);
@@ -60,11 +60,11 @@ test('autoRepost writes the capability without clobbering other keys', function 
 });
 
 test('destroy deletes the account and clears the workspace default', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->for($workspace)->create();
     $workspace->forceFill(['default_connected_account_id' => $account->id])->save();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/connected-accounts/{$account->id}")
         ->assertOk()
         ->assertJson(['deleted' => true]);
@@ -74,10 +74,10 @@ test('destroy deletes the account and clears the workspace default', function ()
 });
 
 test('management actions 404 on a foreign-workspace account', function (string $method, string $suffix) {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $foreign = ConnectedAccount::factory()->for(Workspace::factory()->create())->create();
 
-    $this->withToken($token)
+    $this
         ->json($method, "/api/v1/connected-accounts/{$foreign->id}/{$suffix}")
         ->assertNotFound();
 })->with([
@@ -89,10 +89,10 @@ test('management actions 404 on a foreign-workspace account', function (string $
 ]);
 
 test('destroy 404s on a foreign-workspace account', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $foreign = ConnectedAccount::factory()->for(Workspace::factory()->create())->create();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/connected-accounts/{$foreign->id}")
         ->assertNotFound();
 });
@@ -114,23 +114,23 @@ test('write actions reject a read-only key', function () {
 });
 
 test('connect meta pending is 404 without a stashed OAuth flow', function () {
-    [, $workspace, $token] = issuedKey();
-    $this->withToken($token)
+    [, $workspace] = ownerActingIn();
+    $this
         ->getJson('/api/v1/connected-accounts/connect/meta')
         ->assertNotFound();
 
-    $this->withToken($token)
+    $this
         ->postJson('/api/v1/connected-accounts/connect/meta', ['selected' => [['assetKey' => 'a', 'platform' => 'facebook']]])
         ->assertNotFound();
 });
 
 test('connect linkedin pending is 404 without a stashed OAuth flow', function () {
-    [, $workspace, $token] = issuedKey();
-    $this->withToken($token)
+    [, $workspace] = ownerActingIn();
+    $this
         ->getJson('/api/v1/connected-accounts/connect/linkedin')
         ->assertNotFound();
 
-    $this->withToken($token)
+    $this
         ->postJson('/api/v1/connected-accounts/connect/linkedin', ['selected' => [['type' => 'person']]])
         ->assertNotFound();
 });

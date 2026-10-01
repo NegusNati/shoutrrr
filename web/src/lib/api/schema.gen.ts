@@ -696,22 +696,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/instance-settings/admins": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["instanceSettings.listAdmins"];
-        put?: never;
-        post: operations["instanceSettings.addAdmin"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/instance-settings/usage/workspaces/{workspace}/budget": {
         parameters: {
             query?: never;
@@ -722,6 +706,22 @@ export interface paths {
         get?: never;
         put: operations["instanceSettings.updateBudget"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instance-settings/admins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["instanceSettings.listAdmins"];
+        put?: never;
+        post: operations["instanceSettings.addAdmin"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1804,22 +1804,6 @@ export interface paths {
         patch: operations["workspaceSettings.updateWorkspace"];
         trace?: never;
     };
-    "/settings/workspace/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["workspaceSettings.showMembersApi"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/settings/workspace/timezone": {
         parameters: {
             query?: never;
@@ -1829,6 +1813,22 @@ export interface paths {
         };
         get?: never;
         put: operations["workspaceSettings.updateTimezoneApi"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/workspace/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaceSettings.showMembersApi"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -4246,6 +4246,39 @@ export interface operations {
             };
         };
     };
+    "instanceSettings.updateBudget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The workspace ID */
+                workspace: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWorkspaceXBudgetRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Workspace X budget updated.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "instanceSettings.listAdmins": {
         parameters: {
             query?: never;
@@ -4314,39 +4347,6 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
-            422: components["responses"]["ValidationException"];
-        };
-    };
-    "instanceSettings.updateBudget": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The workspace ID */
-                workspace: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateWorkspaceXBudgetRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @constant */
-                        message: "Workspace X budget updated.";
-                    };
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            403: components["responses"]["AuthorizationException"];
-            404: components["responses"]["ModelNotFoundException"];
             422: components["responses"]["ValidationException"];
         };
     };
@@ -6253,7 +6253,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    base_text: string | null;
+                    base_text?: string | null;
                     segments?: string[];
                     mentions?: {
                         id: string;
@@ -6267,8 +6267,9 @@ export interface operations {
                     }[];
                     destination: {
                         /** @enum {string} */
-                        kind: "all" | "set" | "account";
+                        kind: "all" | "none" | "set" | "account" | "accounts";
                         id?: string | null;
+                        ids?: string[];
                     };
                     auto_repost?: boolean | null;
                 };
@@ -6531,7 +6532,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    base_text: string | null;
+                    base_text?: string | null;
                     segments?: string[];
                     mentions?: {
                         id: string;
@@ -6545,8 +6546,9 @@ export interface operations {
                     }[];
                     destination: {
                         /** @enum {string} */
-                        kind: "all" | "set" | "account";
+                        kind: "all" | "none" | "set" | "account" | "accounts";
                         id?: string | null;
+                        ids?: string[];
                     };
                     targets?: {
                         connected_account_id: string;
@@ -8055,6 +8057,35 @@ export interface operations {
             422: components["responses"]["ValidationException"];
         };
     };
+    "workspaceSettings.updateTimezoneApi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWorkspaceTimezoneRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Posting timezone saved.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
+        };
+    };
     "workspaceSettings.showMembersApi": {
         parameters: {
             query?: never;
@@ -8091,35 +8122,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
-        };
-    };
-    "workspaceSettings.updateTimezoneApi": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateWorkspaceTimezoneRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @constant */
-                        message: "Posting timezone saved.";
-                    };
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            403: components["responses"]["AuthorizationException"];
-            422: components["responses"]["ValidationException"];
         };
     };
     "workspaceSettings.invite": {

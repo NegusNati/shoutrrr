@@ -10,9 +10,9 @@ use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMembership;
 
 test('workspace overview returns payload for bound workspace', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/settings/workspace')
         ->assertOk()
         ->assertJsonStructure([
@@ -28,9 +28,9 @@ test('workspace overview returns payload for bound workspace', function () {
 });
 
 test('workspace update renames the workspace', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->patchJson('/api/v1/settings/workspace', ['name' => 'New Name'])
         ->assertOk();
 
@@ -38,9 +38,9 @@ test('workspace update renames the workspace', function () {
 });
 
 test('workspace timezone saves onto posting schedule', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/settings/workspace/timezone', ['timezone' => 'Africa/Addis_Ababa'])
         ->assertOk();
 
@@ -49,9 +49,9 @@ test('workspace timezone saves onto posting schedule', function () {
 });
 
 test('members show lists members and pending invitations', function () {
-    [$user, $workspace, $token] = issuedKey();
+    [$user, $workspace] = ownerActingIn();
 
-    $response = $this->withToken($token)
+    $response = $this
         ->getJson('/api/v1/settings/workspace/members')
         ->assertOk()
         ->assertJsonStructure([
@@ -66,9 +66,9 @@ test('members show lists members and pending invitations', function () {
 });
 
 test('invite creates a pending invitation and emails it', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $response = $this->withToken($token)
+    $response = $this
         ->postJson('/api/v1/settings/workspace/invite', [
             'email' => 'invitee@example.com',
             'role' => 'member',
@@ -83,9 +83,9 @@ test('invite creates a pending invitation and emails it', function () {
 });
 
 test('invite rejects an existing member email', function () {
-    [$user, $workspace, $token] = issuedKey();
+    [$user, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->postJson('/api/v1/settings/workspace/invite', [
             'email' => $user->email,
             'role' => 'member',
@@ -94,20 +94,20 @@ test('invite rejects an existing member email', function () {
 });
 
 test('member role update and removal', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $member = User::factory()->create();
     $membership = $workspace->members()->create([
         'user_id' => $member->id,
         'role' => 'member',
     ]);
 
-    $this->withToken($token)
+    $this
         ->patchJson("/api/v1/settings/workspace/members/{$membership->id}", ['role' => 'admin'])
         ->assertOk();
 
     expect($membership->fresh()->role->value)->toBe('admin');
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/settings/workspace/members/{$membership->id}")
         ->assertOk();
 
@@ -115,21 +115,21 @@ test('member role update and removal', function () {
 });
 
 test('member role update on foreign membership 404s', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $other = Workspace::factory()->create();
     $member = User::factory()->create();
     $membership = $other->members()->create(['user_id' => $member->id, 'role' => 'member']);
 
-    $this->withToken($token)
+    $this
         ->patchJson("/api/v1/settings/workspace/members/{$membership->id}", ['role' => 'admin'])
         ->assertNotFound();
 });
 
 test('cancel invitation deletes it', function () {
-    [$user, $workspace, $token] = issuedKey();
+    [$user, $workspace] = ownerActingIn();
     $invitation = WorkspaceInvitation::factory()->for($workspace)->create(['invited_by' => $user->id]);
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/settings/workspace/invitations/{$invitation->id}")
         ->assertOk();
 
@@ -137,14 +137,14 @@ test('cancel invitation deletes it', function () {
 });
 
 test('api keys list, create returns plaintext once, revoke', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/settings/workspace/api-keys')
         ->assertOk()
         ->assertJsonStructure(['apiKeys']);
 
-    $response = $this->withToken($token)
+    $response = $this
         ->postJson('/api/v1/settings/workspace/api-keys', [
             'name' => 'ci-key',
             'scope' => 'read',
@@ -154,7 +154,7 @@ test('api keys list, create returns plaintext once, revoke', function () {
 
     $keyId = $response->json('apiKey.id');
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/settings/workspace/api-keys/{$keyId}")
         ->assertOk();
 
@@ -162,9 +162,9 @@ test('api keys list, create returns plaintext once, revoke', function () {
 });
 
 test('api key create validates scope', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->postJson('/api/v1/settings/workspace/api-keys', [
             'name' => 'bad',
             'scope' => 'admin',
@@ -173,9 +173,9 @@ test('api key create validates scope', function () {
 });
 
 test('subscription endpoint 404s when subscriptions disabled', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/settings/workspace/subscription')
         ->assertNotFound();
 });

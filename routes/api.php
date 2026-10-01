@@ -50,6 +50,8 @@ use App\Http\Controllers\Api\V1\WorkspaceSettingsController;
 use App\Http\Controllers\Gifs\GifBrowserController;
 use App\Http\Controllers\Posts\NextSlotController;
 use App\Http\Middleware\RecordApiUsage;
+use App\Http\Middleware\RequireConfirmedPassword;
+use App\Http\Middleware\RequireSessionAuth;
 use App\Http\Middleware\RequireWriteScope;
 use App\Http\Middleware\ResolveApiWorkspace;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +70,85 @@ Route::get('workspace-invitations/token/{token}', [PublicInvitationController::c
 Route::middleware(['auth:api,sanctum', 'throttle:api'])->group(function (): void {
     Route::post('workspace-invitations/{invitation}/accept', [WorkspaceInvitationsController::class, 'accept']);
     Route::delete('workspace-invitations/{invitation}', [WorkspaceInvitationsController::class, 'deny']);
+});
+
+// Session-only: user settings belong to the signed-in user, not a workspace —
+// RequireSessionAuth rejects Passport API keys before validation runs.
+Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'])->group(function (): void {
+    Route::get('settings/profile', [UserProfileController::class, 'show']);
+    Route::put('settings/profile', [UserProfileController::class, 'updateProfile']);
+    Route::delete('settings/profile', [UserProfileController::class, 'destroyProfile']);
+    // RequireConfirmedPassword mirrors the web group's password.confirm gate:
+    // an unconfirmed session gets a JSON 423 and the SPA shows its
+    // confirm-password page (Fortify's /user/confirm-password unlocks it).
+    Route::get('settings/security', [UserSecurityController::class, 'show'])
+        ->middleware(RequireConfirmedPassword::class);
+    Route::put('settings/password', [UserSecurityController::class, 'updatePassword']);
+    Route::get('settings/connections', [UserConnectionsController::class, 'show']);
+    Route::delete('settings/connections/{socialAccountId}', [UserConnectionsController::class, 'remove']);
+    Route::get('settings/notifications', [UserNotificationsController::class, 'show']);
+    Route::put('settings/notifications', [UserNotificationsController::class, 'updatePreferences']);
+});
+
+// Session-only workspace surfaces: settings, api keys, billing, connected
+// accounts, sync pipelines and instance settings act on credentials and the
+// current workspace — API keys stay out while ResolveApiWorkspace installs
+// the workspace_id Context the shared FormRequests authorize against.
+Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWorkspace::class, 'throttle:api'])->group(function (): void {
+    Route::get('settings/workspace', [WorkspaceSettingsController::class, 'showOverviewApi']);
+    Route::patch('settings/workspace', [WorkspaceSettingsController::class, 'updateWorkspace']);
+    Route::put('settings/workspace/timezone', [WorkspaceSettingsController::class, 'updateTimezoneApi']);
+    Route::get('settings/workspace/members', [WorkspaceSettingsController::class, 'showMembersApi']);
+    Route::post('settings/workspace/invite', [WorkspaceSettingsController::class, 'invite']);
+    Route::patch('settings/workspace/members/{membershipId}', [WorkspaceSettingsController::class, 'updateRole']);
+    Route::delete('settings/workspace/members/{membershipId}', [WorkspaceSettingsController::class, 'removeMemberApi']);
+    Route::delete('settings/workspace/invitations/{invitationId}', [WorkspaceSettingsController::class, 'cancelInvitationApi']);
+
+    Route::get('settings/workspace/api-keys', [WorkspaceApiKeysController::class, 'list']);
+    Route::post('settings/workspace/api-keys', [WorkspaceApiKeysController::class, 'create']);
+    Route::delete('settings/workspace/api-keys/{apiKeyId}', [WorkspaceApiKeysController::class, 'remove']);
+
+    Route::get('settings/workspace/subscription', [BillingController::class, 'show']);
+    Route::post('billing/checkout', [BillingController::class, 'createCheckout']);
+    Route::post('billing/portal', [BillingController::class, 'createPortal']);
+
+    // Connected accounts: connect flows + per-account management. The OAuth
+    // pickers pass provider data through the session stash and ResolveApiWorkspace
+    // scopes the {accountId} bindings to the workspace.
+    Route::get('connected-accounts', [ConnectedAccountsController::class, 'index']);
+    Route::get('connected-accounts/connect/meta', [MetaConnectController::class, 'pending']);
+    Route::get('connected-accounts/connect/linkedin', [LinkedInConnectController::class, 'pending']);
+    Route::post('connected-accounts/connect/bluesky', [ConnectedAccountsController::class, 'connectBluesky']);
+    Route::post('connected-accounts/connect/discord', [ConnectedAccountsController::class, 'connectDiscord']);
+    Route::post('connected-accounts/connect/meta', [MetaConnectController::class, 'submit']);
+    Route::post('connected-accounts/connect/linkedin', [LinkedInConnectController::class, 'submit']);
+    Route::patch('connected-accounts/{accountId}/toggle', [ConnectedAccountsController::class, 'toggle']);
+    Route::post('connected-accounts/{accountId}/default', [ConnectedAccountsController::class, 'makeDefault']);
+    Route::patch('connected-accounts/{accountId}/auto-repost', [ConnectedAccountsController::class, 'autoRepost']);
+    Route::post('connected-accounts/{accountId}/refresh-x-tier', [ConnectedAccountsController::class, 'refreshXAccountTier']);
+    Route::post('connected-accounts/{accountId}/reconnect', [ConnectedAccountsController::class, 'reconnect']);
+    Route::delete('connected-accounts/{accountId}', [ConnectedAccountsController::class, 'destroy']);
+
+    Route::get('sync-pipelines', [SyncPipelinesController::class, 'list']);
+    Route::post('sync-pipelines', [SyncPipelinesController::class, 'create']);
+    Route::patch('sync-pipelines/{pipelineId}', [SyncPipelinesController::class, 'patch']);
+    Route::delete('sync-pipelines/{pipelineId}', [SyncPipelinesController::class, 'remove']);
+    Route::post('sync-pipelines/native-tracking/{accountId}', [SyncPipelinesController::class, 'trackNative']);
+    Route::delete('sync-pipelines/native-tracking/{accountId}', [SyncPipelinesController::class, 'untrackNative']);
+
+    // Instance-owner settings (owner-gated inside the controller).
+    Route::get('instance-settings', [InstanceSettingsController::class, 'show']);
+    Route::put('instance-settings', [InstanceSettingsController::class, 'updateSettings']);
+    Route::get('instance-settings/polling', [InstanceSettingsController::class, 'showPolling']);
+    Route::put('instance-settings/polling', [InstanceSettingsController::class, 'updatePollingSettings']);
+    Route::get('instance-settings/platforms', [InstanceSettingsController::class, 'showPlatforms']);
+    Route::put('instance-settings/platforms', [InstanceSettingsController::class, 'updatePlatformSettings']);
+    Route::get('instance-settings/usage', [InstanceSettingsController::class, 'showUsage']);
+    Route::get('instance-settings/usage/x', [InstanceSettingsController::class, 'xUsage']);
+    Route::put('instance-settings/usage/workspaces/{workspace}/budget', [InstanceSettingsController::class, 'updateBudget']);
+    Route::get('instance-settings/admins', [InstanceSettingsController::class, 'listAdmins']);
+    Route::post('instance-settings/admins', [InstanceSettingsController::class, 'addAdmin']);
+    Route::delete('instance-settings/admins/{owner}', [InstanceSettingsController::class, 'removeAdmin']);
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session
@@ -93,12 +174,6 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
         Route::delete('notifications/{notification}', [NotificationsController::class, 'destroy']);
         Route::post('notifications/{notification}/read', [NotificationsController::class, 'markRead']);
 
-        Route::get('connected-accounts', [ConnectedAccountsController::class, 'index']);
-        // Pending OAuth pickers: the web callback stashes provider assets in
-        // the session; the SPA reads them here (session-auth only in practice —
-        // an API key never runs the browser OAuth flow).
-        Route::get('connected-accounts/connect/meta', [MetaConnectController::class, 'pending']);
-        Route::get('connected-accounts/connect/linkedin', [LinkedInConnectController::class, 'pending']);
         Route::get('posts', [PostsController::class, 'index']);
         Route::get('posts/next-slot', [NextSlotController::class, 'show']);
         Route::get('posts/{id}', [PostsController::class, 'show']);
@@ -116,25 +191,6 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
 
         Route::get('messages', [MessagingController::class, 'inbox'])->middleware('messages.enabled');
         Route::get('messages/{conversationId}/thread', [MessagingController::class, 'thread'])->middleware('messages.enabled');
-
-        // Instance-owner settings (owner-gated inside the controller).
-        Route::get('instance-settings', [InstanceSettingsController::class, 'show']);
-        Route::get('instance-settings/polling', [InstanceSettingsController::class, 'showPolling']);
-        Route::get('instance-settings/platforms', [InstanceSettingsController::class, 'showPlatforms']);
-        Route::get('instance-settings/usage', [InstanceSettingsController::class, 'showUsage']);
-        Route::get('instance-settings/usage/x', [InstanceSettingsController::class, 'xUsage']);
-        Route::get('instance-settings/admins', [InstanceSettingsController::class, 'listAdmins']);
-
-        Route::get('sync-pipelines', [SyncPipelinesController::class, 'list']);
-
-        Route::get('settings/profile', [UserProfileController::class, 'show']);
-        Route::get('settings/security', [UserSecurityController::class, 'show']);
-        Route::get('settings/connections', [UserConnectionsController::class, 'show']);
-        Route::get('settings/notifications', [UserNotificationsController::class, 'show']);
-        Route::get('settings/workspace', [WorkspaceSettingsController::class, 'showOverviewApi']);
-        Route::get('settings/workspace/members', [WorkspaceSettingsController::class, 'showMembersApi']);
-        Route::get('settings/workspace/api-keys', [WorkspaceApiKeysController::class, 'list']);
-        Route::get('settings/workspace/subscription', [BillingController::class, 'show']);
 
         Route::middleware('gifs.enabled')->group(function (): void {
             Route::get('gifs/{catalog}', [GifBrowserController::class, 'index']);
@@ -175,46 +231,6 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
             Route::delete('workspace-mentions/{workspaceMention}', [WorkspaceMentionsController::class, 'destroy']);
 
             Route::put('posting-schedule', [PostingScheduleController::class, 'update']);
-
-            Route::post('connected-accounts/connect/bluesky', [ConnectedAccountsController::class, 'connectBluesky']);
-            Route::post('connected-accounts/connect/discord', [ConnectedAccountsController::class, 'connectDiscord']);
-            Route::post('connected-accounts/connect/meta', [MetaConnectController::class, 'submit']);
-            Route::post('connected-accounts/connect/linkedin', [LinkedInConnectController::class, 'submit']);
-            Route::patch('connected-accounts/{accountId}/toggle', [ConnectedAccountsController::class, 'toggle']);
-            Route::post('connected-accounts/{accountId}/default', [ConnectedAccountsController::class, 'makeDefault']);
-            Route::patch('connected-accounts/{accountId}/auto-repost', [ConnectedAccountsController::class, 'autoRepost']);
-            Route::post('connected-accounts/{accountId}/refresh-x-tier', [ConnectedAccountsController::class, 'refreshXAccountTier']);
-            Route::post('connected-accounts/{accountId}/reconnect', [ConnectedAccountsController::class, 'reconnect']);
-            Route::delete('connected-accounts/{accountId}', [ConnectedAccountsController::class, 'destroy']);
-
-            Route::put('instance-settings', [InstanceSettingsController::class, 'updateSettings']);
-            Route::put('instance-settings/polling', [InstanceSettingsController::class, 'updatePollingSettings']);
-            Route::put('instance-settings/platforms', [InstanceSettingsController::class, 'updatePlatformSettings']);
-            Route::put('instance-settings/usage/workspaces/{workspace}/budget', [InstanceSettingsController::class, 'updateBudget']);
-            Route::post('instance-settings/admins', [InstanceSettingsController::class, 'addAdmin']);
-            Route::delete('instance-settings/admins/{owner}', [InstanceSettingsController::class, 'removeAdmin']);
-
-            Route::post('sync-pipelines', [SyncPipelinesController::class, 'create']);
-            Route::patch('sync-pipelines/{pipelineId}', [SyncPipelinesController::class, 'patch']);
-            Route::delete('sync-pipelines/{pipelineId}', [SyncPipelinesController::class, 'remove']);
-            Route::post('sync-pipelines/native-tracking/{accountId}', [SyncPipelinesController::class, 'trackNative']);
-            Route::delete('sync-pipelines/native-tracking/{accountId}', [SyncPipelinesController::class, 'untrackNative']);
-
-            Route::put('settings/profile', [UserProfileController::class, 'updateProfile']);
-            Route::delete('settings/profile', [UserProfileController::class, 'destroyProfile']);
-            Route::put('settings/password', [UserSecurityController::class, 'updatePassword']);
-            Route::delete('settings/connections/{socialAccountId}', [UserConnectionsController::class, 'remove']);
-            Route::put('settings/notifications', [UserNotificationsController::class, 'updatePreferences']);
-            Route::patch('settings/workspace', [WorkspaceSettingsController::class, 'updateWorkspace']);
-            Route::put('settings/workspace/timezone', [WorkspaceSettingsController::class, 'updateTimezoneApi']);
-            Route::post('settings/workspace/invite', [WorkspaceSettingsController::class, 'invite']);
-            Route::patch('settings/workspace/members/{membershipId}', [WorkspaceSettingsController::class, 'updateRole']);
-            Route::delete('settings/workspace/members/{membershipId}', [WorkspaceSettingsController::class, 'removeMemberApi']);
-            Route::delete('settings/workspace/invitations/{invitationId}', [WorkspaceSettingsController::class, 'cancelInvitationApi']);
-            Route::post('settings/workspace/api-keys', [WorkspaceApiKeysController::class, 'create']);
-            Route::delete('settings/workspace/api-keys/{apiKeyId}', [WorkspaceApiKeysController::class, 'remove']);
-            Route::post('billing/checkout', [BillingController::class, 'createCheckout']);
-            Route::post('billing/portal', [BillingController::class, 'createPortal']);
 
             Route::middleware('engagement.enabled')->group(function (): void {
                 Route::post('engagement/{replyId}/read', [EngagementController::class, 'markRead']);

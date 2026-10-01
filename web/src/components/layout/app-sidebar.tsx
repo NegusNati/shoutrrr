@@ -136,22 +136,22 @@ function NavItemLink({
     spa,
     className,
     children,
+    ...props
 }: {
     href: Href;
     spa?: boolean;
-    className?: string;
     children?: React.ReactNode;
-}) {
+} & Omit<React.ComponentProps<'a'>, 'href'>) {
     if (spa) {
         return (
-            <Link to={toUrl(href)} className={className}>
+            <Link to={toUrl(href)} className={className} {...props}>
                 {children}
             </Link>
         );
     }
 
     return (
-        <a href={toUrl(href)} className={className}>
+        <a href={toUrl(href)} className={className} {...props}>
             {children}
         </a>
     );

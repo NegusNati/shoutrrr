@@ -6,18 +6,10 @@ use App\Enums\InstanceRole;
 use App\Models\User;
 use App\Models\Workspace;
 
-function issuedOwnerKey(string $scope = 'write'): array
-{
-    [$user, $workspace, $token] = issuedKey($scope);
-    $user->forceFill(['instance_role' => InstanceRole::Owner])->save();
-
-    return [$user, $workspace, $token];
-}
-
 test('show returns the instance settings payload for an owner', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/instance-settings')
         ->assertOk()
         ->assertJsonStructure([
@@ -31,9 +23,9 @@ test('show returns the instance settings payload for an owner', function () {
 });
 
 test('non-owner gets 403 on every instance-settings read', function (string $url) {
-    [, , $token] = issuedKey();
+    ownerActingIn();
 
-    $this->withToken($token)->getJson($url)->assertForbidden();
+    $this->getJson($url)->assertForbidden();
 })->with([
     '/api/v1/instance-settings',
     '/api/v1/instance-settings/polling',
@@ -43,32 +35,31 @@ test('non-owner gets 403 on every instance-settings read', function (string $url
 ]);
 
 test('updateSettings persists and echoes the settings', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
 
-    $settings = $this->withToken($token)
+    $settings = $this
         ->getJson('/api/v1/instance-settings')
         ->assertOk()
         ->json('settings');
     $settings['registrations_enabled'] = false;
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/instance-settings', $settings)
         ->assertOk()
         ->assertJsonPath('settings.registrations_enabled', false);
 });
 
 test('updateSettings rejects a non-owner', function () {
-    [, , $token] = issuedKey();
+    ownerActingIn();
 
-    $this->withToken($token)
-        ->putJson('/api/v1/instance-settings', ['registrations_enabled' => false])
+    $this->putJson('/api/v1/instance-settings', ['registrations_enabled' => false])
         ->assertForbidden();
 });
 
 test('polling round-trips settings and sections', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
 
-    $response = $this->withToken($token)
+    $response = $this
         ->getJson('/api/v1/instance-settings/polling')
         ->assertOk()
         ->assertJsonStructure([
@@ -79,22 +70,22 @@ test('polling round-trips settings and sections', function () {
     $settings = $response->json('settings');
     $settings['engagement']['x'] = 30;
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/instance-settings/polling', $settings)
         ->assertOk()
         ->assertJsonPath('settings.engagement.x', 30);
 });
 
 test('platforms round-trips toggles', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
 
     $platforms = collect(
-        $this->withToken($token)->getJson('/api/v1/instance-settings/platforms')->assertOk()->json('platforms'),
+        $this->getJson('/api/v1/instance-settings/platforms')->assertOk()->json('platforms'),
     );
     $x = $platforms->firstWhere('platform', 'x');
     expect($x)->toHaveKeys(['platform', 'label', 'enabled', 'configured']);
 
-    $this->withToken($token)
+    $this
         ->putJson('/api/v1/instance-settings/platforms', [
             'platforms' => $platforms->mapWithKeys(fn ($p) => [$p['platform'] => $p['platform'] !== 'x'])->all(),
             'linkedin_community_management_enabled' => true,
@@ -104,9 +95,9 @@ test('platforms round-trips toggles', function () {
 });
 
 test('usage returns the paginator, summary and pricing metadata', function () {
-    [, $workspace, $token] = issuedOwnerKey();
+    [, $workspace] = instanceOwnerActingIn();
 
-    $response = $this->withToken($token)
+    $response = $this
         ->getJson('/api/v1/instance-settings/usage')
         ->assertOk()
         ->assertJsonStructure([
@@ -123,9 +114,9 @@ test('usage returns the paginator, summary and pricing metadata', function () {
 });
 
 test('usage drilldown is eager when workspace query param is present', function () {
-    [, $workspace, $token] = issuedOwnerKey();
+    [, $workspace] = instanceOwnerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson("/api/v1/instance-settings/usage?workspace={$workspace->id}")
         ->assertOk()
         ->assertJsonStructure([
@@ -139,10 +130,10 @@ test('usage drilldown is eager when workspace query param is present', function 
 });
 
 test('updateBudget stores a custom dollar override', function () {
-    [, $workspace, $token] = issuedOwnerKey();
+    [, $workspace] = instanceOwnerActingIn();
     $target = Workspace::factory()->create();
 
-    $this->withToken($token)
+    $this
         ->putJson("/api/v1/instance-settings/usage/workspaces/{$target->id}/budget", [
             'unlimited' => false,
             'dollars' => 12.5,
@@ -151,10 +142,10 @@ test('updateBudget stores a custom dollar override', function () {
 });
 
 test('updateBudget validates the payload', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
     $target = Workspace::factory()->create();
 
-    $this->withToken($token)
+    $this
         ->putJson("/api/v1/instance-settings/usage/workspaces/{$target->id}/budget", [
             'dollars' => 'not-a-number',
         ])
@@ -162,10 +153,10 @@ test('updateBudget validates the payload', function () {
 });
 
 test('listAdmins returns owners and search-matched users', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
     $candidate = User::factory()->create(['email' => 'findme@example.com']);
 
-    $response = $this->withToken($token)
+    $response = $this
         ->getJson('/api/v1/instance-settings/admins?search=findme')
         ->assertOk();
 
@@ -176,19 +167,19 @@ test('listAdmins returns owners and search-matched users', function () {
 });
 
 test('listAdmins without search returns no user candidates', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
 
-    $this->withToken($token)
+    $this
         ->getJson('/api/v1/instance-settings/admins')
         ->assertOk()
         ->assertJson(['users' => []]);
 });
 
 test('addAdmin promotes a registered user', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
     $candidate = User::factory()->create();
 
-    $this->withToken($token)
+    $this
         ->postJson('/api/v1/instance-settings/admins', ['email' => $candidate->email])
         ->assertCreated()
         ->assertJsonPath('owner.id', $candidate->id);
@@ -197,18 +188,18 @@ test('addAdmin promotes a registered user', function () {
 });
 
 test('addAdmin rejects an unregistered email', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
 
-    $this->withToken($token)
+    $this
         ->postJson('/api/v1/instance-settings/admins', ['email' => 'ghost@example.com'])
         ->assertUnprocessable();
 });
 
 test('removeAdmin demotes another owner', function () {
-    [$actor, , $token] = issuedOwnerKey();
+    [$actor] = instanceOwnerActingIn();
     $other = User::factory()->create(['instance_role' => InstanceRole::Owner]);
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/instance-settings/admins/{$other->id}")
         ->assertOk();
 
@@ -216,27 +207,28 @@ test('removeAdmin demotes another owner', function () {
 });
 
 test('removeAdmin refuses to demote yourself', function () {
-    [$actor, , $token] = issuedOwnerKey();
+    [$actor] = instanceOwnerActingIn();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/instance-settings/admins/{$actor->id}")
         ->assertUnprocessable()
         ->assertJsonPath('errors.owner.0', 'You cannot remove yourself as an instance owner.');
 });
 
 test('removeAdmin 404s for a non-owner id', function () {
-    [, , $token] = issuedOwnerKey();
+    instanceOwnerActingIn();
     $member = User::factory()->create();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/instance-settings/admins/{$member->id}")
         ->assertNotFound();
 });
 
 test('read-scoped key cannot mutate instance settings', function () {
-    [, , $token] = issuedOwnerKey('read');
+    instanceOwnerActingIn();
+    [, , $token] = issuedKey('read');
 
-    $this->withToken($token)->getJson('/api/v1/instance-settings')->assertOk();
+    $this->getJson('/api/v1/instance-settings')->assertOk();
 
     $this->withToken($token)
         ->putJson('/api/v1/instance-settings', ['registrations_enabled' => false])

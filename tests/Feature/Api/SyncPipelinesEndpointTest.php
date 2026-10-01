@@ -8,7 +8,7 @@ use App\Models\ConnectedAccountNativeWatch;
 use App\Models\SyncPipeline;
 
 test('index returns accounts, pipelines and tracking state for the bound workspace', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->for($workspace)->create();
     $otherWorkspaceAccount = ConnectedAccount::factory()->create();
     $pipeline = SyncPipeline::factory()->for($workspace)->create([
@@ -16,7 +16,7 @@ test('index returns accounts, pipelines and tracking state for the bound workspa
     ]);
     $pipeline->destinations()->sync([$account->id]);
 
-    $response = $this->withToken($token)
+    $response = $this
         ->getJson('/api/v1/sync-pipelines')
         ->assertOk()
         ->assertJsonStructure([
@@ -38,11 +38,11 @@ test('index returns accounts, pipelines and tracking state for the bound workspa
 });
 
 test('create stores a pipeline with destinations', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $source = ConnectedAccount::factory()->for($workspace)->create();
     $dest = ConnectedAccount::factory()->for($workspace)->create();
 
-    $response = $this->withToken($token)
+    $response = $this
         ->postJson('/api/v1/sync-pipelines', [
             'name' => 'X to Bluesky',
             'source_connected_account_id' => $source->id,
@@ -57,10 +57,10 @@ test('create stores a pipeline with destinations', function () {
 });
 
 test('create rejects a source that is also a destination', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $source = ConnectedAccount::factory()->for($workspace)->create();
 
-    $this->withToken($token)
+    $this
         ->postJson('/api/v1/sync-pipelines', [
             'name' => 'Self loop',
             'source_connected_account_id' => $source->id,
@@ -71,11 +71,11 @@ test('create rejects a source that is also a destination', function () {
 });
 
 test('create rejects an account from a foreign workspace', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $source = ConnectedAccount::factory()->for($workspace)->create();
     $foreign = ConnectedAccount::factory()->create();
 
-    $this->withToken($token)
+    $this
         ->postJson('/api/v1/sync-pipelines', [
             'name' => 'Foreign dest',
             'source_connected_account_id' => $source->id,
@@ -85,14 +85,14 @@ test('create rejects an account from a foreign workspace', function () {
 });
 
 test('patch toggles a pipeline', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->for($workspace)->create();
     $pipeline = SyncPipeline::factory()->for($workspace)->create([
         'source_connected_account_id' => $account->id,
         'enabled' => true,
     ]);
 
-    $this->withToken($token)
+    $this
         ->patchJson("/api/v1/sync-pipelines/{$pipeline->id}", ['enabled' => false])
         ->assertOk()
         ->assertJson(['enabled' => false]);
@@ -101,24 +101,24 @@ test('patch toggles a pipeline', function () {
 });
 
 test('patch on a foreign pipeline 404s', function () {
-    [, , $token] = issuedKey();
+    ownerActingIn();
     $pipeline = SyncPipeline::factory()->create();
 
-    $this->withToken($token)
+    $this
         ->patchJson("/api/v1/sync-pipelines/{$pipeline->id}", ['enabled' => false])
         ->assertNotFound();
 });
 
 test('remove deletes a pipeline and 404s on foreign', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $mine = SyncPipeline::factory()->for($workspace)->create();
     $foreign = SyncPipeline::factory()->create();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/sync-pipelines/{$mine->id}")
         ->assertOk();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/sync-pipelines/{$foreign->id}")
         ->assertNotFound();
 
@@ -126,19 +126,19 @@ test('remove deletes a pipeline and 404s on foreign', function () {
 });
 
 test('native tracking toggles on and off for a native-read account', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->for($workspace)->create([
         'platform' => Platform::X,
     ]);
 
-    $this->withToken($token)
+    $this
         ->postJson("/api/v1/sync-pipelines/native-tracking/{$account->id}")
         ->assertOk();
 
     expect(ConnectedAccountNativeWatch::query()->where('connected_account_id', $account->id)->exists())
         ->toBeTrue();
 
-    $this->withToken($token)
+    $this
         ->deleteJson("/api/v1/sync-pipelines/native-tracking/{$account->id}")
         ->assertOk();
 
@@ -147,23 +147,23 @@ test('native tracking toggles on and off for a native-read account', function ()
 });
 
 test('native tracking rejects a platform that cannot be watched', function () {
-    [, $workspace, $token] = issuedKey();
+    [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->for($workspace)->create([
         'platform' => Platform::LinkedIn,
     ]);
 
-    $this->withToken($token)
+    $this
         ->postJson("/api/v1/sync-pipelines/native-tracking/{$account->id}")
         ->assertUnprocessable();
 });
 
 test('native tracking on a foreign account 404s', function () {
-    [, , $token] = issuedKey();
+    ownerActingIn();
     $account = ConnectedAccount::factory()->create([
         'platform' => Platform::X,
     ]);
 
-    $this->withToken($token)
+    $this
         ->postJson("/api/v1/sync-pipelines/native-tracking/{$account->id}")
         ->assertNotFound();
 });
