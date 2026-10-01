@@ -92,7 +92,7 @@ describe('platform tabs overflow', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/platform-tabs.tsx',
+                'web/src/components/compose/platform-tabs.tsx',
             ),
             'utf8',
         );
@@ -115,7 +115,7 @@ describe('platform tabs overflow', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/platform-tabs.tsx',
+                'web/src/components/compose/platform-tabs.tsx',
             ),
             'utf8',
         );

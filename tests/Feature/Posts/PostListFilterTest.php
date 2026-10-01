@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Context;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 beforeEach(function (): void {
     $this->workspace = Workspace::factory()->create();
@@ -34,12 +35,10 @@ it('lists workspace posts and excludes deleted', function (): void {
     makePost($this->workspace, $this->user, PostStatus::Deleted);
 
     $this->actingAs($this->user)
-        ->get(route('posts.index'))
-        ->assertInertia(fn ($page) => $page
-            ->component('posts/index')
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('posts.data', 1)
-                ->where('posts.data.0.status', 'draft')));
+        ->getJson('/api/v1/posts')
+        ->assertJson(fn (Assert $json) => $json
+            ->has('data', 1)
+            ->where('data.0.status', 'draft')->etc());
 });
 
 it('filters by status tab', function (): void {
@@ -47,11 +46,10 @@ it('filters by status tab', function (): void {
     makePost($this->workspace, $this->user, PostStatus::Scheduled);
 
     $this->actingAs($this->user)
-        ->get(route('posts.index', ['status' => 'scheduled']))
-        ->assertInertia(fn ($page) => $page
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('posts.data', 1)
-                ->where('posts.data.0.status', 'scheduled')));
+        ->getJson('/api/v1/posts?'.http_build_query(['status' => 'scheduled']))
+        ->assertJson(fn (Assert $json) => $json
+            ->has('data', 1)
+            ->where('data.0.status', 'scheduled')->etc());
 });
 
 it('exposes per-status tab counts that exclude deleted', function (): void {
@@ -61,12 +59,12 @@ it('exposes per-status tab counts that exclude deleted', function (): void {
     makePost($this->workspace, $this->user, PostStatus::Deleted);
 
     $this->actingAs($this->user)
-        ->get(route('posts.index'))
-        ->assertInertia(fn ($page) => $page
-            ->where('counts.all', 3)
-            ->where('counts.draft', 2)
-            ->where('counts.scheduled', 1)
-            ->where('counts.published', 0));
+        ->getJson('/api/v1/posts')
+        ->assertJson(fn (Assert $json) => $json
+            ->where('meta.counts.all', 3)
+            ->where('meta.counts.draft', 2)
+            ->where('meta.counts.scheduled', 1)
+            ->where('meta.counts.published', 0)->etc());
 });
 
 it('filters by text query on base_text', function (): void {
@@ -74,9 +72,8 @@ it('filters by text query on base_text', function (): void {
     Post::factory()->for($this->workspace)->create(['author_id' => $this->user->id, 'base_text' => 'weekly recap']);
 
     $this->actingAs($this->user)
-        ->get(route('posts.index', ['q' => 'launch']))
-        ->assertInertia(fn ($page) => $page
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('posts.data', 1)
-                ->where('posts.data.0.base_text', 'launch announcement')));
+        ->getJson('/api/v1/posts?'.http_build_query(['q' => 'launch']))
+        ->assertJson(fn (Assert $json) => $json
+            ->has('data', 1)
+            ->where('data.0.base_text', 'launch announcement')->etc());
 });

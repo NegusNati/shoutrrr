@@ -92,7 +92,7 @@ describe('target status chips', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/target-status-chips.tsx',
+                'web/src/components/compose/target-status-chips.tsx',
             ),
             'utf8',
         );

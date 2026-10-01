@@ -7,7 +7,7 @@ use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceInvitationResponseController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('invitation/{token}', [WorkspaceController::class, 'showInvitation'])
+Route::get('invitation/{token}', fn (string $token) => redirect("/app/invitation/{$token}"))
     ->middleware('throttle:5,1')
     ->name('workspace.invitation');
 

@@ -7,7 +7,7 @@ const source = () =>
     readFileSync(
         resolve(
             process.cwd(),
-            'resources/js/components/queue/add-time-popover.tsx',
+            'web/src/components/queue/add-time-popover.tsx',
         ),
         'utf8',
     );

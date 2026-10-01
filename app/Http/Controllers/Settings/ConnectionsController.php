@@ -11,30 +11,9 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ConnectionsController extends Controller
 {
-    public function edit(Request $request): Response
-    {
-        $user = $request->user();
-
-        $linkedAccounts = $user->socialAccounts()->get(['id', 'provider'])->keyBy('provider');
-
-        $connections = collect(SocialProvider::enabledProviders())
-            ->map(fn (string $key): array => [
-                'provider' => $key,
-                'label' => SocialProvider::from($key)->label(),
-                'connected' => $linkedAccounts->has($key),
-                'id' => $linkedAccounts->get($key)?->id,
-            ])
-            ->values()
-            ->all();
-
-        return Inertia::render('settings/connections', $this->connectionsPayload($user));
-    }
-
     /**
      * @return array{connections: array<int, array<string, mixed>>, hasPassword: bool}
      */

@@ -8,7 +8,7 @@ describe('composer platform tabs', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/composer.tsx',
+                'web/src/components/compose/composer.tsx',
             ),
             'utf8',
         );
@@ -23,7 +23,7 @@ describe('composer platform tabs', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/platform-tabs.tsx',
+                'web/src/components/compose/platform-tabs.tsx',
             ),
             'utf8',
         );
@@ -34,7 +34,7 @@ describe('composer platform tabs', () => {
         expect(source).toContain(
             '{needsAttention && <NeedsAttentionIcon account={account} />}',
         );
-        expect(source).toContain('router.visit(accountsRoute().url);');
+        expect(source).toContain("navigate({ to: '/accounts' })");
         expect(source).toContain('Reconnect {account.handle} before posting.');
     });
 });

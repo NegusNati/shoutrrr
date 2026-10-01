@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Context;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 beforeEach(function (): void {
     $this->user = User::factory()->create();
@@ -27,10 +28,10 @@ it('exposes the calendar at its own top-level endpoint', function (): void {
     expect(route('calendar.month', ['yyyymm' => '2026-06'], absolute: false))->toBe('/calendar/2026-06');
 });
 
-it('bare calendar redirects to the current month', function (): void {
+it('bare calendar redirects into the SPA', function (): void {
     $this->actingAs($this->user)
-        ->get(route('calendar.index'))
-        ->assertRedirect(route('calendar.month', ['yyyymm' => now()->format('Y-m')]));
+        ->get('/calendar')
+        ->assertRedirect('/app/calendar');
 });
 
 it('returns scheduled + published posts whose date falls in the visible window', function (): void {
@@ -47,10 +48,8 @@ it('returns scheduled + published posts whose date falls in the visible window',
     ]); // no date → excluded
 
     $this->actingAs($this->user)
-        ->get(route('calendar.month', ['yyyymm' => '2026-06']))
-        ->assertInertia(fn ($page) => $page
-            ->component('posts/calendar/index')
-            ->where('view', 'month')
-            ->missing('posts')               // deferred — streamed in after the grid frame paints
-            ->loadDeferredProps(fn ($reload) => $reload->has('posts', 2)));
+        ->getJson('/api/v1/calendar?month=2026-06')
+        ->assertJson(fn (Assert $json) => $json
+            ->where('month', '2026-06')
+            ->has('posts', 2)->etc());
 });

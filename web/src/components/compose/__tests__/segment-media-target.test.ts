@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 // eventual `addMedia` dispatch) actually finishes.
 const source = () =>
     readFileSync(
-        resolve(process.cwd(), 'resources/js/components/compose/composer.tsx'),
+        resolve(process.cwd(), 'web/src/components/compose/composer.tsx'),
         'utf8',
     );
 

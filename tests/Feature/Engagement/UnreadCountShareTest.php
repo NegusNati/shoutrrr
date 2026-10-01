@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Context;
-use Inertia\Testing\AssertableInertia as Assert;
 
 test('the shell exposes the unread reply count', function (): void {
     $workspace = Workspace::factory()->create();
@@ -30,6 +29,7 @@ test('the shell exposes the unread reply count', function (): void {
         'workspace_id' => $workspace->id, 'read_at' => now(), 'is_ours' => false,
     ]);
 
-    $this->get(route('dashboard'))
-        ->assertInertia(fn (Assert $page) => $page->where('shell.unreadReplies', 1));
+    $this->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('shell.unreadReplies', 1);
 });

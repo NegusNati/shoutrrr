@@ -6,13 +6,13 @@ import { MonthGrid } from '@/components/posts/calendar/month-grid';
 import type { PostRowData } from '@/components/posts/post-row';
 import { dayjs } from '@/lib/datetime/dayjs';
 import type { PlatformName } from '@/types/compose';
+import type * as TanStackRouter from '@tanstack/react-router';
 
-const composerShow = vi.hoisted(() =>
-    vi.fn((post: string) => ({ url: `/posts/${post}` })),
-);
-vi.mock('@/actions/App/Http/Controllers/Posts/ComposerController', () => ({
-    default: { show: composerShow },
-}));
+const navigate = vi.hoisted(() => vi.fn());
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+    const mod = await importOriginal<typeof TanStackRouter>();
+    return { ...mod, useNavigate: () => navigate };
+});
 
 vi.mock('@/hooks/posts/use-scheduling-timezone', () => ({
     useSchedulingTimezone: () => 'UTC',
@@ -81,7 +81,10 @@ describe('MonthGrid — click a day that already has a post', () => {
         fireEvent.click(screen.getByTitle('Existing post'));
 
         expect(onEmptyDayClick).not.toHaveBeenCalled();
-        expect(composerShow).toHaveBeenCalledWith('post-1');
+        expect(navigate).toHaveBeenCalledWith({
+            to: '/posts/$postId',
+            params: { postId: 'post-1' },
+        });
     });
 
     it('does NOT create a post when activating the "+N more" button with the keyboard', () => {

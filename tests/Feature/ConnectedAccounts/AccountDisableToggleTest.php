@@ -5,7 +5,6 @@ use App\Models\ConnectedAccount;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
-use Inertia\Testing\AssertableInertia as Assert;
 
 function toggleOwner(): array
 {
@@ -79,10 +78,8 @@ test('the accounts page exposes the disabled flag', function () {
         'connected_by_user_id' => $user->id,
     ]);
 
-    test()->actingAs($user)->get('/accounts')
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('accounts/index')
-            ->where('accounts.0.handle', '@off')
-            ->where('accounts.0.disabled', true),
-        );
+    test()->actingAs($user)->getJson('/api/v1/connected-accounts')
+        ->assertOk()
+        ->assertJsonPath('accounts.0.handle', '@off')
+        ->assertJsonPath('accounts.0.disabled', true);
 });

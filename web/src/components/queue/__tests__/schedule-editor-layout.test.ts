@@ -7,7 +7,7 @@ const source = () =>
     readFileSync(
         resolve(
             process.cwd(),
-            'resources/js/components/queue/schedule-editor.tsx',
+            'web/src/components/queue/schedule-editor.tsx',
         ),
         'utf8',
     );

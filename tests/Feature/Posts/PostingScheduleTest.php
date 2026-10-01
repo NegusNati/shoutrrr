@@ -6,6 +6,7 @@ use App\Models\PostingScheduleSlot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 function scheduleMember(WorkspaceRole $role): array
 {
@@ -37,31 +38,26 @@ test('the queue page renders', function () {
         'position' => 0,
     ]);
 
-    test()->get(route('queue.show'))
+    test()->getJson('/api/v1/posting-schedule')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('queue/index')
+        ->assertJson(fn (Assert $json) => $json
             ->where('timezone', 'America/New_York')
             ->where('canManage', true)
-            ->missing('slots')               // deferred — absent on initial render
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('slots', 1)
-                ->where('slots.0.weekday', 1)
-                ->where('slots.0.hour', 9)
-                ->where('slots.0.minute', 30)));
+            ->has('slots', 1)
+            ->where('slots.0.weekday', 1)
+            ->where('slots.0.hour', 9)
+            ->where('slots.0.minute', 30)->etc());
 });
 
 test('the queue page renders with defaults when no schedule exists yet', function () {
     [$user, $workspace] = scheduleMember(WorkspaceRole::Member);
 
-    test()->get(route('queue.show'))
+    test()->getJson('/api/v1/posting-schedule')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('queue/index')
-            ->where('timezone', 'UTC')
+        ->assertJson(fn (Assert $json) => $json
+            ->where('timezone', null)
             ->where('canManage', false)
-            ->missing('slots')               // deferred — absent on initial render
-            ->loadDeferredProps(fn ($reload) => $reload->has('slots', 0)));
+            ->has('slots', 0)->etc());
 });
 
 test('an admin replaces the whole slot set atomically, preserving timezone', function () {
@@ -132,7 +128,7 @@ test('a plain member cannot edit slots', function () {
 test('out-of-range weekday is rejected', function () {
     [$user, $workspace] = scheduleMember(WorkspaceRole::Admin);
 
-    test()->from(route('queue.show'))
+    test()->from('/app/queue')
         ->put(route('queue.update'), [
             'slots' => [['weekday' => 7, 'hour' => 9, 'minute' => 0]],
         ])->assertSessionHasErrors('slots.0.weekday');
@@ -141,7 +137,7 @@ test('out-of-range weekday is rejected', function () {
 test('out-of-range minute is rejected', function () {
     [$user, $workspace] = scheduleMember(WorkspaceRole::Admin);
 
-    test()->from(route('queue.show'))
+    test()->from('/app/queue')
         ->put(route('queue.update'), [
             'slots' => [['weekday' => 1, 'hour' => 9, 'minute' => 60]],
         ])->assertSessionHasErrors('slots.0.minute');

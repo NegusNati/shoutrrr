@@ -11,6 +11,7 @@ use App\Http\Controllers\ConnectedAccounts\MetaConnectionController;
 use App\Http\Controllers\ConnectedAccounts\OAuthConnectionController;
 use App\Http\Controllers\OAuth\BlueskyClientMetadataController;
 use App\Models\ConnectedAccount;
+use App\Support\SpaRedirect;
 use Illuminate\Support\Facades\Route;
 
 Route::get('oauth/bluesky/client-metadata.json', BlueskyClientMetadataController::class)
@@ -29,7 +30,7 @@ Route::bind('account', fn (string $value): ConnectedAccount => ConnectedAccount:
     ->firstOrFail());
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('accounts', [ConnectedAccountController::class, 'index'])->name('accounts.index');
+    Route::get('accounts', SpaRedirect::to('/accounts'))->name('accounts.index');
 
     Route::get('accounts/connect/bluesky/oauth', [BlueskyOAuthController::class, 'redirect'])
         ->middleware('throttle:10,1')

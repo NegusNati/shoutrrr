@@ -4,7 +4,7 @@ use App\Services\Gifs\GifAttacher;
 use Illuminate\Support\Facades\Vite;
 
 test('responses carry the static security headers', function () {
-    $response = $this->get('/login');
+    $response = $this->get('/app');
 
     $response->assertOk();
     $response->assertHeader('X-Frame-Options', 'DENY');
@@ -13,7 +13,7 @@ test('responses carry the static security headers', function () {
 });
 
 test('responses carry a nonce-based content security policy', function () {
-    $response = $this->get('/login');
+    $response = $this->get('/app');
 
     $csp = $response->headers->get('Content-Security-Policy');
 

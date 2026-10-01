@@ -31,21 +31,37 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
 
 class EngagementController extends Controller
 {
-    /**
-     * No return type: the API subclass overrides this with JsonResponse.
-     *
-     * @return InertiaResponse
-     */
-    public function index(Request $request, InstanceSettings $settings)
+    public function thread(PostTargetReply $reply): JsonResponse
     {
-        return Inertia::render('engagement/index', [
-            'replies' => Inertia::scroll(fn () => $this->conversationPaginator($this->engagementReplyFilter($request), $request))->defer(),
-            ...$this->engagementIndexProps($request, $settings),
+        $onTarget = PostTargetReply::query()
+            ->withoutGlobalScopes()
+            ->where('workspace_id', $reply->workspace_id)
+            ->where('post_target_id', $reply->post_target_id)
+            ->with(['target.post', 'target.account'])
+            ->get();
+
+        $baseReply = $this->baseReplyFor($reply, $onTarget);
+        $baseRemoteId = $baseReply->remote_reply_id;
+
+        $conversation = $onTarget
+            ->filter(fn (PostTargetReply $candidate): bool => $this->baseReplyFor($candidate, $onTarget)->remote_reply_id === $baseRemoteId)
+            ->sortBy('remote_created_at');
+
+        PostTargetReply::query()
+            ->whereIn('id', $conversation->where('is_ours', false)->where('read_at', null)->pluck('id'))
+            ->update(['read_at' => now()]);
+
+        $thread = $conversation
+            ->map(fn (PostTargetReply $r): array => ReplyListItem::make($r))
+            ->values()
+            ->all();
+
+        return response()->json([
+            'post_excerpt' => $reply->target?->post?->excerpt(),
+            'thread' => $thread,
         ]);
     }
 
@@ -152,37 +168,6 @@ class EngagementController extends Controller
                 ->map(fn (WorkspaceMention $mention): array => WorkspaceMentionController::view($mention))
                 ->all()),
         ];
-    }
-
-    public function thread(PostTargetReply $reply): JsonResponse
-    {
-        $onTarget = PostTargetReply::query()
-            ->withoutGlobalScopes()
-            ->where('workspace_id', $reply->workspace_id)
-            ->where('post_target_id', $reply->post_target_id)
-            ->with(['target.post', 'target.account'])
-            ->get();
-
-        $baseReply = $this->baseReplyFor($reply, $onTarget);
-        $baseRemoteId = $baseReply->remote_reply_id;
-
-        $conversation = $onTarget
-            ->filter(fn (PostTargetReply $candidate): bool => $this->baseReplyFor($candidate, $onTarget)->remote_reply_id === $baseRemoteId)
-            ->sortBy('remote_created_at');
-
-        PostTargetReply::query()
-            ->whereIn('id', $conversation->where('is_ours', false)->where('read_at', null)->pluck('id'))
-            ->update(['read_at' => now()]);
-
-        $thread = $conversation
-            ->map(fn (PostTargetReply $r): array => ReplyListItem::make($r))
-            ->values()
-            ->all();
-
-        return response()->json([
-            'post_excerpt' => $reply->target?->post?->excerpt(),
-            'thread' => $thread,
-        ]);
     }
 
     public function markRead(PostTargetReply $reply): Response

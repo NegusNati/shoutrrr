@@ -162,7 +162,7 @@ describe('composer editor text rhythm', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/editor-body.tsx',
+                'web/src/components/compose/editor-body.tsx',
             ),
             'utf8',
         );
@@ -183,7 +183,7 @@ describe('editor body break-id preservation', () => {
         return readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/editor-body.tsx',
+                'web/src/components/compose/editor-body.tsx',
             ),
             'utf8',
         );

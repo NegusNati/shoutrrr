@@ -9,6 +9,7 @@ use App\Http\Controllers\Engagement\ReplyVideoUploadController;
 use App\Http\Controllers\Gifs\ReplyGifController;
 use App\Models\PostTarget;
 use App\Models\PostTargetReply;
+use App\Support\SpaRedirect;
 use Illuminate\Support\Facades\Route;
 
 // Route-model binding runs before WorkspaceMiddleware sets the Context, so scope
@@ -25,10 +26,10 @@ Route::bind('target', fn (string $value): PostTarget => PostTarget::query()
     ->firstOrFail());
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('engagement', [EngagementController::class, 'index'])
+    Route::get('engagement', SpaRedirect::to('/engagement'))
         ->middleware('engagement.enabled')
         ->name('engagement.index');
-    Route::get('engagement/{reply}/thread', [EngagementController::class, 'thread'])
+    Route::get('engagement/{reply}/thread', fn () => redirect('/app/engagement'))
         ->middleware('engagement.enabled')->name('engagement.thread');
     Route::post('engagement/{reply}/read', [EngagementController::class, 'markRead'])
         ->middleware('engagement.enabled')->name('engagement.read');

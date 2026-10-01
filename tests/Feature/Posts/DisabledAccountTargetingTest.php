@@ -8,7 +8,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use App\Services\Posts\DraftService;
 use Illuminate\Support\Facades\Context;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 function ownerWithDisabledAccount(): array
 {
@@ -69,12 +69,13 @@ test('the composer and shell exclude disabled accounts', function () {
         'author_id' => $user->id,
     ]);
 
-    test()->actingAs($user)->get("/posts/{$post->id}")
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('compose/index')
+    test()->actingAs($user)->getJson("/api/v1/posts/{$post->id}/compose")
+        ->assertJson(fn (Assert $json) => $json
             ->has('accounts', 1)
-            ->where('accounts.0.handle', '@enabled')
+            ->where('accounts.0.handle', '@enabled')->etc());
+
+    test()->actingAs($user)->getJson('/api/v1/me')
+        ->assertJson(fn (Assert $json) => $json
             ->has('shell.accounts', 1)
-            ->where('shell.accounts.0.handle', '@enabled'),
-        );
+            ->where('shell.accounts.0.handle', '@enabled')->etc());
 });

@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Str;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 use Laravel\Cashier\Subscription;
 use Stripe\Exception\ApiConnectionException;
 use Stripe\Service\SubscriptionService;
@@ -58,10 +59,10 @@ test('workspace settings disables deletion for the last workspace', function () 
     $owner = User::factory()->create(['current_workspace_id' => $workspace->id]);
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->get(route('settings.workspace'))
-        ->assertInertia(fn ($page) => $page
+    $this->actingAs($owner)->getJson('/api/v1/settings/workspace')
+        ->assertJson(fn (Assert $json) => $json
             ->where('canDelete', false)
-        );
+            ->etc());
 });
 
 test('workspace settings disables deletion for the initial workspace on a cloud instance', function () {
@@ -72,11 +73,11 @@ test('workspace settings disables deletion for the initial workspace on a cloud 
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $other->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->get(route('settings.workspace'))
-        ->assertInertia(fn ($page) => $page
+    $this->actingAs($owner)->getJson('/api/v1/settings/workspace')
+        ->assertJson(fn (Assert $json) => $json
             ->where('canDelete', false)
             ->where('deleteDisabledReason', 'The initial workspace of this instance cannot be deleted.')
-        );
+            ->etc());
 });
 
 test('owner can delete workspace and memberships cascade when another workspace remains', function () {

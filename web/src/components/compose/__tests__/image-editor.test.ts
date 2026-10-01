@@ -8,7 +8,7 @@ describe('image editor crop controls', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/image-editor.tsx',
+                'web/src/components/compose/image-editor.tsx',
             ),
             'utf8',
         );
@@ -31,7 +31,7 @@ describe('image editor unedited primary action', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/image-editor.tsx',
+                'web/src/components/compose/image-editor.tsx',
             ),
             'utf8',
         );
@@ -50,7 +50,7 @@ describe('image editor background controls', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/image-editor.tsx',
+                'web/src/components/compose/image-editor.tsx',
             ),
             'utf8',
         );
@@ -68,7 +68,7 @@ describe('image editor default focus', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/image-editor.tsx',
+                'web/src/components/compose/image-editor.tsx',
             ),
             'utf8',
         );

@@ -23,7 +23,12 @@ test('logged in invitee accepts via link', function () {
         'user_id' => $user->id,
     ]);
 
-    $this->actingAs($user)->get(route('workspace.invitation', $plain))->assertRedirect(route('dashboard'));
+    $this->actingAs($user)->get(route('workspace.invitation', $plain))
+        ->assertRedirect("/app/invitation/{$plain}");
+
+    $this->actingAs($user)
+        ->postJson('/api/v1/workspace-invitations/'.WorkspaceInvitation::query()->firstWhere('token', $hash)->id.'/accept')
+        ->assertOk();
 
     $this->assertTrue($user->fresh()->isMemberOfWorkspace($workspace->id));
     $this->assertSame($workspace->id, $user->fresh()->current_workspace_id);
@@ -36,11 +41,12 @@ test('guest invitee sees acceptance page', function () {
     [$plain, $hash] = WorkspaceInvitation::generateToken();
     WorkspaceInvitation::factory()->create(['workspace_id' => $workspace->id, 'token' => $hash]);
 
-    $this->get(route('workspace.invitation', $plain))->assertOk();
+    $this->get(route('workspace.invitation', $plain))->assertRedirect("/app/invitation/{$plain}");
 });
 
 test('invalid token redirects home with error', function () {
     $this->get(route('workspace.invitation', 'nope'))
-        ->assertRedirect(route('home'))
-        ->assertSessionHasErrors();
+        ->assertRedirect('/app/invitation/nope');
+
+    $this->getJson('/api/v1/workspace-invitations/token/nope')->assertNotFound();
 });

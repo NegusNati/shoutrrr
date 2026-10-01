@@ -23,7 +23,7 @@ import { describe, expect, it } from 'vitest';
 // when it began, so the row can just filter on it directly.
 const source = () =>
     readFileSync(
-        resolve(process.cwd(), 'resources/js/components/compose/composer.tsx'),
+        resolve(process.cwd(), 'web/src/components/compose/composer.tsx'),
         'utf8',
     );
 

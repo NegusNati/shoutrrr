@@ -35,6 +35,10 @@ test('billing routes exist but are inactive on self hosted instances', function 
 
     $this->actingAs($user)
         ->get(route('billing.index'))
+        ->assertRedirect('/app/settings/workspace/subscription');
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/settings/workspace/subscription')
         ->assertNotFound();
 });
 
@@ -81,13 +85,11 @@ test('billing page does not show portal management for a customer without a subs
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
     $this->actingAs($user)
-        ->get(route('billing.index'))
+        ->getJson('/api/v1/settings/workspace/subscription')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/workspace/subscription')
-            ->where('subscribed', false)
-            ->where('canManageSubscription', false)
-            ->where('canAccessPortal', true));
+        ->assertJsonPath('subscribed', false)
+        ->assertJsonPath('canManageSubscription', false)
+        ->assertJsonPath('canAccessPortal', true);
 });
 
 test('billing page shows current month x budget usage', function () {
@@ -130,13 +132,11 @@ test('billing page shows current month x budget usage', function () {
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
     $this->actingAs($user)
-        ->get(route('billing.index'))
+        ->getJson('/api/v1/settings/workspace/subscription')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/workspace/subscription')
-            ->where('monthlyXBudgetMicrousd', 5_000_000)
-            ->where('monthlyXBudgetUsedMicrousd', 180_000)
-            ->where('monthlyXBudgetRemainingMicrousd', 4_820_000));
+        ->assertJsonPath('monthlyXBudgetMicrousd', 5_000_000)
+        ->assertJsonPath('monthlyXBudgetUsedMicrousd', 180_000)
+        ->assertJsonPath('monthlyXBudgetRemainingMicrousd', 4_820_000);
 });
 
 test('portal is unavailable for a workspace that never became a stripe customer', function () {
@@ -210,10 +210,28 @@ test('members without the billing permission cannot reach any billing action', f
         ->{$method}(route($route))
         ->assertForbidden();
 })->with([
-    'index' => ['get', 'billing.index'],
     'checkout' => ['post', 'billing.checkout'],
     'portal' => ['post', 'billing.portal'],
 ]);
+
+test('members without the billing permission cannot reach the billing api', function () {
+    config(['subscriptions.enabled' => true]);
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create([
+        'owner_id' => User::factory()->create()->id,
+        'stripe_id' => 'cus_test_member_denied',
+    ]);
+    WorkspaceMembership::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $user->id,
+        'role' => WorkspaceRole::Member,
+    ]);
+    $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/settings/workspace/subscription')
+        ->assertForbidden();
+});
 
 test('a user with no membership in the current workspace cannot reach billing', function () {
     config(['subscriptions.enabled' => true]);
@@ -222,7 +240,7 @@ test('a user with no membership in the current workspace cannot reach billing', 
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
     $this->actingAs($user)
-        ->get(route('billing.index'))
+        ->getJson('/api/v1/settings/workspace/subscription')
         ->assertForbidden();
 });
 
@@ -238,7 +256,7 @@ test('admins may manage billing', function () {
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 
     $this->actingAs($user)
-        ->get(route('billing.index'))
+        ->getJson('/api/v1/settings/workspace/subscription')
         ->assertOk();
 });
 

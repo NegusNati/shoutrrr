@@ -7,7 +7,7 @@ const source = () =>
     readFileSync(
         resolve(
             process.cwd(),
-            'resources/js/components/compose/platform-preview-panel.tsx',
+            'web/src/components/compose/platform-preview-panel.tsx',
         ),
         'utf8',
     );

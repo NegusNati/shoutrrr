@@ -9,27 +9,12 @@ use App\Models\Workspace;
 use App\Services\Billing\WorkspaceSubscriptionGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 use Laravel\Cashier\Checkout;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\InvalidRequestException;
 
 class BillingController extends Controller
 {
-    public function index(Request $request): Response
-    {
-        abort_unless(config('subscriptions.enabled'), 404);
-
-        $workspace = $this->currentWorkspace($request);
-
-        abort_unless($workspace instanceof Workspace, 404);
-
-        $this->authorizeManageBilling($request, $workspace);
-
-        return Inertia::render('settings/workspace/subscription', $this->billingPayload($workspace));
-    }
-
     /**
      * @return array{subscribed: bool, monthlyPrice: int, monthlyXBudgetMicrousd: int|null, monthlyXBudgetUsedMicrousd: int, monthlyXBudgetRemainingMicrousd: int|null, canManageSubscription: bool, canAccessPortal: bool}
      */

@@ -4,7 +4,7 @@ use App\Models\User;
 
 function pollingOwner(): User
 {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
     test()->actingAs($owner);
 
     return $owner;
@@ -41,17 +41,17 @@ function fullPollingPayload(array $overrides = []): array
 test('the polling page exposes per-section platform lists', function () {
     pollingOwner();
 
-    test()->get(route('instance-settings.polling'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/instance-polling')
-            ->where('sections.engagement', fn ($p) => collect($p)->pluck('platform')->all()
-                === ['x', 'bluesky', 'linkedin', 'facebook', 'instagram', 'threads'])
-            ->where('sections.post_metrics', fn ($p) => collect($p)->pluck('platform')->all()
-                === ['x', 'bluesky', 'linkedin', 'facebook', 'instagram', 'threads', 'discord'])
-            ->where('sections.account_metrics', fn ($p) => collect($p)->pluck('platform')->all()
-                === ['x', 'bluesky', 'linkedin', 'facebook', 'instagram', 'threads']),
-        );
+    test()->getJson('/api/v1/instance-settings/polling')
+        ->assertOk();
+
+    $payload = test()->getJson('/api/v1/instance-settings/polling')->json('sections');
+
+    expect(collect($payload['engagement'])->pluck('platform')->all())
+        ->toBe(['x', 'bluesky', 'linkedin', 'facebook', 'instagram', 'threads'])
+        ->and(collect($payload['post_metrics'])->pluck('platform')->all())
+        ->toBe(['x', 'bluesky', 'linkedin', 'facebook', 'instagram', 'threads', 'discord'])
+        ->and(collect($payload['account_metrics'])->pluck('platform')->all())
+        ->toBe(['x', 'bluesky', 'linkedin', 'facebook', 'instagram', 'threads']);
 });
 
 test('the update request rejects a payload missing a supported platform', function () {

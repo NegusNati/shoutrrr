@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Context;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 beforeEach(function (): void {
     $this->workspace = Workspace::factory()->create();
@@ -26,15 +26,15 @@ beforeEach(function (): void {
 test('messages route 404s when disabled', function (): void {
     config()->set('messages.enabled', false);
 
-    $this->actingAs($this->user)->get('/messages')->assertNotFound();
+    $this->actingAs($this->user)->getJson('/api/v1/messages')->assertNotFound();
 });
 
 test('messages route renders when enabled', function (): void {
     config()->set('messages.enabled', true);
 
-    $this->actingAs($this->user)->get('/messages')
+    $this->actingAs($this->user)->getJson('/api/v1/messages')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('messages/index'));
+        ->assertJson(fn (Assert $json) => $json->has('conversations')->etc());
 });
 
 test('read and archive routes 404 when disabled', function (): void {

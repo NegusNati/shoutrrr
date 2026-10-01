@@ -44,7 +44,7 @@ describe('pick-time tz helpers', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/pick-time-popover.tsx',
+                'web/src/components/compose/pick-time-popover.tsx',
             ),
             'utf8',
         );
@@ -56,6 +56,6 @@ describe('pick-time tz helpers', () => {
         expect(source).toContain('{showBrowserTz && (');
         expect(source).toContain('Your timezone looks like');
         expect(source).toContain('workspace settings');
-        expect(source).toContain('href={workspaceSettings().url}');
+        expect(source).toContain("href={appUrl('/settings/workspace')}");
     });
 });

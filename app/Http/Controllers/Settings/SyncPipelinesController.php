@@ -18,23 +18,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class SyncPipelinesController extends Controller
 {
     public function __construct(protected readonly WorkspaceSubscriptionGate $gate) {}
-
-    public function index(Request $request): Response
-    {
-        /** @var User $user */
-        $user = $request->user();
-        $workspace = $user->currentWorkspace;
-        abort_if($workspace === null, 404);
-        $this->authorizeManage($user, $workspace->id);
-
-        return Inertia::render('sync', $this->pipelinesPayload($workspace));
-    }
 
     /**
      * @return array{accounts: Collection<int, array{id: string, platform: 'bluesky'|'discord'|'facebook'|'instagram'|'linkedin'|'threads'|'x', handle: string, display_name: string|null, avatar_url: string|null, status: 'active'|'needs_attention', supports_native: bool}>, pipelines: Collection<int, array{id: string, name: string, enabled: bool, source_connected_account_id: string, destination_connected_account_ids: array<int, string>}>, maxPipelines: int, canCreate: bool, trackableAccounts: Collection<int, array{id: string, platform: 'bluesky'|'discord'|'facebook'|'instagram'|'linkedin'|'threads'|'x', handle: string, display_name: string|null, avatar_url: string|null, status: 'active'|'needs_attention', supports_native: bool}>, trackedAccountIds: Collection<int, string>, canTrack: bool, maxTracked: int}

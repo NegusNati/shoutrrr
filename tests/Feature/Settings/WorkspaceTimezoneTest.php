@@ -25,20 +25,18 @@ test('the overview page exposes the posting timezone and the timezone list', fun
     [$user, $workspace] = tzMember(WorkspaceRole::Admin);
     PostingSchedule::factory()->create(['workspace_id' => $workspace->id, 'timezone' => 'America/New_York']);
 
-    test()->get(route('settings.workspace'))
+    test()->getJson('/api/v1/settings/workspace')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/workspace/overview')
-            ->where('timezone', 'America/New_York')
-            ->has('timezones'));
+        ->assertJsonPath('timezone', 'America/New_York')
+        ->assertJsonStructure(['timezones']);
 });
 
 test('the overview timezone defaults to UTC when no schedule exists', function () {
     [$user, $workspace] = tzMember(WorkspaceRole::Member);
 
-    test()->get(route('settings.workspace'))
+    test()->getJson('/api/v1/settings/workspace')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('timezone', 'UTC'));
+        ->assertJsonPath('timezone', 'UTC');
 });
 
 test('an admin updates the posting timezone, creating the schedule', function () {

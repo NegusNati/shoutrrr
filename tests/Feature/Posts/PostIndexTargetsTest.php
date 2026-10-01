@@ -10,7 +10,7 @@ use App\Models\PostTarget;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
-use Inertia\Testing\AssertableInertia;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 test('posts index payload includes per-target status and published_at', function () {
     $user = User::factory()->create();
@@ -36,14 +36,12 @@ test('posts index payload includes per-target status and published_at', function
     ]);
 
     $this->actingAs($user)
-        ->get('/posts')
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('posts/index')
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->where('posts.data.0.published_at', fn ($value) => $value !== null)
-                ->where('posts.data.0.targets.0.platform', 'x')
-                ->where('posts.data.0.targets.0.status', 'failed')
-                ->where('posts.data.0.targets.0.error_kind', 'rate_limited')
-                ->where('posts.data.0.targets.0.error_message', 'slow down')
-                ->where('posts.data.0.targets.0.attempts', 3)));
+        ->getJson('/api/v1/posts')
+        ->assertJson(fn (Assert $json) => $json
+            ->where('data.0.published_at', fn ($value) => $value !== null)
+            ->where('data.0.targets.0.platform', 'x')
+            ->where('data.0.targets.0.status', 'failed')
+            ->where('data.0.targets.0.error_kind', 'rate_limited')
+            ->where('data.0.targets.0.error_message', 'slow down')
+            ->where('data.0.targets.0.attempts', 3)->etc());
 });

@@ -8,7 +8,7 @@ describe('crop overlay', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/components/compose/crop-overlay.tsx',
+                'web/src/components/compose/crop-overlay.tsx',
             ),
             'utf8',
         );

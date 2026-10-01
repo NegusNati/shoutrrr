@@ -10,20 +10,9 @@ use App\Http\Requests\Settings\UpdateNotificationPreferencesRequest;
 use App\Models\User;
 use App\Support\Notifications\NotificationPreferences;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class NotificationPreferencesController extends Controller
 {
-    /**
-     * Show the notification preferences settings page.
-     */
-    public function edit(Request $request): Response
-    {
-        return Inertia::render('settings/notifications', $this->preferencesPayload($request->user()));
-    }
-
     /**
      * @return array{preferences: array<string, mixed>, alwaysOn: array<int, string>}
      */
@@ -49,8 +38,6 @@ class NotificationPreferencesController extends Controller
                 $request->validated('preferences'),
             ),
         ]);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Notification preferences updated.')]);
 
         return to_route('notifications.preferences');
     }

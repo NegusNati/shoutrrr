@@ -9,6 +9,7 @@ use App\Models\SyncPipeline;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 test('an owner can create a pipeline', function () {
     [, $workspace] = ownerActingIn();
@@ -186,19 +187,19 @@ test('the settings page renders', function () {
     [, $workspace] = ownerActingIn();
     ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
 
-    $this->get('/sync')
+    $this->getJson('/api/v1/sync-pipelines')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('sync')->has('accounts'));
+        ->assertJson(fn (Assert $json) => $json->has('accounts')->etc());
 });
 
 test('the settings page exposes native tracking data', function () {
     [, $workspace] = ownerActingIn();
     ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'platform' => Platform::Bluesky]);
 
-    $this->get('/sync')
+    $this->getJson('/api/v1/sync-pipelines')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
+        ->assertJson(fn (Assert $json) => $json
             ->has('trackableAccounts')
             ->has('trackedAccountIds')
-            ->has('canTrack'));
+            ->has('canTrack')->etc());
 });

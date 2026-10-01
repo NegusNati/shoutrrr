@@ -11,7 +11,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use App\Support\InstanceSettings;
 use Illuminate\Support\Facades\Context;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 beforeEach(function (): void {
     $this->workspace = Workspace::factory()->create();
@@ -40,12 +40,11 @@ test('the inbox lists unarchived inbound replies for the workspace', function ()
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('engagement/index')
+        ->assertJson(fn (Assert $json) => $json
             ->has('filters')
-            ->has('facets.accounts'));
+            ->has('facets.accounts')->etc());
 });
 
 test('the inbox exposes when engagement polling is disabled', function (): void {
@@ -54,13 +53,12 @@ test('the inbox exposes when engagement polling is disabled', function (): void 
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('engagement/index')
+        ->assertJson(fn (Assert $json) => $json
             ->where('engagementEnabled.x', false)
             ->where('engagementEnabled.bluesky', false)
-            ->where('engagementEnabled.linkedin', false));
+            ->where('engagementEnabled.linkedin', false)->etc());
 });
 
 test('the inbox exposes which engagement platforms are disabled', function (): void {
@@ -76,33 +74,30 @@ test('the inbox exposes which engagement platforms are disabled', function (): v
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('engagement/index')
+        ->assertJson(fn (Assert $json) => $json
             ->where('engagementEnabled.x', false)
             ->where('engagementEnabled.bluesky', true)
-            ->where('engagementEnabled.linkedin', true));
+            ->where('engagementEnabled.linkedin', true)->etc());
 });
 
 test('the inbox exposes whether the LinkedIn community management scope is enabled', function (): void {
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('engagement/index')
-            ->where('linkedinCommunityManagementEnabled', false));
+        ->assertJson(fn (Assert $json) => $json
+            ->where('linkedinCommunityManagementEnabled', false)->etc());
 
     app(InstanceSettings::class)->update([
         'linkedin_community_management_enabled' => true,
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('engagement/index')
-            ->where('linkedinCommunityManagementEnabled', true));
+        ->assertJson(fn (Assert $json) => $json
+            ->where('linkedinCommunityManagementEnabled', true)->etc());
 });
 
 test('the posts facet lists posts that drew replies with a count', function (): void {
@@ -120,12 +115,12 @@ test('the posts facet lists posts that drew replies with a count', function (): 
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
+        ->assertJson(fn (Assert $json) => $json
             ->has('facets.posts', 1)
             ->where('facets.posts.0.id', $post->id)
-            ->where('facets.posts.0.count', 3));
+            ->where('facets.posts.0.count', 3)->etc());
 });
 
 test('filtering by post narrows the stream to that post', function (): void {
@@ -142,13 +137,12 @@ test('filtering by post narrows the stream to that post', function (): void {
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index', ['post' => $kept->id]))
+        ->getJson('/api/v1/engagement?'.http_build_query(['post' => $kept->id]))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
+        ->assertJson(fn (Assert $json) => $json
             ->where('filters.post', $kept->id)
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('replies.data', 1)
-                ->where('replies.data.0.text', 'on kept post')));
+            ->has('replies.data', 1)
+            ->where('replies.data.0.text', 'on kept post')->etc());
 });
 
 test('filtering by platform uses the target platform', function (): void {
@@ -170,14 +164,13 @@ test('filtering by platform uses the target platform', function (): void {
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index', ['platform' => Platform::X->value]))
+        ->getJson('/api/v1/engagement?'.http_build_query(['platform' => Platform::X->value]))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
+        ->assertJson(fn (Assert $json) => $json
             ->where('filters.platform', Platform::X->value)
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('replies.data', 1)
-                ->where('replies.data.0.text', 'reply on x target')
-                ->where('replies.data.0.platform', Platform::X->value)));
+            ->has('replies.data', 1)
+            ->where('replies.data.0.text', 'reply on x target')
+            ->where('replies.data.0.platform', Platform::X->value)->etc());
 });
 
 test('filtering archived shows only archived inbound replies', function (): void {
@@ -198,14 +191,13 @@ test('filtering archived shows only archived inbound replies', function (): void
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index', ['archived' => 1]))
+        ->getJson('/api/v1/engagement?'.http_build_query(['archived' => 1]))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
+        ->assertJson(fn (Assert $json) => $json
             ->where('filters.archived', true)
             ->where('filters.unread', false)
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('replies.data', 1)
-                ->where('replies.data.0.text', 'archived reply')));
+            ->has('replies.data', 1)
+            ->where('replies.data.0.text', 'archived reply')->etc());
 });
 
 test('the inbox consolidates replies by base reply thread', function (): void {
@@ -259,17 +251,16 @@ test('the inbox consolidates replies by base reply thread', function (): void {
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('replies.data', 2)
-                ->where('replies.data.0.text', 'hey')
-                ->where('replies.data.0.reply_count', 2)
-                ->where('replies.data.0.unread_count', 1)
-                ->where('replies.data.0.is_read', false)
-                ->where('replies.data.1.text', 'yo yo, whats up')
-                ->where('replies.data.1.reply_count', 1)));
+        ->assertJson(fn (Assert $json) => $json
+            ->has('replies.data', 2)
+            ->where('replies.data.0.text', 'hey')
+            ->where('replies.data.0.reply_count', 2)
+            ->where('replies.data.0.unread_count', 1)
+            ->where('replies.data.0.is_read', false)
+            ->where('replies.data.1.text', 'yo yo, whats up')
+            ->where('replies.data.1.reply_count', 1)->etc());
 });
 
 test('the inbox keeps separate conversations for different authors on the same post target', function (): void {
@@ -290,20 +281,19 @@ test('the inbox keeps separate conversations for different authors on the same p
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('replies.data', 2)
-                ->where('replies.data.0.reply_count', 1)
-                ->where('replies.data.1.reply_count', 1)));
+        ->assertJson(fn (Assert $json) => $json
+            ->has('replies.data', 2)
+            ->where('replies.data.0.reply_count', 1)
+            ->where('replies.data.1.reply_count', 1)->etc());
 });
 
 test('replies from another workspace are not visible', function (): void {
     PostTargetReply::factory()->create(['workspace_id' => '11111111-1111-1111-1111-111111111111', 'text' => 'foreign']);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index', ['unread' => 1]))
+        ->getJson('/api/v1/engagement?'.http_build_query(['unread' => 1]))
         ->assertOk();
 
     // HasWorkspaceScope filters by Context workspace_id, so the foreign row must not be visible.
@@ -337,12 +327,11 @@ test('a nested reply is grouped under the conversation of its base reply', funct
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('engagement.index'))
+        ->getJson('/api/v1/engagement')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('replies.data', 1)
-                ->where('replies.data.0.text', 'child reply')
-                ->where('replies.data.0.reply_count', 2)
-                ->where('replies.data.0.conversation_key', $target->id.':at://base')));
+        ->assertJson(fn (Assert $json) => $json
+            ->has('replies.data', 1)
+            ->where('replies.data.0.text', 'child reply')
+            ->where('replies.data.0.reply_count', 2)
+            ->where('replies.data.0.conversation_key', $target->id.':at://base')->etc());
 });

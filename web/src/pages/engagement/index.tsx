@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { toast } from 'sonner';
 
-import ComposerController from '@/actions/App/Http/Controllers/Posts/ComposerController';
+import { appUrl } from '@/lib/href';
 import { PlatformGlyph } from '@/components/common/platform-glyph';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -285,7 +285,7 @@ function RightPane({
         selected.post_remote_id,
     );
     const postInShoutrrrUrl = selected.post_id
-        ? ComposerController.show(selected.post_id).url
+        ? appUrl(`/posts/${selected.post_id}`)
         : null;
     const hasOpenTargets = Boolean(
         commentOnPlatformUrl || postOnPlatformUrl || postInShoutrrrUrl,

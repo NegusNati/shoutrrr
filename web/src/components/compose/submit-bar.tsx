@@ -81,7 +81,7 @@ function limitsFor(
 
 // onHttpException's response.data is typed `string` but may arrive already
 // parsed at runtime — handle both, mirroring the pattern in
-// resources/js/hooks/compose/use-autosave.ts.
+// web/src/hooks/compose/use-autosave.ts.
 function parseServerBlocked(raw: unknown): AccountBlock[] {
     let data: unknown = raw;
     if (typeof raw === 'string') {

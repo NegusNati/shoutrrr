@@ -10,9 +10,8 @@ beforeEach(function () {
 });
 
 test('reset password link screen can be rendered', function () {
-    $response = $this->get(route('password.request'));
-
-    $response->assertOk();
+    $this->get(route('password.request'))
+        ->assertRedirect('/app/forgot-password');
 });
 
 test('reset password link can be requested', function () {
@@ -32,10 +31,12 @@ test('reset password screen can be rendered', function () {
 
     $this->post(route('password.email'), ['email' => $user->email]);
 
-    Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-        $response = $this->get(route('password.reset', $notification->token));
-
-        $response->assertOk();
+    Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        $this->get(route('password.reset', $notification->token).'?email='.urlencode($user->email))
+            ->assertRedirect('/app/reset-password?'.http_build_query([
+                'token' => $notification->token,
+                'email' => $user->email,
+            ]));
 
         return true;
     });

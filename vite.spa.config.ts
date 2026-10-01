@@ -1,3 +1,4 @@
+import { cpSync } from 'node:fs';
 import path from 'node:path';
 
 import { wayfinder } from '@laravel/vite-plugin-wayfinder';
@@ -8,6 +9,31 @@ import laravel from 'laravel-vite-plugin';
 import { defineConfig, loadEnv } from 'vite';
 
 import { resolveAppVersion } from './resolve-app-version';
+
+// Copy the emojibase `en` locale into public/ so Frimousse and the emoji
+// typeahead fetch it same-origin. The app's CSP (connect-src 'self') blocks
+// Frimousse's default jsdelivr CDN, so the data must be served from our origin.
+function copyEmojiData() {
+    const copy = () => {
+        try {
+            cpSync('node_modules/emojibase-data/en', 'public/emoji/en', {
+                recursive: true,
+            });
+        } catch (error) {
+            throw new Error(
+                'copy-emoji-data: could not copy node_modules/emojibase-data/en ' +
+                    'to public/emoji/en. Run `bun install` to restore the ' +
+                    `emojibase-data dependency. (${(error as Error).message})`,
+            );
+        }
+    };
+
+    return {
+        name: 'copy-emoji-data',
+        buildStart: copy,
+        configureServer: copy,
+    };
+}
 
 /**
  * Build config for the standalone SPA (web/), served by Laravel at /app/*.
@@ -65,6 +91,7 @@ export default defineConfig(({ mode }) => {
             },
         },
         plugins: [
+            copyEmojiData(),
             // The router plugin must run before the React plugin so it can
             // transform route files and regenerate the route tree.
             tanstackRouter({

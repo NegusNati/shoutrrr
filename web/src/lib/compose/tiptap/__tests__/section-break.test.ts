@@ -111,7 +111,7 @@ describe('keyboard bindings', () => {
         const source = readFileSync(
             resolve(
                 process.cwd(),
-                'resources/js/lib/compose/tiptap/section-break.ts',
+                'web/src/lib/compose/tiptap/section-break.ts',
             ),
             'utf8',
         );

@@ -17,23 +17,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class AnalyticsController extends Controller
 {
-    /**
-     * No return type: the API subclass overrides this with JsonResponse.
-     *
-     * @return Response
-     */
-    public function index(Request $request, InstanceSettings $settings)
-    {
-        abort_unless($request->user()->can('viewAny', Post::class), 403);
-
-        return Inertia::render('analytics/index', $this->analyticsIndexData($request, $settings));
-    }
-
     /**
      * The analytics page payload, shared by the Inertia and API indexes.
      *

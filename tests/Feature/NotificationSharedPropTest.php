@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use App\Notifications\PostPublishedNotification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 test('shared notifications prop only includes current-workspace notifications', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
     $wsA = Workspace::factory()->create();
     $wsB = Workspace::factory()->create();
+    WorkspaceMembership::factory()->create([
+        'workspace_id' => $wsA->id,
+        'user_id' => $user->id,
+    ]);
     $user->forceFill(['current_workspace_id' => $wsA->id])->save();
 
     // two stored database notifications, one per workspace
@@ -29,16 +34,19 @@ test('shared notifications prop only includes current-workspace notifications', 
     ]);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->where('notifications.unreadCount', 1)
-            ->where('notifications.items.0.title', 'A')
-        );
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('notifications.unreadCount', 1)
+        ->assertJsonPath('notifications.items.0.title', 'A');
 });
 
 test('shared notifications prop includes global notifications in the current workspace feed', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
     $ws = Workspace::factory()->create();
+    WorkspaceMembership::factory()->create([
+        'workspace_id' => $ws->id,
+        'user_id' => $user->id,
+    ]);
     $user->forceFill(['current_workspace_id' => $ws->id])->save();
 
     $user->notifications()->create([
@@ -49,16 +57,19 @@ test('shared notifications prop includes global notifications in the current wor
     ]);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->where('notifications.unreadCount', 1)
-            ->where('notifications.items.0.title', 'Workspace invitation')
-        );
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('notifications.unreadCount', 1)
+        ->assertJsonPath('notifications.items.0.title', 'Workspace invitation');
 });
 
 test('notifications are ordered by id desc when created_at is identical', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
     $ws = Workspace::factory()->create();
+    WorkspaceMembership::factory()->create([
+        'workspace_id' => $ws->id,
+        'user_id' => $user->id,
+    ]);
     $user->forceFill(['current_workspace_id' => $ws->id])->save();
 
     $sameTime = Carbon::now();
@@ -84,9 +95,8 @@ test('notifications are ordered by id desc when created_at is identical', functi
     ]);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->where('notifications.items.0.title', 'Later')
-            ->where('notifications.items.1.title', 'Earlier')
-        );
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('notifications.items.0.title', 'Later')
+        ->assertJsonPath('notifications.items.1.title', 'Earlier');
 });

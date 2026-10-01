@@ -21,21 +21,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class WorkspaceSettingsController extends Controller
 {
-    public function showOverview(Request $request): Response
-    {
-        /** @var User $user */
-        $user = $request->user();
-        $workspace = $user->currentWorkspace;
-        abort_if($workspace === null, 404);
-
-        return Inertia::render('settings/workspace/overview', $this->overviewPayload($user, $workspace));
-    }
-
     /**
      * @return array{workspace: array<string, mixed>, canManage: bool, isOwner: bool, canDelete: bool, deleteDisabledReason: ?string, timezone: string, timezones: array<int, string>}
      */
@@ -114,19 +102,6 @@ class WorkspaceSettingsController extends Controller
         );
 
         return back()->with('success', 'Posting timezone saved.');
-    }
-
-    public function showMembers(Request $request): Response
-    {
-        /** @var User $user */
-        $user = $request->user();
-        $workspace = $user->currentWorkspace;
-        abort_if($workspace === null, 404);
-
-        return Inertia::render('settings/workspace/members', [
-            'members' => Inertia::defer(fn (): array => $this->membersList($workspace)),
-            ...$this->membersPayload($user, $workspace),
-        ]);
     }
 
     /**

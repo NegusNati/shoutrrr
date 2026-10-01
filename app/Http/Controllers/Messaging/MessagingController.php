@@ -23,22 +23,18 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
 
 class MessagingController extends Controller
 {
-    /**
-     * No return type: the API subclass overrides this with JsonResponse.
-     *
-     * @return InertiaResponse
-     */
-    public function index(Request $request)
+    public function thread(Conversation $conversation): JsonResponse
     {
-        return Inertia::render('messages/index', [
-            'conversations' => Inertia::scroll(fn () => $this->conversationPaginator($request))->defer(),
-            'filters' => ['archived' => $request->boolean('archived')],
-        ]);
+        $messages = $conversation->messages()
+            ->with('media')
+            ->orderBy('remote_created_at')
+            ->get()
+            ->map(fn (DirectMessage $m) => MessageListItem::make($m));
+
+        return response()->json(['conversation' => ConversationListItem::make($conversation), 'messages' => $messages]);
     }
 
     /**
@@ -58,17 +54,6 @@ class MessagingController extends Controller
             ->orderByDesc('last_message_at')
             ->paginate(30)
             ->through(fn (Conversation $c) => ConversationListItem::make($c));
-    }
-
-    public function thread(Conversation $conversation): JsonResponse
-    {
-        $messages = $conversation->messages()
-            ->with('media')
-            ->orderBy('remote_created_at')
-            ->get()
-            ->map(fn (DirectMessage $m) => MessageListItem::make($m));
-
-        return response()->json(['conversation' => ConversationListItem::make($conversation), 'messages' => $messages]);
     }
 
     public function markRead(Conversation $conversation): Response

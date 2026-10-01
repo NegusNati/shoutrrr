@@ -9,6 +9,7 @@ use App\Models\WorkspaceMembership;
 use App\Services\Posts\DraftService;
 use App\Support\InstanceSettings;
 use Illuminate\Support\Facades\Context;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 /**
  * @return array{0: string, 1: ConnectedAccount, 2: ConnectedAccount}
@@ -56,9 +57,9 @@ it('excludes frozen-platform accounts from the composer accounts prop', function
     ]);
     $post = app(DraftService::class)->createDraft($workspaceId, $user, ['kind' => 'all'], ['hello']);
 
-    $response = $this->actingAs($user)->get(route('posts.show', $post));
+    $response = $this->actingAs($user)->getJson("/api/v1/posts/{$post->id}/compose");
 
-    $response->assertInertia(fn ($page) => $page
+    $response->assertJson(fn (Assert $json) => $json
         ->where('accounts', fn (mixed $accounts): bool => collect($accounts)->pluck('id')->contains($blueskyAccount->id)
-            && ! collect($accounts)->pluck('id')->contains($xAccount->id)));
+            && ! collect($accounts)->pluck('id')->contains($xAccount->id))->etc());
 });

@@ -4,6 +4,7 @@ use App\Models\ApiKey;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 beforeEach(function () {
     if (! file_exists(storage_path('oauth-private.key'))) {
@@ -71,7 +72,7 @@ test('the api-keys settings page renders for an owner', function () {
     [$user, $workspace] = ownerInWorkspaceForApiKeys();
     ApiKey::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'name' => 'Existing']);
 
-    $this->actingAs($user)->get('/settings/workspace/api-keys')
+    $this->actingAs($user)->getJson('/api/v1/settings/workspace/api-keys')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('settings/workspace/api-keys')->has('apiKeys', 1));
+        ->assertJson(fn (Assert $json) => $json->has('apiKeys', 1)->etc());
 });

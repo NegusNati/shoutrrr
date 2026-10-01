@@ -13,23 +13,10 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ApiKeysController extends Controller
 {
     public function __construct(protected readonly ApiKeyManager $manager) {}
-
-    public function index(Request $request): Response
-    {
-        /** @var User $user */
-        $user = $request->user();
-        $workspace = $user->currentWorkspace;
-        abort_if($workspace === null, 404);
-        $this->authorizeManage($user, $workspace->id);
-
-        return Inertia::render('settings/workspace/api-keys', ['apiKeys' => $this->keysPayload($workspace)]);
-    }
 
     /**
      * @return Collection<int, array{id: string, name: string, last_four: string|null, scope: string, last_used_at: string|null, expires_at: string|null, created_at: string}>

@@ -2,46 +2,49 @@
 
 use App\Models\SocialAccount;
 use App\Models\User;
-use Inertia\Testing\AssertableInertia as Assert;
 
 test('enabled provider keys are shared globally for the settings nav gate', function () {
     config()->set('kit.auth.socialite.providers', ['google']);
 
-    $this->actingAs(User::factory()->create())
-        ->get(route('connections.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('socialite.providers', ['google']));
+    $this->actingAs(User::factory()->withWorkspace()->create())
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('socialite.providers', ['google']);
 
     config()->set('kit.auth.socialite.enabled', false);
 
-    $this->actingAs(User::factory()->create())
-        ->get(route('profile.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('socialite.providers', []));
+    $this->actingAs(User::factory()->withWorkspace()->create())
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('socialite.providers', []);
 });
 
 test('connections page lists enabled providers and link state', function () {
     config()->set('kit.auth.socialite.providers', ['google']);
 
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
     SocialAccount::factory()->create(['user_id' => $user->id, 'provider' => 'google']);
 
     $this->actingAs($user)
-        ->get(route('connections.edit'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/connections')
-            ->where('hasPassword', true)
-            ->has('connections', 1)
-            ->where('connections.0.provider', 'google')
-            ->where('connections.0.connected', true)
-            ->where('connections.0.id', $user->socialAccounts()->first()->id),
-        );
+        ->getJson('/api/v1/settings/connections')
+        ->assertOk()
+        ->assertJsonPath('hasPassword', true)
+        ->assertJsonCount(1, 'connections')
+        ->assertJsonPath('connections.0.provider', 'google')
+        ->assertJsonPath('connections.0.connected', true)
+        ->assertJsonPath('connections.0.id', $user->socialAccounts()->first()->id);
 });
 
 test('connections page is reachable by an oauth-only user without password confirmation', function () {
-    $user = User::factory()->create(['password' => null]);
+    $user = User::factory()->withWorkspace()->create(['password' => null]);
     SocialAccount::factory()->create(['user_id' => $user->id, 'provider' => 'google']);
 
     $this->actingAs($user)
         ->get(route('connections.edit'))
+        ->assertRedirect('/app/settings/connections');
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/settings/connections')
         ->assertOk();
 });
 

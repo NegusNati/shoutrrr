@@ -20,8 +20,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use Inertia\Response;
 use RuntimeException;
 use Throwable;
 
@@ -34,27 +32,6 @@ class ConnectedAccountController extends Controller
         private readonly XAccountCapabilities $xCapabilities,
         private readonly TokenManager $tokens,
     ) {}
-
-    public function index(Request $request): Response
-    {
-        $request->user()->can('viewAny', ConnectedAccount::class) ?: abort(403);
-        $defaultAccountId = $request->user()->currentWorkspace()->value('default_connected_account_id');
-
-        $accounts = ConnectedAccount::query()
-            ->with(['connectedBy:id,name', 'secret:connected_account_id,session'])
-            ->latest()
-            ->get()
-            ->sortByDesc(fn (ConnectedAccount $account): bool => $account->id === $defaultAccountId)
-            ->map(fn (ConnectedAccount $account): array => self::view($account, $defaultAccountId))
-            ->values()
-            ->all();
-
-        return Inertia::render('accounts/index', [
-            'accounts' => $accounts,
-            'capabilities' => Platform::capabilities(),
-            'canManage' => $request->user()->can('create', ConnectedAccount::class),
-        ]);
-    }
 
     /**
      * Card payload for a connected account — shared by the Inertia index and
@@ -328,7 +305,6 @@ class ConnectedAccountController extends Controller
 
         $account->secret()->delete();
         $account->delete();
-        Inertia::clearHistory();
 
         return redirect()->route('accounts.index')->with('success', 'Account disconnected.');
     }

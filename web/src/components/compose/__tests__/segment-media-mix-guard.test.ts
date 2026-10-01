@@ -19,13 +19,13 @@ import { describe, expect, it } from 'vitest';
 //
 // `wouldMixVideoAndImages`/`wouldViolateBlueskyGif` themselves are pure and
 // already have real behavioral coverage in
-// `resources/js/lib/compose/__tests__/media-rules.test.ts`; this file's only
+// `web/src/lib/compose/__tests__/media-rules.test.ts`; this file's only
 // job is pinning what composer.tsx passes as their `existing` argument at
 // the call site, which is composer-internal wiring with no pure-function
 // home to move to.
 const source = () =>
     readFileSync(
-        resolve(process.cwd(), 'resources/js/components/compose/composer.tsx'),
+        resolve(process.cwd(), 'web/src/components/compose/composer.tsx'),
         'utf8',
     );
 

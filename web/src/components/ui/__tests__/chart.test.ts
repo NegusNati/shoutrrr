@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 describe('chart tooltip content', () => {
     it('keeps space between a series label and its value', () => {
         const source = readFileSync(
-            resolve(process.cwd(), 'resources/js/components/ui/chart.tsx'),
+            resolve(process.cwd(), 'web/src/components/ui/chart.tsx'),
             'utf8',
         );
 

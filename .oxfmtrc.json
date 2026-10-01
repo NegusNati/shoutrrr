@@ -6,14 +6,13 @@
     "htmlWhitespaceSensitivity": "css",
     "printWidth": 80,
     "sortTailwindcss": {
-        "stylesheet": "resources/css/app.css",
+        "stylesheet": "web/src/styles/app.css",
         "functions": ["clsx", "cn", "cva"]
     },
     "tabWidth": 4,
     "sortImports": true,
     "sortPackageJson": false,
     "ignorePatterns": [
-        "resources/js/components/ui/*",
         "resources/views/mail/*",
         "web/src/components/ui/*",
         "web/src/routeTree.gen.ts",

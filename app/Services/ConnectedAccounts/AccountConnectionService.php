@@ -13,7 +13,6 @@ use App\Models\User;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
 use RuntimeException;
 
 class AccountConnectionService
@@ -62,7 +61,6 @@ class AccountConnectionService
         });
 
         ConnectedAccountConnected::dispatch($account);
-        Inertia::clearHistory();
 
         return $account;
     }
@@ -104,7 +102,6 @@ class AccountConnectionService
         });
 
         ConnectedAccountConnected::dispatch($account);
-        Inertia::clearHistory();
 
         return $account;
     }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Messaging\ConversationMediaController;
 use App\Http\Controllers\Messaging\ConversationVideoUploadController;
 use App\Http\Controllers\Messaging\MessagingController;
 use App\Models\Conversation;
+use App\Support\SpaRedirect;
 use Illuminate\Support\Facades\Route;
 
 // Route-model binding runs before WorkspaceMiddleware sets the Context, so scope
@@ -18,8 +19,8 @@ Route::bind('conversation', fn (string $value): Conversation => Conversation::qu
     ->firstOrFail());
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('messages', [MessagingController::class, 'index'])->middleware('messages.enabled')->name('messages.index');
-    Route::get('messages/{conversation}/thread', [MessagingController::class, 'thread'])->middleware('messages.enabled')->name('messages.thread');
+    Route::get('messages', SpaRedirect::to('/messages'))->middleware('messages.enabled')->name('messages.index');
+    Route::get('messages/{conversation}/thread', fn () => redirect('/app/messages'))->middleware('messages.enabled')->name('messages.thread');
     Route::post('messages/{conversation}/read', [MessagingController::class, 'markRead'])->middleware('messages.enabled')->name('messages.read');
     Route::post('messages/{conversation}/archive', [MessagingController::class, 'archive'])->middleware('messages.enabled')->name('messages.archive');
     Route::post('messages/{conversation}/reply', [MessagingController::class, 'respond'])->middleware(['messages.enabled', 'throttle:30,1'])->name('messages.respond');

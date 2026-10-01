@@ -28,20 +28,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class InstanceSettingsController extends Controller
 {
-    public function edit(Request $request, InstanceSettings $settings): Response
-    {
-        /** @var User|null $user */
-        $user = $request->user();
-        abort_unless($user?->isInstanceOwner(), 403);
-
-        return Inertia::render('settings/instance', $this->instancePayload($settings));
-    }
-
     /**
      * @return array{settings: array<string, mixed>, workspaces_enabled: bool}
      */
@@ -58,22 +47,6 @@ class InstanceSettingsController extends Controller
             'settings' => $instanceSettings,
             'workspaces_enabled' => $workspacesEnabled,
         ];
-    }
-
-    public function admins(Request $request): Response
-    {
-        /** @var User|null $user */
-        $user = $request->user();
-        abort_unless($user?->isInstanceOwner(), 403);
-
-        $search = $request->string('search')->trim()->toString();
-        $users = $this->searchableUsers($search);
-
-        return Inertia::render('settings/instance-admins', [
-            'owners' => $this->instanceOwners(),
-            'users' => $users,
-            'search' => $search,
-        ]);
     }
 
     /**
@@ -119,15 +92,6 @@ class InstanceSettingsController extends Controller
             ]);
     }
 
-    public function polling(Request $request, InstanceSettings $settings): Response
-    {
-        /** @var User|null $user */
-        $user = $request->user();
-        abort_unless($user?->isInstanceOwner(), 403);
-
-        return Inertia::render('settings/instance-polling', $this->pollingPayload($settings));
-    }
-
     /**
      * @return array{settings: array<string, mixed>, sections: array<string, list<array{platform: string, label: string}>>}
      */
@@ -146,15 +110,6 @@ class InstanceSettingsController extends Controller
                     ),
                 ])->all(),
         ];
-    }
-
-    public function platforms(Request $request, InstanceSettings $settings): Response
-    {
-        /** @var User|null $user */
-        $user = $request->user();
-        abort_unless($user?->isInstanceOwner(), 403);
-
-        return Inertia::render('settings/instance-platforms', $this->platformsPayload($settings));
     }
 
     /**
@@ -183,25 +138,6 @@ class InstanceSettingsController extends Controller
         ]);
 
         return back()->with('success', 'Platform settings updated.');
-    }
-
-    public function usage(Request $request, UsagePricing $pricing, InstanceSettings $settings, WorkspaceSubscriptionGate $gate): Response
-    {
-        /** @var User|null $user */
-        $user = $request->user();
-        abort_unless($user?->isInstanceOwner(), 403);
-
-        $search = $request->string('search')->trim()->toString();
-        $sort = $request->string('sort')->toString() === 'name' ? 'name' : 'spend';
-        $workspaceId = $request->string('workspace')->trim()->toString() ?: null;
-        $defaultDollars = (int) config('subscriptions.monthly_x_budget_cents') / 100;
-
-        return Inertia::render('settings/instance-usage', [
-            ...$this->usagePayload($request, $pricing, $settings, $gate),
-            ...($workspaceId === null
-                ? []
-                : ['drilldown' => fn () => $this->workspaceDrilldown($workspaceId, $pricing, $gate, $settings, $defaultDollars)]),
-        ]);
     }
 
     /**

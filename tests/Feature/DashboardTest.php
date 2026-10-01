@@ -15,12 +15,11 @@ test('guests are redirected to the login page', function () {
     $response->assertRedirect(route('login'));
 });
 
-test('authenticated users can visit the dashboard', function () {
+test('authenticated users are redirected to the SPA dashboard', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $response = $this->get(route('dashboard'));
-    $response->assertOk();
+    $this->get(route('dashboard'))->assertRedirect('/app/dashboard');
 });
 
 test('the recent feed exposes full row data including targets', function () {
@@ -38,13 +37,9 @@ test('the recent feed exposes full row data including targets', function () {
     PostTarget::factory()->for($post)->create();
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->component('dashboard')
-            ->missing('posts')
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->has('posts.0.targets')
-                ->has('posts.0.published_at')));
+        ->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonStructure(['posts' => [['targets', 'published_at']]]);
 });
 
 test('the recent feed exposes attached media for a row thumbnail', function () {
@@ -71,13 +66,11 @@ test('the recent feed exposes attached media for a row thumbnail', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->component('dashboard')
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->where('posts.0.media_count', 2)
-                ->where('posts.0.media_preview.kind', 'image')
-                ->has('posts.0.media_preview.url')));
+        ->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonPath('posts.0.media_count', 2)
+        ->assertJsonPath('posts.0.media_preview.kind', 'image')
+        ->assertJsonStructure(['posts' => [['media_preview' => ['url']]]]);
 });
 
 test('a video-only post exposes no preview url so the list shows an icon tile', function () {
@@ -99,13 +92,11 @@ test('a video-only post exposes no preview url so the list shows an icon tile', 
     ]);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->component('dashboard')
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->where('posts.0.media_count', 1)
-                ->where('posts.0.media_preview.kind', 'video')
-                ->where('posts.0.media_preview.url', null)));
+        ->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonPath('posts.0.media_count', 1)
+        ->assertJsonPath('posts.0.media_preview.kind', 'video')
+        ->assertJsonPath('posts.0.media_preview.url', null);
 });
 
 test('the dashboard includes saved workspace mentions for the composer', function () {
@@ -127,9 +118,8 @@ test('the dashboard includes saved workspace mentions for the composer', functio
     WorkspaceMention::factory()->create(['name' => '@foreign']);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->component('dashboard')
-            ->has('savedMentions', 1)
-            ->where('savedMentions.0.name', '@saved'));
+        ->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonCount(1, 'savedMentions')
+        ->assertJsonPath('savedMentions.0.name', '@saved');
 });
