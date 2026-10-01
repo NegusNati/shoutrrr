@@ -11,6 +11,7 @@ import {
     isTypingTarget,
     nextAfterArchive,
     relativeTime,
+    resolveSelectedItem,
 } from '../helpers';
 
 describe('isTypingTarget', () => {
@@ -56,6 +57,18 @@ describe('adjacentIndex', () => {
         expect(adjacentIndex(3, 0, -1)).toBe(0);
         expect(adjacentIndex(3, 2, 1)).toBe(2);
         expect(adjacentIndex(3, 1, 1)).toBe(2);
+    });
+});
+
+describe('resolveSelectedItem', () => {
+    it('prefers the loaded stream row, else the deep-linked item', () => {
+        const row = { id: 'a', from: 'stream' };
+        const fetched = { id: 'b', from: 'thread' };
+
+        expect(resolveSelectedItem('', [row], fetched)).toBeNull();
+        expect(resolveSelectedItem('a', [row], fetched)).toBe(row);
+        expect(resolveSelectedItem('b', [row], fetched)).toBe(fetched);
+        expect(resolveSelectedItem('b', [row], undefined)).toBeNull();
     });
 });
 

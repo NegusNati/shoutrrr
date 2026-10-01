@@ -1,4 +1,8 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import {
+    useInfiniteQuery,
+    useQuery,
+    useQueryClient,
+} from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { toast } from 'sonner';
@@ -17,7 +21,7 @@ import { Archive, Inbox, MessagesSquare, SearchX } from '@/components/ui/icons';
 import { Kbd } from '@/components/ui/kbd';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useInvalidateMe } from '@/features/me/me';
+import { meQuery, useInvalidateMe } from '@/features/me/me';
 import {
     archiveConversation,
     markConversationRead,
@@ -43,10 +47,11 @@ import {
     initials,
     messagesShortcut,
     nextAfterArchive,
+    resolveSelectedItem,
 } from './helpers';
 import type { ConversationItem, MessageItem, MessagesFilters } from './types';
 
-export type MessagesSearch = MessagesFilters;
+export type MessagesSearch = MessagesFilters & { conversation: string };
 
 function StreamSkeleton() {
     return (
@@ -312,14 +317,20 @@ export default function MessagesIndexPage({
     const isMobile = useIsMobile();
     const invalidateMe = useInvalidateMe();
     const navigate = useNavigate();
+    const { conversation: selectedConversationId, ...filters } = search;
     const { data, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } =
-        useInfiniteQuery(messagesQuery(search));
+        useInfiniteQuery(messagesQuery(filters));
     const sentinelRef = useInfiniteScroll(() => {
         if (!isFetchingNextPage) {
             void fetchNextPage();
         }
     }, hasNextPage);
-    const [selected, setSelected] = useState<ConversationItem | null>(null);
+    // A conversation id the stream page doesn't hold (deep link) hydrates
+    // from the thread endpoint — the same query the desk then reuses.
+    const deepLinkQuery = useQuery({
+        ...messagesThreadQuery(selectedConversationId),
+        enabled: selectedConversationId !== '',
+    });
     const messageEditorRef = useRef<HTMLTextAreaElement>(null);
     // Client-side overlay over the query result: archiving, marking read, or
     // responding must update the left list without waiting for the next poll.
@@ -338,7 +349,7 @@ export default function MessagesIndexPage({
     // Filter changes come back as a different query key; stale overrides would
     // wrongly hide rows in, say, the archived view. Reset during render (not an
     // effect) so no wasted commit fires with the old overrides applied.
-    const filterKey = `${search.archived}`;
+    const filterKey = `${filters.archived}`;
     const prevFilterKey = useRef(filterKey);
     if (prevFilterKey.current !== filterKey) {
         prevFilterKey.current = filterKey;
@@ -351,28 +362,77 @@ export default function MessagesIndexPage({
             const override = overrides[c.id];
             return override ? { ...c, ...override } : c;
         });
-    const filtered = search.archived;
+    const filtered = filters.archived;
 
-    function markRead(id: string) {
-        void markConversationRead(id)
-            .then(() => handleRead(id))
-            .catch(() => {});
-    }
+    const selected = resolveSelectedItem(
+        selectedConversationId,
+        items,
+        deepLinkQuery.data?.conversation,
+    );
 
+    // Selection lives in the ?conversation param so a thread link is shareable
+    // and the mobile sheet/keyboard triage all move the same state.
     function selectConversation(next: ConversationItem | null) {
-        setSelected(next);
-        if (next && next.unread_count > 0) {
-            markRead(next.id);
-        }
+        void navigate({
+            to: '/messages',
+            search: { ...search, conversation: next?.id ?? '' },
+            replace: true,
+        });
     }
+
+    // A stale deep link (deleted conversation) must not wedge the desk — drop
+    // the param and leave the plain inbox open.
+    const deepLinkFailed = deepLinkQuery.isError;
+    useEffect(() => {
+        if (deepLinkFailed) {
+            toast.error('That conversation is no longer available.');
+            void navigate({
+                to: '/messages',
+                search: { ...search, conversation: '' },
+                replace: true,
+            });
+        }
+    }, [deepLinkFailed, navigate, search]);
+
+    // Selecting a conversation — by click, keyboard, or deep link — marks it
+    // read once, like a row click did before the param drove selection.
+    const queryClient = useQueryClient();
+    const markedReadRef = useRef<string | null>(null);
+    const unreadSelectedId =
+        selected !== null && selected.unread_count > 0 ? selected.id : null;
+    useEffect(() => {
+        if (unreadSelectedId === null) {
+            markedReadRef.current = null;
+            return;
+        }
+        if (markedReadRef.current === unreadSelectedId) {
+            return;
+        }
+        markedReadRef.current = unreadSelectedId;
+        void markConversationRead(unreadSelectedId)
+            .then(() => {
+                setOverrides((prev) => ({
+                    ...prev,
+                    [unreadSelectedId]: {
+                        ...prev[unreadSelectedId],
+                        unread_count: 0,
+                    },
+                }));
+                // The sidebar's unread badge lives on the /me shell payload.
+                void queryClient.invalidateQueries({
+                    queryKey: meQuery.queryKey,
+                });
+            })
+            .catch(() => {});
+    }, [unreadSelectedId, queryClient]);
 
     function clearSelection() {
-        setSelected(null);
+        selectConversation(null);
     }
 
     function selectById(id: string | null) {
         if (id === null) {
-            setSelected(null);
+            selectConversation(null);
             return;
         }
 
@@ -472,14 +532,6 @@ export default function MessagesIndexPage({
         void invalidateMe();
     }
 
-    function handleRead(id: string) {
-        setOverrides((prev) => ({
-            ...prev,
-            [id]: { ...prev[id], unread_count: 0 },
-        }));
-        void invalidateMe();
-    }
-
     function handleResponded(id: string, preview: string, at: string) {
         setOverrides((prev) => ({
             ...prev,
@@ -504,7 +556,7 @@ export default function MessagesIndexPage({
             {/* Left: conversation list */}
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r">
                 <div className="shrink-0">
-                    <MessageFilters filters={search} onUpdate={applyFilters} />
+                    <MessageFilters filters={filters} onUpdate={applyFilters} />
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto">
                     {isPending ? (

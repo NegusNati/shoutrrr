@@ -70,6 +70,7 @@ import {
     engagementShortcut,
     initials,
     nextAfterArchive,
+    resolveSelectedItem,
     unseenIds,
 } from './helpers';
 import type { EngagementFilters, ReplyItem } from './types';
@@ -84,7 +85,7 @@ const EMPTY_ENGAGEMENT: Record<PlatformName, boolean> = {
     discord: false,
 };
 
-export type EngagementSearch = EngagementFilters;
+export type EngagementSearch = EngagementFilters & { reply: string };
 
 function StreamSkeleton() {
     return (
@@ -546,10 +547,11 @@ export default function EngagementIndexPage({
     const isMobile = useIsMobile();
     const invalidateMe = useInvalidateMe();
     const navigate = useNavigate();
+    const { reply: selectedReplyId, ...filters } = search;
     // The poll refetches continuously; rows only move when the reader asks —
     // nothing reshuffles under a cursor that is mid-triage.
     const { data, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } =
-        useInfiniteQuery(engagementQuery(search));
+        useInfiniteQuery(engagementQuery(filters));
     const sentinelRef = useInfiniteScroll(() => {
         if (!isFetchingNextPage) {
             void fetchNextPage();
@@ -563,7 +565,13 @@ export default function EngagementIndexPage({
             replace: true,
         });
     }
-    const [selected, setSelected] = useState<ReplyItem | null>(null);
+    // A reply id the stream page doesn't hold (deep link, or a reply that
+    // isn't the latest of its conversation) hydrates from the thread endpoint
+    // — the same query the desk then reuses.
+    const deepLinkQuery = useQuery({
+        ...engagementThreadQuery(selectedReplyId),
+        enabled: selectedReplyId !== '',
+    });
     const replyEditorRef = useRef<HTMLTextAreaElement>(null);
     const streamRef = useRef<HTMLDivElement>(null);
     // The list the reader is looking at. The poll keeps `replies` fresh in the
@@ -578,7 +586,6 @@ export default function EngagementIndexPage({
         Record<string, 'archived' | 'responded'>
     >({});
 
-    const filters = search;
     const {
         account: filterAccount,
         platform: filterPlatform,
@@ -656,18 +663,48 @@ export default function EngagementIndexPage({
         filters.post !== '' ||
         filters.target !== '';
 
+    const selected = resolveSelectedItem(
+        selectedReplyId,
+        items,
+        deepLinkQuery.data?.thread.find((r) => r.id === selectedReplyId),
+    );
+
+    // Selection lives in the ?reply param so a thread link is shareable and
+    // the mobile sheet/keyboard triage all move the same state.
+    function selectReply(next: ReplyItem | null) {
+        void navigate({
+            to: '/engagement',
+            search: { ...search, reply: next?.id ?? '' },
+            replace: true,
+        });
+    }
+
+    // A stale deep link (deleted reply) must not wedge the desk — drop the
+    // param and leave the plain inbox open.
+    const deepLinkFailed = deepLinkQuery.isError;
+    useEffect(() => {
+        if (deepLinkFailed) {
+            toast.error('That reply thread is no longer available.');
+            void navigate({
+                to: '/engagement',
+                search: { ...search, reply: '' },
+                replace: true,
+            });
+        }
+    }, [deepLinkFailed, navigate, search]);
+
     function clearSelection() {
-        setSelected(null);
+        selectReply(null);
     }
 
     function selectById(id: string | null) {
         if (id === null) {
-            setSelected(null);
+            selectReply(null);
             return;
         }
 
         const next = items.find((item) => item.id === id) ?? null;
-        setSelected(next);
+        selectReply(next);
     }
 
     function moveSelection(delta: 1 | -1) {
@@ -685,7 +722,7 @@ export default function EngagementIndexPage({
             return;
         }
 
-        setSelected(next);
+        selectReply(next);
         requestAnimationFrame(() => {
             document
                 .getElementById(`engagement-reply-${next.id}`)
@@ -824,7 +861,7 @@ export default function EngagementIndexPage({
                                 replies={items}
                                 revealedIds={revealedIds}
                                 selectedId={selected?.id ?? null}
-                                onSelect={setSelected}
+                                onSelect={selectReply}
                             />
                         )}
                         {items.length > 0 && hasNextPage ? (

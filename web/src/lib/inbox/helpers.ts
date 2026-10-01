@@ -138,6 +138,24 @@ export function adjacentIndex(
 }
 
 /**
+ * The desk's selection for a search-param id: the loaded stream row when the
+ * id names one (fresh, polled data), else the item the deep-link thread fetch
+ * returned (a reply/conversation not on this page of the stream). An empty id
+ * or an unresolvable one yields no selection.
+ */
+export function resolveSelectedItem<T extends { id: string }>(
+    selectionId: string,
+    items: readonly T[],
+    deepLinked: T | undefined,
+): T | null {
+    if (selectionId === '') {
+        return null;
+    }
+
+    return items.find((item) => item.id === selectionId) ?? deepLinked ?? null;
+}
+
+/**
  * After archiving `currentId`, pick the next triage target: the item that
  * followed it, or the previous one if it was last. Returns null when empty.
  */
