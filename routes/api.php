@@ -130,7 +130,6 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
     Route::post('connected-accounts/{account}/refresh-x-tier', [ConnectedAccountsController::class, 'refreshXTier']);
     Route::post('connected-accounts/{account}/reconnect', [ConnectedAccountsController::class, 'reconnect']);
     Route::delete('connected-accounts/{account}', [ConnectedAccountsController::class, 'destroy']);
->>>>>>> 053055e (Port connected accounts to the /api/v1 + React SPA)
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session

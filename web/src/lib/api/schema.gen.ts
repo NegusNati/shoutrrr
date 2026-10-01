@@ -1028,7 +1028,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-<<<<<<< HEAD
     "/sync": {
         parameters: {
             query?: never;
@@ -1115,41 +1114,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-||||||| parent of 053055e (Port connected accounts to the /api/v1 + React SPA)
-=======
-    "/settings/workspace/api-keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["workspaceApiKeys.index"];
-        put?: never;
-        post: operations["workspaceApiKeys.store"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/settings/workspace/api-keys/{apiKey}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["workspaceApiKeys.destroy"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
->>>>>>> 053055e (Port connected accounts to the /api/v1 + React SPA)
     "/workspace-invitations/{invitation}/accept": {
         parameters: {
             query?: never;
@@ -1571,18 +1535,6 @@ export interface components {
         StoreWorkspaceRequest: {
             name: string;
         };
-<<<<<<< HEAD
-        /** TransferOwnershipRequest */
-        TransferOwnershipRequest: {
-            membership_id: string;
-        };
-        /** UpdateMemberRoleRequest */
-        UpdateMemberRoleRequest: {
-            /** @enum {string} */
-            role: "member" | "admin";
-        };
-||||||| parent of 053055e (Port connected accounts to the /api/v1 + React SPA)
-=======
         /** TransferOwnershipRequest */
         TransferOwnershipRequest: {
             membership_id: string;
@@ -1597,7 +1549,6 @@ export interface components {
             /** @enum {string} */
             role: "member" | "admin";
         };
->>>>>>> 053055e (Port connected accounts to the /api/v1 + React SPA)
         /** UpdateNotificationPreferencesRequest */
         UpdateNotificationPreferencesRequest: {
             preferences: {
@@ -5386,7 +5337,6 @@ export interface operations {
             404: components["responses"]["ModelNotFoundException"];
         };
     };
-<<<<<<< HEAD
     "syncPipelines.index": {
         parameters: {
             query?: never;
@@ -5670,109 +5620,6 @@ export interface operations {
             404: components["responses"]["ModelNotFoundException"];
         };
     };
-||||||| parent of 053055e (Port connected accounts to the /api/v1 + React SPA)
-=======
-    "workspaceApiKeys.index": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        apiKeys: {
-                            id: string;
-                            name: string;
-                            last_four: string | null;
-                            scope: string;
-                            last_used_at: string | null;
-                            expires_at: string | null;
-                            created_at: string;
-                        }[];
-                    };
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            404: components["responses"]["ModelNotFoundException"];
-        };
-    };
-    "workspaceApiKeys.store": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name: string;
-                    /** @enum {string} */
-                    scope: "read" | "write";
-                    /** Format: date-time */
-                    expires_at?: string | null;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        apiKey: {
-                            id: string;
-                            name: string;
-                            last_four: string | null;
-                            scope: string;
-                            last_used_at: string | null;
-                            expires_at: string | null;
-                            created_at: string;
-                        };
-                        plainTextApiKey: string;
-                    };
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            404: components["responses"]["ModelNotFoundException"];
-            422: components["responses"]["ValidationException"];
-        };
-    };
-    "workspaceApiKeys.destroy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The api key ID */
-                apiKey: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        revoked: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["AuthenticationException"];
-            404: components["responses"]["ModelNotFoundException"];
-        };
-    };
->>>>>>> 053055e (Port connected accounts to the /api/v1 + React SPA)
     "workspaceInvitations.accept": {
         parameters: {
             query?: never;
