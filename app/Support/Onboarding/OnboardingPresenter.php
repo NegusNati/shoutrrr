@@ -34,7 +34,7 @@ class OnboardingPresenter
                 'key' => $step->value,
                 'label' => $step->label(),
                 'done' => self::isStepDone($workspace, $step, $progress),
-                'href' => $step->spaHref() ?? route($step->routeName()),
+                'href' => $step->spaHref(),
                 'clickToComplete' => $step->isClickToComplete(),
             ];
         }

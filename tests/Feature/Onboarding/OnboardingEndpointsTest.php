@@ -53,7 +53,7 @@ test('welcomed with connect redirects to accounts and stamps the workspace', fun
 
     $this->actingAs($user)
         ->post(route('onboarding.welcomed'), ['connect' => true])
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirect('/app/accounts');
 
     expect($user->currentWorkspace->fresh()->onboarding_welcomed_at)->not->toBeNull();
 });
@@ -97,7 +97,7 @@ test('welcome modal connect CTA redirects to accounts without recording progress
 
     $this->actingAs($user)
         ->post(route('onboarding.welcomed'), ['connect' => true])
-        ->assertRedirect(route('accounts.index'));
+        ->assertRedirect('/app/accounts');
 
     expect($user->currentWorkspace->fresh()->onboarding_progress)->toBeNull();
 });

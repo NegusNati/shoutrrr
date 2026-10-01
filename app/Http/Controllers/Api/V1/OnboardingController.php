@@ -25,7 +25,7 @@ class OnboardingController extends Controller
 
         return response()->json([
             'connect_url' => $request->boolean('connect')
-                ? route(OnboardingStep::ConnectAccount->routeName())
+                ? OnboardingStep::ConnectAccount->spaHref()
                 : null,
         ]);
     }
@@ -65,7 +65,7 @@ class OnboardingController extends Controller
         }
 
         return response()->json([
-            'redirect_url' => $step->spaHref() ?? route($step->routeName()),
+            'redirect_url' => $step->spaHref(),
         ]);
     }
 

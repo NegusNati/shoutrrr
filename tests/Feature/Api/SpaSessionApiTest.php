@@ -173,7 +173,7 @@ test('onboarding welcomed returns a connect url when asked', function () {
     $response = $this->postJson('/api/v1/onboarding/welcomed', ['connect' => true])
         ->assertOk();
 
-    expect($response->json('connect_url'))->toContain('/accounts');
+    expect($response->json('connect_url'))->toBe('/app/accounts');
 });
 
 test('onboarding dismiss is conflict without a connected account', function () {

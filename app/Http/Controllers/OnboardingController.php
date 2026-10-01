@@ -21,7 +21,7 @@ class OnboardingController extends Controller
         // step is data-derived (done once an account exists), so nothing to
         // record here — just route there.
         if ($request->boolean('connect')) {
-            return redirect()->route(OnboardingStep::ConnectAccount->routeName());
+            return redirect(OnboardingStep::ConnectAccount->spaHref());
         }
 
         return back();
@@ -56,7 +56,7 @@ class OnboardingController extends Controller
 
         $this->recordStep($workspace, $step);
 
-        return redirect($step->spaHref() ?? route($step->routeName()));
+        return redirect($step->spaHref());
     }
 
     private function currentWorkspace(Request $request): Workspace

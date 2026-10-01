@@ -52,23 +52,9 @@ enum OnboardingStep: string
     }
 
     /**
-     * Named route the step links to (all param-less).
+     * Path inside the SPA the step links to.
      */
-    public function routeName(): string
-    {
-        return match ($this) {
-            self::ConnectAccount => 'accounts.index',
-            self::FirstPost => 'dashboard',
-            self::Timezone => 'settings.workspace',
-            self::InviteTeammate => 'settings.workspace.members',
-        };
-    }
-
-    /**
-     * Path inside the SPA when the step's target page has been ported;
-     * null while the target still lives in the legacy app.
-     */
-    public function spaHref(): ?string
+    public function spaHref(): string
     {
         return match ($this) {
             self::FirstPost => '/app/dashboard',
