@@ -176,6 +176,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/command-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search the current workspace's posts by body text for the command palette */
+        get: operations["v1.commandSearch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/{postId}/compose": {
         parameters: {
             query?: never;
@@ -2786,6 +2803,38 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "v1.commandSearch": {
+        parameters: {
+            query?: {
+                /** @description Search text; shorter than two characters returns nothing. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        posts: {
+                            id: string;
+                            excerpt: string;
+                            status: string;
+                            scheduled_at: string | null;
+                        }[];
+                    } | {
+                        posts: string[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "composer.showCompose": {

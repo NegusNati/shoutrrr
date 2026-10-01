@@ -1,9 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
+import { openCommandPalette } from '@/components/command-palette/command-palette';
 import { ThemeToggle } from '@/components/common/theme-toggle';
 import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { Search } from '@/components/ui/icons';
+import { Kbd } from '@/components/ui/kbd';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { meQuery } from '@/features/me/me';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
@@ -43,6 +46,23 @@ export function AppSidebarHeader({
             </div>
 
             <div className="ml-auto flex items-center gap-1.5">
+                <button
+                    type="button"
+                    onClick={openCommandPalette}
+                    className="hidden h-8 items-center gap-2 rounded-lg border border-input bg-input/40 pr-1.5 pl-2.5 text-sm text-muted-foreground transition-colors hover:bg-input/70 sm:flex"
+                >
+                    <Search className="size-3.5" />
+                    <span className="pr-6">Search…</span>
+                    <Kbd>⌘K</Kbd>
+                </button>
+                <button
+                    type="button"
+                    onClick={openCommandPalette}
+                    aria-label="Search"
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:hidden"
+                >
+                    <Search className="size-4" />
+                </button>
                 <NotificationBell />
                 <ThemeToggle />
             </div>

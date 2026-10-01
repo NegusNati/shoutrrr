@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AuthOptionsController;
 use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\CalendarController;
+use App\Http\Controllers\Api\V1\CommandSearchController;
 use App\Http\Controllers\Api\V1\ComposerController;
 use App\Http\Controllers\Api\V1\ConnectedAccountsController;
 use App\Http\Controllers\Api\V1\ConversationGifController;
@@ -175,6 +176,11 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
     // the signed-in user and their current workspace, so keys stay out.
     Route::post('feedback', FeedbackController::class)
         ->middleware(['feedback.enabled', 'verified', 'throttle:5,1']);
+
+    // Command-palette post search: session-only and not verified-gated, with
+    // the legacy web route's own 60/min throttle on top of the group default.
+    Route::get('command-search', CommandSearchController::class)
+        ->middleware('throttle:60,1');
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session
