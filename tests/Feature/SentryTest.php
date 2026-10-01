@@ -68,7 +68,7 @@ test('browser Sentry config is injected when a frontend DSN is set', function ()
         'sentry-browser.environment' => 'production',
     ]);
 
-    $response = $this->get('/login');
+    $response = $this->get('/app');
 
     $response->assertSee('window.__sentry', false);
     $response->assertSee('o1.ingest.sentry.io', false);

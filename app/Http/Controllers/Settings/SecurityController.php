@@ -7,16 +7,14 @@ use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rules\Password;
-use Inertia\Inertia;
-use Inertia\Response;
 use Laravel\Fortify\Features;
 
 class SecurityController extends Controller
 {
     /**
-     * Show the user's security settings page.
+     * @return array{canManageTwoFactor: bool, canManagePasskeys: bool, passkeys: array<int, array<string, mixed>>, passwordRules: string, twoFactorEnabled?: bool, requiresConfirmation?: bool}
      */
-    public function edit(TwoFactorAuthenticationRequest $request): Response
+    protected function securityPayload(TwoFactorAuthenticationRequest $request): array
     {
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
@@ -41,13 +39,15 @@ class SecurityController extends Controller
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
-            $request->ensureStateIsValid();
+            if ($request->hasSession()) {
+                $request->ensureStateIsValid();
+            }
 
             $props['twoFactorEnabled'] = $request->user()->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
         }
 
-        return Inertia::render('settings/security', $props);
+        return $props;
     }
 
     /**
@@ -58,8 +58,6 @@ class SecurityController extends Controller
         $request->user()->update([
             'password' => $request->password,
         ]);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 
         return back();
     }

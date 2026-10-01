@@ -6,10 +6,7 @@ export type Appearance = ResolvedAppearance | 'system';
 const APPEARANCES: readonly Appearance[] = ['light', 'dark', 'system'];
 
 function isAppearance(value: unknown): value is Appearance {
-    return (
-        typeof value === 'string' &&
-        APPEARANCES.some((a) => a === value)
-    );
+    return typeof value === 'string' && APPEARANCES.some((a) => a === value);
 }
 
 export type UseAppearanceReturn = {

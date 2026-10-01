@@ -4,15 +4,16 @@ use App\Enums\NotificationType;
 use App\Models\User;
 
 test('preferences screen renders with current values', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
         ->get(route('notifications.preferences'))
+        ->assertRedirect('/app/settings/notifications');
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/settings/notifications')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/notifications')
-            ->has('preferences')
-        );
+        ->assertJsonStructure(['preferences']);
 });
 
 test('updating preferences persists the matrix', function () {

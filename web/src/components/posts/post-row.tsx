@@ -1,6 +1,6 @@
+import { useNavigate } from '@tanstack/react-router';
 import { Fragment } from 'react';
 
-import ComposerController from '@/actions/App/Http/Controllers/Posts/ComposerController';
 import { PlatformGlyph } from '@/components/common/platform-glyph';
 import type { ChipTarget } from '@/components/compose/target-status-chips';
 import { Badge } from '@/components/ui/badge';
@@ -140,10 +140,10 @@ export function PostRow({ post }: { post: PostRowData }) {
         (t: ChipTarget) => t.status === 'failed',
     ).length;
 
+    const navigate = useNavigate();
+
     function openCompose() {
-        // The composer still lives in the server-rendered app — navigate
-        // there with a full page load until that page is ported to the SPA.
-        window.location.assign(ComposerController.show(post.id).url);
+        void navigate({ to: '/posts/$postId', params: { postId: post.id } });
     }
 
     const metaParts: { key: string; node: React.ReactNode }[] = [];

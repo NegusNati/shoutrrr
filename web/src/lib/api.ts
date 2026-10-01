@@ -9,6 +9,8 @@ export class ApiError extends Error {
         public readonly status: number,
         message: string,
         public readonly errors: Record<string, string[]> = {},
+        /** Raw response body — needed by callers that parse error bodies (409 conflict snapshot, 422 blocked accounts). */
+        public readonly payload: Record<string, unknown> = {},
     ) {
         super(message);
         this.name = 'ApiError';
@@ -38,6 +40,20 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
     >;
 
     if (!response.ok) {
+        // 423 Locked — Laravel's password.confirm middleware. The action needs
+        // a fresh password confirmation; send the user through the confirm
+        // page and back (mirrors the Inertia app's behavior).
+        if (
+            response.status === 423 &&
+            !window.location.pathname.endsWith('/confirm-password')
+        ) {
+            window.location.assign(
+                `/app/confirm-password?return_to=${encodeURIComponent(
+                    window.location.pathname + window.location.search,
+                )}`,
+            );
+        }
+
         // Laravel's error contract: { message: string, errors: {field: string[]} }
         const errors =
             typeof payload.errors === 'object' && payload.errors !== null
@@ -50,10 +66,28 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
                 ? payload.message
                 : `Request failed (${response.status})`,
             errors,
+            payload,
         );
     }
 
     return payload as T;
+}
+
+/**
+ * User-facing error text for toasts. 4xx keeps the server's message (validation,
+ * throttling); 5xx+ and anything else gets the fallback so a raw framework
+ * exception ("No query results for model …") never reaches the user.
+ */
+export function errorMessage(error: unknown, fallback: string): string {
+    if (
+        error instanceof ApiError &&
+        error.status < 500 &&
+        error.message.trim() !== ''
+    ) {
+        return error.message;
+    }
+
+    return fallback;
 }
 
 /**
@@ -81,6 +115,34 @@ export async function apiFetch<T = unknown>(
         ...(options.body !== undefined && {
             body: JSON.stringify(options.body),
         }),
+    });
+
+    return parseJsonResponse<T>(response);
+}
+
+/**
+ * Multipart POST for file uploads (media attachments). Lets the browser set
+ * the multipart boundary; same session + XSRF contract as apiFetch.
+ */
+export async function apiUpload<T = unknown>(
+    path: string,
+    body: FormData | Record<string, Blob | string>,
+): Promise<T> {
+    const form = body instanceof FormData ? body : new FormData();
+    if (!(body instanceof FormData)) {
+        for (const [key, value] of Object.entries(body)) {
+            form.append(key, value);
+        }
+    }
+
+    const response = await fetch(`/api/v1/${path}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            Accept: 'application/json',
+            ...xsrfHeader(),
+        },
+        body: form,
     });
 
     return parseJsonResponse<T>(response);
@@ -151,7 +213,42 @@ export async function apiCall<T>(
         typeof body.errors === 'object' && body.errors !== null
             ? (body.errors as Record<string, string[]>)
             : {},
+        typeof error === 'object' && error !== null
+            ? (error as Record<string, unknown>)
+            : {},
     );
+}
+
+/**
+ * Calls non-API (web) endpoints such as Fortify's auth routes, the passkeys
+ * routes, and the legacy workspace lifecycle routes that have no `/api/v1`
+ * equivalent. Same XSRF contract as apiFetch, but the path is absolute.
+ * Note: redirects land on HTML pages, so a followed 302 resolves `{}` —
+ * callers that need the error bag get it via a non-2xx status instead.
+ */
+export async function webFetch<T = unknown>(
+    url: string,
+    options: ApiOptions = {},
+): Promise<T> {
+    const response = await fetch(url, {
+        method: options.method ?? 'GET',
+        credentials: 'include',
+        headers: {
+            Accept: 'application/json',
+            ...(options.body !== undefined && {
+                'Content-Type': 'application/json',
+            }),
+            ...(options.method !== undefined && options.method !== 'GET'
+                ? xsrfHeader()
+                : {}),
+            ...options.headers,
+        },
+        ...(options.body !== undefined && {
+            body: JSON.stringify(options.body),
+        }),
+    });
+
+    return parseJsonResponse<T>(response);
 }
 
 /**
@@ -162,16 +259,5 @@ export async function webPost<T = unknown>(
     url: string,
     body: Record<string, unknown> = {},
 ): Promise<T> {
-    const response = await fetch(url, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...xsrfHeader(),
-        },
-        body: JSON.stringify(body),
-    });
-
-    return parseJsonResponse<T>(response);
+    return webFetch<T>(url, { method: 'POST', body });
 }

@@ -96,6 +96,7 @@ test('the customer id is derived, stable, and not the raw user id', function () 
 
 test('shares the gifs_enabled flag with the frontend', function () {
     $this->actingAs(User::factory()->withWorkspace()->create())
-        ->get('/dashboard')
-        ->assertInertia(fn ($page) => $page->where('shell.gifs_enabled', true));
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('shell.gifs_enabled', true);
 });

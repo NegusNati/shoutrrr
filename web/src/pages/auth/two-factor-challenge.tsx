@@ -11,12 +11,14 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 import { submitTwoFactorChallenge } from '@/features/auth/auth';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { ApiError } from '@/lib/api';
 import { fieldString } from '@/lib/forms';
 
 const OTP_MAX_LENGTH = 6;
 
 export default function TwoFactorChallengePage() {
+    useDocumentTitle('Two-factor authentication');
     const navigate = useNavigate();
     const [showRecoveryInput, setShowRecoveryInput] = useState(false);
     const [code, setCode] = useState('');

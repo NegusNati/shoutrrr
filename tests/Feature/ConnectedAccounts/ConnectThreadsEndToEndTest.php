@@ -128,8 +128,7 @@ test('callback redirects with a friendly error instead of 500ing when the long-l
     ]);
 
     test()->get('/accounts/callback/threads')
-        ->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('error');
+        ->assertRedirect('/app/accounts?'.http_build_query(['error' => "We couldn't connect your Threads account. Please try again."]));
 
     expect(ConnectedAccount::withoutGlobalScopes()->where('remote_account_id', 'threads-fail')->exists())->toBeFalse();
 });

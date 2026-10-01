@@ -34,7 +34,7 @@ test('the development server binds to all interfaces without a fixed port so it 
 });
 
 test('vite binds to all interfaces, falls back when the port is taken, and uses VITE_HMR_HOST', function () {
-    $viteConfig = file_get_contents(base_path('vite.config.ts'));
+    $viteConfig = file_get_contents(base_path('vite.spa.config.ts'));
     $packageJson = json_decode(file_get_contents(base_path('package.json')), true, flags: JSON_THROW_ON_ERROR);
 
     expect($viteConfig)
@@ -45,7 +45,6 @@ test('vite binds to all interfaces, falls back when the port is taken, and uses 
         ->toContain('...process.env')
         ->toContain("environment.VITE_HMR_HOST || '').trim()")
         ->toContain("appUrl.protocol === 'https:' ? 'localhost' : appUrl.hostname")
-        ->toContain('disable-hot-file-for-https-app-url')
         ->toContain('cors: true')
         ->toContain('host: hmrHost')
         ->not->toContain('origin: viteOrigin')
@@ -53,7 +52,7 @@ test('vite binds to all interfaces, falls back when the port is taken, and uses 
         ->not->toContain('strictPort: true')
         ->not->toContain('networkInterfaces');
 
-    expect($packageJson['scripts']['dev'])->toBe('vite --host 0.0.0.0');
+    expect($packageJson['scripts']['dev'])->toBe('vite --host 0.0.0.0 --config vite.spa.config.ts');
 
     expect(file_get_contents(base_path('.env.example')))
         ->toContain('VITE_HMR_HOST=');

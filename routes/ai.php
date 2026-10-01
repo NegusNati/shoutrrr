@@ -7,7 +7,6 @@ use App\Http\Middleware\RecordApiUsage;
 use App\Mcp\Servers\ShoutrrrServer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use Laravel\Mcp\Facades\Mcp;
 
 // Throttle the OAuth authorize/token endpoints so consent and token-exchange
@@ -37,7 +36,7 @@ Route::get('/mcp', function (Request $request) {
     $wantsEventStream = str_contains($accept, 'text/event-stream');
 
     if ($wantsHtml && ! $wantsEventStream) {
-        return Inertia::render('mcp/landing');
+        return redirect('/app/mcp');
     }
 
     return response('', 405)->header('Allow', 'POST');

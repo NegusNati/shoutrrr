@@ -20,8 +20,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use Inertia\Response;
 use RuntimeException;
 use Throwable;
 
@@ -35,48 +33,38 @@ class ConnectedAccountController extends Controller
         private readonly TokenManager $tokens,
     ) {}
 
-    public function index(Request $request): Response
+    /**
+     * Card payload for a connected account — shared by the Inertia index and
+     * the API index so both surfaces render identical data.
+     *
+     * @return array<string, mixed>
+     */
+    public static function view(ConnectedAccount $account, ?string $defaultAccountId): array
     {
-        $request->user()->can('viewAny', ConnectedAccount::class) ?: abort(403);
-        $defaultAccountId = $request->user()->currentWorkspace()->value('default_connected_account_id');
-
-        $accounts = ConnectedAccount::query()
-            ->with(['connectedBy:id,name', 'secret:connected_account_id,session'])
-            ->latest()
-            ->get()
-            ->sortByDesc(fn (ConnectedAccount $account): bool => $account->id === $defaultAccountId)
-            ->map(fn (ConnectedAccount $account): array => [
-                'id' => $account->id,
-                'platform' => $account->platform->value,
-                'platform_label' => $account->platform->label(),
-                'handle' => $account->handle,
-                'display_name' => $account->display_name,
-                'avatar_url' => $account->avatar_url,
-                'status' => $account->status->value,
-                'status_label' => $account->status->label(),
-                'auth_method' => $account->auth_method,
-                'connected_by' => $account->connectedBy?->name,
-                'token_expires_at' => $account->token_expires_at?->toIso8601String(),
-                'max_text_length' => $account->maxTextLength(),
-                'max_video_duration_seconds' => $account->maxVideoDurationSeconds(),
-                'x_premium' => $account->hasXPremium(),
-                'x_subscription_tier' => $account->xSubscriptionTier(),
-                'x_subscription_label' => $account->xSubscriptionLabel(),
-                'x_subscription_checked_at' => $account->xSubscriptionCheckedAt(),
-                'is_linkedin_page' => $account->isLinkedInOrganization(),
-                'is_default' => $account->id === $defaultAccountId,
-                'disabled' => $account->isDisabled(),
-                'pds_url' => $this->customPdsUrl($account),
-                'auto_repost_enabled' => $account->autoRepostEnabled(),
-            ])
-            ->values()
-            ->all();
-
-        return Inertia::render('accounts/index', [
-            'accounts' => $accounts,
-            'capabilities' => Platform::capabilities(),
-            'canManage' => $request->user()->can('create', ConnectedAccount::class),
-        ]);
+        return [
+            'id' => $account->id,
+            'platform' => $account->platform->value,
+            'platform_label' => $account->platform->label(),
+            'handle' => $account->handle,
+            'display_name' => $account->display_name,
+            'avatar_url' => $account->avatar_url,
+            'status' => $account->status->value,
+            'status_label' => $account->status->label(),
+            'auth_method' => $account->auth_method,
+            'connected_by' => $account->connectedBy?->name,
+            'token_expires_at' => $account->token_expires_at?->toIso8601String(),
+            'max_text_length' => $account->maxTextLength(),
+            'max_video_duration_seconds' => $account->maxVideoDurationSeconds(),
+            'x_premium' => $account->hasXPremium(),
+            'x_subscription_tier' => $account->xSubscriptionTier(),
+            'x_subscription_label' => $account->xSubscriptionLabel(),
+            'x_subscription_checked_at' => $account->xSubscriptionCheckedAt(),
+            'is_linkedin_page' => $account->isLinkedInOrganization(),
+            'is_default' => $account->id === $defaultAccountId,
+            'disabled' => $account->isDisabled(),
+            'pds_url' => self::customPdsUrl($account),
+            'auto_repost_enabled' => $account->autoRepostEnabled(),
+        ];
     }
 
     /**
@@ -84,7 +72,7 @@ class ConnectedAccountController extends Controller
      * default discovery target — so reconnect can re-run OAuth against a custom
      * service URL instead of silently falling back to bsky.social.
      */
-    private function customPdsUrl(ConnectedAccount $account): ?string
+    private static function customPdsUrl(ConnectedAccount $account): ?string
     {
         if ($account->platform !== Platform::Bluesky) {
             return null;
@@ -317,7 +305,6 @@ class ConnectedAccountController extends Controller
 
         $account->secret()->delete();
         $account->delete();
-        Inertia::clearHistory();
 
         return redirect()->route('accounts.index')->with('success', 'Account disconnected.');
     }

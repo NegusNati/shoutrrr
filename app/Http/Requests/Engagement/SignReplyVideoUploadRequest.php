@@ -10,7 +10,7 @@ class SignReplyVideoUploadRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->route('reply') !== null;
+        return $this->route('reply') !== null || $this->route('replyId') !== null;
     }
 
     /**

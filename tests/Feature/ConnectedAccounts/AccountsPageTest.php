@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Http;
-use Inertia\Testing\AssertableInertia as Assert;
 
 function viewerInWorkspace(WorkspaceRole $role): User
 {
@@ -41,21 +40,22 @@ test('the accounts page lists accounts and exposes capabilities and canManage to
     $owner = viewerInWorkspace(WorkspaceRole::Owner);
 
     test()->actingAs($owner)->get('/accounts')
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('accounts/index')
-            ->where('canManage', true)
-            ->has('capabilities', 7)
-            ->has('accounts', 1)
-            ->where('accounts.0.handle', '@listed')
-            ->where('accounts.0.x_premium', true)
-            ->where('accounts.0.x_subscription_tier', 'premium')
-            ->where('accounts.0.x_subscription_label', 'X Premium')
-            ->where('accounts.0.x_subscription_checked_at', '2026-07-10T12:00:00+00:00')
-            ->where('accounts.0.max_text_length', 25_000)
-            ->where('accounts.0.max_video_duration_seconds', 14_400)
-            ->where('accounts.0.is_default', false)
-            ->missing('accounts.0.secret'),
-        );
+        ->assertRedirect('/app/accounts');
+
+    test()->actingAs($owner)->getJson('/api/v1/connected-accounts')
+        ->assertOk()
+        ->assertJsonPath('can_manage', true)
+        ->assertJsonCount(7, 'capabilities')
+        ->assertJsonCount(1, 'accounts')
+        ->assertJsonPath('accounts.0.handle', '@listed')
+        ->assertJsonPath('accounts.0.x_premium', true)
+        ->assertJsonPath('accounts.0.x_subscription_tier', 'premium')
+        ->assertJsonPath('accounts.0.x_subscription_label', 'X Premium')
+        ->assertJsonPath('accounts.0.x_subscription_checked_at', '2026-07-10T12:00:00+00:00')
+        ->assertJsonPath('accounts.0.max_text_length', 25_000)
+        ->assertJsonPath('accounts.0.max_video_duration_seconds', 14_400)
+        ->assertJsonPath('accounts.0.is_default', false)
+        ->assertJson(fn ($json) => $json->missing('accounts.0.secret')->etc());
 });
 
 test('owners can refresh an X subscription tier without reconnecting', function () {
@@ -178,15 +178,13 @@ test('the accounts page exposes a saved custom PDS so reconnect can replay it', 
         'session' => ['pds' => 'https://pds.example'],
     ]);
 
-    test()->actingAs($owner)->get('/accounts')
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('accounts/index')
-            ->has('accounts', 2)
-            ->where('accounts.0.handle', '@custom')
-            ->where('accounts.0.pds_url', 'https://pds.example')
-            ->where('accounts.1.handle', '@default-pds')
-            ->where('accounts.1.pds_url', null),
-        );
+    test()->actingAs($owner)->getJson('/api/v1/connected-accounts')
+        ->assertOk()
+        ->assertJsonCount(2, 'accounts')
+        ->assertJsonPath('accounts.0.handle', '@custom')
+        ->assertJsonPath('accounts.0.pds_url', 'https://pds.example')
+        ->assertJsonPath('accounts.1.handle', '@default-pds')
+        ->assertJsonPath('accounts.1.pds_url', null);
 });
 
 test('owners can set a workspace default account from the accounts page', function () {
@@ -235,12 +233,11 @@ test('the accounts page marks and lists the workspace default account first', fu
     $default = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'handle' => '@default']);
     $workspace->forceFill(['default_connected_account_id' => $default->id])->save();
 
-    test()->actingAs($owner)->get('/accounts')
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('accounts.0.id', $default->id)
-            ->where('accounts.0.is_default', true)
-            ->where('accounts.0.handle', '@default'),
-        );
+    test()->actingAs($owner)->getJson('/api/v1/connected-accounts')
+        ->assertOk()
+        ->assertJsonPath('accounts.0.id', $default->id)
+        ->assertJsonPath('accounts.0.is_default', true)
+        ->assertJsonPath('accounts.0.handle', '@default');
 });
 
 test('disconnecting the workspace default account clears the default', function () {
@@ -261,34 +258,12 @@ test('disconnecting the workspace default account clears the default', function 
     expect($workspace->fresh()->default_connected_account_id)->toBeNull();
 });
 
-test('disconnecting an account clears stale inertia history on the next accounts page response', function () {
-    $owner = User::factory()->create(['email_verified_at' => now()]);
-    $workspace = Workspace::factory()->create(['owner_id' => $owner->id]);
-    WorkspaceMembership::factory()->owner()->create([
-        'workspace_id' => $workspace->id,
-        'user_id' => $owner->id,
-    ]);
-    $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
-    $account = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
-
-    test()->actingAs($owner)
-        ->delete(route('accounts.destroy', $account))
-        ->assertRedirect(route('accounts.index'));
-
-    test()->actingAs($owner)
-        ->get(route('accounts.index'))
-        ->assertInertia(fn (Assert $page) => expect($page->toArray())
-            ->toHaveKey('clearHistory', true));
-});
-
 test('members see the list but cannot manage', function () {
     $member = viewerInWorkspace(WorkspaceRole::Member);
 
-    test()->actingAs($member)->get('/accounts')
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('accounts/index')
-            ->where('canManage', false),
-        );
+    test()->actingAs($member)->getJson('/api/v1/connected-accounts')
+        ->assertOk()
+        ->assertJsonPath('can_manage', false);
 });
 
 test('the accounts page requires authentication', function () {
@@ -301,17 +276,17 @@ test('the accounts index marks a linkedin page account', function () {
     ConnectedAccount::factory()->linkedinPage()->create(['workspace_id' => $workspace->id]);
 
     test()->get(route('accounts.index'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('accounts.0.is_linkedin_page', true));
+        ->assertRedirect('/app/accounts');
+
+    test()->getJson('/api/v1/connected-accounts')
+        ->assertOk()
+        ->assertJsonPath('accounts.0.is_linkedin_page', true);
 });
 
-test('get requests to account member paths return not found instead of method not allowed', function () {
+test('get requests to account member paths return method not allowed', function () {
     $owner = viewerInWorkspace(WorkspaceRole::Owner);
 
     test()->actingAs($owner)
         ->get('/accounts/does-not-exist')
-        ->assertNotFound()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('error')
-            ->where('status', 404));
+        ->assertMethodNotAllowed();
 });

@@ -139,7 +139,7 @@ test('issue generates keys without invoking the passport console command (octane
 
         // The generated public key must verify a JWT signed by the generated private key:
         // authenticate the freshly issued token through the real resource-server guard.
-        $this->withToken($plain)->getJson('/api/v1/connected-accounts')->assertOk();
+        $this->withToken($plain)->getJson('/api/v1/posts')->assertOk();
     } finally {
         Passport::loadKeysFrom(storage_path());
         File::deleteDirectory($emptyDir);

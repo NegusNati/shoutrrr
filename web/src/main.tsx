@@ -4,6 +4,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { queryClient } from '@/lib/query-client';
+import ErrorPage from '@/pages/error';
 
 import { routeTree } from './routeTree.gen';
 
@@ -13,6 +14,8 @@ const router = createRouter({
     routeTree,
     basepath: '/app',
     defaultPreload: 'intent',
+    defaultNotFoundComponent: () => <ErrorPage status={404} />,
+    defaultErrorComponent: () => <ErrorPage status={500} />,
     context: {
         queryClient,
     },

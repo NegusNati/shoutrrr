@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Context;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 test('the compose page serializes target placements', function (): void {
     $user = User::factory()->create();
@@ -55,14 +55,12 @@ test('the compose page serializes target placements', function (): void {
         'position' => 0,
     ]);
 
-    test()->actingAs($user)->get("/posts/{$post->id}")
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('compose/index')
+    test()->actingAs($user)->getJson("/api/v1/posts/{$post->id}/compose")
+        ->assertJson(fn (Assert $json) => $json
             ->where('post.targets.0.placements.0.segment_ref', 'seg-1')
             ->where('post.targets.0.placements.0.media_id', $media->id)
             ->where('post.targets.0.segment_breaks', ['seg-1'])
             ->has('post.segment_breaks')
             ->where('post.segment_breaks', ['seg-1'])
-            ->has('post.placements', 1),
-        );
+            ->has('post.placements', 1)->etc());
 });

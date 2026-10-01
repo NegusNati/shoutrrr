@@ -38,7 +38,7 @@ test('opening a thread returns the reply and marks it read', function (): void {
         'read_at' => null,
     ]);
 
-    $this->getJson(route('engagement.thread', $reply))
+    $this->getJson('/api/v1/engagement/'.$reply->id.'/thread')
         ->assertOk()
         ->assertJsonStructure(['thread']);
 
@@ -62,7 +62,7 @@ test('thread replies include the published post remote id for platform links', f
         'platform' => Platform::Bluesky,
     ]);
 
-    $this->getJson(route('engagement.thread', $reply))
+    $this->getJson('/api/v1/engagement/'.$reply->id.'/thread')
         ->assertOk()
         ->assertJsonPath('thread.0.post_remote_id', 'at://did:plc:heyandras/app.bsky.feed.post/3kabc')
         ->assertJsonPath('thread.0.account_handle', '@heyandras-testing.bsky.social');
@@ -75,7 +75,7 @@ test('thread replies expose whether the platform can like them', function (): vo
         'platform' => Platform::X,
     ]);
 
-    $this->getJson(route('engagement.thread', $likeable))
+    $this->getJson('/api/v1/engagement/'.$likeable->id.'/thread')
         ->assertOk()
         ->assertJsonPath('thread.0.can_like', true);
 
@@ -87,7 +87,7 @@ test('thread replies expose whether the platform can like them', function (): vo
         'platform' => Platform::Threads,
     ]);
 
-    $this->getJson(route('engagement.thread', $notLikeable))
+    $this->getJson('/api/v1/engagement/'.$notLikeable->id.'/thread')
         ->assertOk()
         ->assertJsonPath('thread.0.can_like', false);
 });
@@ -167,7 +167,7 @@ test('opening a conversation returns only replies in the selected base reply thr
         'remote_created_at' => now()->subMinutes(2),
     ]);
 
-    $this->getJson(route('engagement.thread', $latest))
+    $this->getJson('/api/v1/engagement/'.$latest->id.'/thread')
         ->assertOk()
         ->assertJsonPath('thread.0.text', 'base inbound')
         ->assertJsonPath('thread.1.text', 'our response')
@@ -319,7 +319,7 @@ test('a parent_remote_id cycle is bounded and does not hang', function (): void 
         'parent_remote_id' => 'at://a',
     ]);
 
-    $response = $this->getJson(route('engagement.thread', $a))
+    $response = $this->getJson('/api/v1/engagement/'.$a->id.'/thread')
         ->assertOk()
         ->assertJsonStructure(['thread']);
 

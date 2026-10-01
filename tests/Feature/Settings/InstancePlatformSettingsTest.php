@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\InstanceRole;
 use App\Enums\Platform;
 use App\Models\User;
 use App\Support\InstanceSettings;
@@ -39,27 +38,29 @@ it('stops polling for a frozen platform regardless of the polling toggle', funct
 });
 
 it('lets an owner view the platforms page', function () {
-    $owner = User::factory()->create(['instance_role' => InstanceRole::Owner->value]);
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->get(route('instance-settings.platforms'))
+        ->assertRedirect('/app/settings/instance/platforms');
+
+    $this->actingAs($owner)
+        ->getJson('/api/v1/instance-settings/platforms')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('settings/instance-platforms')
-            ->has('platforms', 7)
-            ->where('linkedin_community_management_enabled', false));
+        ->assertJsonCount(7, 'platforms')
+        ->assertJsonPath('linkedin_community_management_enabled', false);
 });
 
 it('forbids a non-owner from the platforms page', function () {
-    $user = User::factory()->create(['instance_role' => null]);
+    $user = User::factory()->withWorkspace()->create(['instance_role' => null]);
 
     $this->actingAs($user)
-        ->get(route('instance-settings.platforms'))
+        ->getJson('/api/v1/instance-settings/platforms')
         ->assertForbidden();
 });
 
 it('persists platform toggles for an owner', function () {
-    $owner = User::factory()->create(['instance_role' => InstanceRole::Owner->value]);
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->put(route('instance-settings.updatePlatforms'), [
@@ -80,7 +81,7 @@ it('persists platform toggles for an owner', function () {
 });
 
 it('persists the linkedin community management toggle from the platforms page', function () {
-    $owner = User::factory()->create(['instance_role' => InstanceRole::Owner->value]);
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     expect(app(InstanceSettings::class)->linkedinCommunityManagementEnabled())->toBeFalse();
 
@@ -103,7 +104,7 @@ it('persists the linkedin community management toggle from the platforms page', 
 });
 
 it('rejects a platforms update missing the linkedin community management field', function () {
-    $owner = User::factory()->create(['instance_role' => InstanceRole::Owner->value]);
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->put(route('instance-settings.updatePlatforms'), [

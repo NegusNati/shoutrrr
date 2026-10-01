@@ -1,5 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 
+import Composer from '@/components/compose/composer';
 import { DashboardAura } from '@/components/dashboard/dashboard-aura';
 import { RecentFeed } from '@/components/dashboard/recent-feed';
 import { GettingStartedCard } from '@/components/onboarding/getting-started-card';
@@ -15,8 +17,10 @@ import {
 import { Plug } from '@/components/ui/icons';
 import { useMeData } from '@/features/me/me';
 import { dashboardQuery } from '@/features/posts/posts';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { parseDestinationParam } from '@/lib/compose/composer-state';
 import { shouldShowDashboardNoAccountsNotice } from '@/lib/dashboard/accounts';
-import { index as accountsRoute } from '@/routes/accounts';
+import { appUrl } from '@/lib/href';
 
 function timeGreeting(): string {
     const hour = new Date().getHours();
@@ -47,7 +51,7 @@ function NoAccountsNotice() {
                 </EmptyDescription>
             </EmptyHeader>
             <a
-                href={accountsRoute().url}
+                href={appUrl('/accounts')}
                 className="text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
                 View connected accounts
@@ -57,8 +61,44 @@ function NoAccountsNotice() {
 }
 
 export default function DashboardPage() {
+    useDocumentTitle('Dashboard');
     const me = useMeData();
     const { data, isLoading } = useQuery(dashboardQuery);
+    const queryClient = useQueryClient();
+
+    // Autosave persists drafts via standalone fetches, so the recent-posts
+    // feed would stay stale after a save. Refresh the query when the composer
+    // reports a save, debounced so a burst of keystroke-driven saves coalesces
+    // into one refetch.
+    const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    function refreshRecentPosts() {
+        if (reloadTimer.current) {
+            clearTimeout(reloadTimer.current);
+        }
+        reloadTimer.current = setTimeout(() => {
+            void queryClient.invalidateQueries({
+                queryKey: dashboardQuery.queryKey,
+            });
+        }, 600);
+    }
+    useEffect(
+        () => () => {
+            if (reloadTimer.current) {
+                clearTimeout(reloadTimer.current);
+            }
+        },
+        [],
+    );
+
+    // A calendar slot click opens the composer here with a pre-set schedule
+    // time; a "compose for channel" action arrives with ?destination=… — read
+    // once from the URL, mirroring the Inertia page's page.url parsing.
+    const initialScheduleAt = new URL(window.location.href).searchParams.get(
+        'schedule_at',
+    );
+    const initialDestination = parseDestinationParam(
+        new URL(window.location.href).searchParams.get('destination'),
+    );
 
     const firstName = (me?.auth.user?.name ?? '').split(/\s+/)[0] || 'there';
     const showNoAccountsNotice = shouldShowDashboardNoAccountsNotice(
@@ -91,8 +131,19 @@ export default function DashboardPage() {
 
             {showNoAccountsNotice && <NoAccountsNotice />}
 
-            {/* The inline composer still lives in the server-rendered app and
-                ports in the composer slice; post rows navigate there too. */}
+            {me && data && (
+                <Composer
+                    post={null}
+                    accounts={me.shell.accounts}
+                    sets={me.shell.sets}
+                    limits={me.shell.limits}
+                    initialScheduleAt={initialScheduleAt}
+                    initialDestination={initialDestination}
+                    initialSavedMentions={data.savedMentions}
+                    autoFocusEditor
+                    onSaved={refreshRecentPosts}
+                />
+            )}
 
             {isLoading ? <RecentFeedSkeleton /> : <RecentFeed posts={posts} />}
         </div>

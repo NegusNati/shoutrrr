@@ -10,7 +10,7 @@ class StoreConversationVideoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->route('conversation') !== null;
+        return $this->route('conversation') !== null || $this->route('conversationId') !== null;
     }
 
     /**

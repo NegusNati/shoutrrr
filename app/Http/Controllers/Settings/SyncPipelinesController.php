@@ -14,24 +14,20 @@ use App\Models\Workspace;
 use App\Services\Billing\WorkspaceSubscriptionGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class SyncPipelinesController extends Controller
 {
-    public function __construct(private readonly WorkspaceSubscriptionGate $gate) {}
+    public function __construct(protected readonly WorkspaceSubscriptionGate $gate) {}
 
-    public function index(Request $request): Response
+    /**
+     * @return array{accounts: Collection<int, array{id: string, platform: 'bluesky'|'discord'|'facebook'|'instagram'|'linkedin'|'threads'|'x', handle: string, display_name: string|null, avatar_url: string|null, status: 'active'|'needs_attention', supports_native: bool}>, pipelines: Collection<int, array{id: string, name: string, enabled: bool, source_connected_account_id: string, destination_connected_account_ids: array<int, string>}>, maxPipelines: int, canCreate: bool, trackableAccounts: Collection<int, array{id: string, platform: 'bluesky'|'discord'|'facebook'|'instagram'|'linkedin'|'threads'|'x', handle: string, display_name: string|null, avatar_url: string|null, status: 'active'|'needs_attention', supports_native: bool}>, trackedAccountIds: Collection<int, string>, canTrack: bool, maxTracked: int}
+     */
+    protected function pipelinesPayload(Workspace $workspace): array
     {
-        /** @var User $user */
-        $user = $request->user();
-        $workspace = $user->currentWorkspace;
-        abort_if($workspace === null, 404);
-        $this->authorizeManage($user, $workspace->id);
-
         $accounts = ConnectedAccount::query()
             ->where('workspace_id', $workspace->id)
             ->enabled()
@@ -56,20 +52,21 @@ class SyncPipelinesController extends Controller
                 'name' => $pipeline->name,
                 'enabled' => $pipeline->enabled,
                 'source_connected_account_id' => $pipeline->source_connected_account_id,
-                'destination_connected_account_ids' => $pipeline->destinations->pluck('id')->all(),
+                'destination_connected_account_ids' => $pipeline->destinations->map(fn (ConnectedAccount $d): string => $d->id)->all(),
             ]);
 
-        return Inertia::render('sync', [
+        return [
             'accounts' => $accounts,
             'pipelines' => $pipelines,
             'maxPipelines' => (int) config('subscriptions.max_sync_pipelines'),
             'canCreate' => $this->gate->canCreateSyncPipeline($workspace),
             'trackableAccounts' => $accounts->filter(fn (array $a): bool => Platform::from($a['platform'])->supportsNativeRead())->values(),
             'trackedAccountIds' => ConnectedAccountNativeWatch::query()
-                ->where('workspace_id', $workspace->id)->pluck('connected_account_id'),
+                ->where('workspace_id', $workspace->id)->pluck('connected_account_id')
+                ->map(fn ($id): string => (string) $id),
             'canTrack' => $this->gate->canTrackNativeAccount($workspace),
             'maxTracked' => (int) config('subscriptions.max_native_tracked'),
-        ]);
+        ];
     }
 
     public function store(Request $request): RedirectResponse
@@ -124,7 +121,7 @@ class SyncPipelinesController extends Controller
      * the account is eligible (native-read platform, and either already tracked
      * or within the tracking cap). Best-effort: never blocks pipeline creation.
      */
-    private function maybeTrackSource(Workspace $workspace, User $user, string $sourceId, bool $optedIn): bool
+    protected function maybeTrackSource(Workspace $workspace, User $user, string $sourceId, bool $optedIn): bool
     {
         if (! $optedIn) {
             return false;
@@ -196,7 +193,7 @@ class SyncPipelinesController extends Controller
     /**
      * @param  array<int, mixed>  $destinations
      */
-    private function assertSourceNotDestination(string $source, array $destinations): void
+    protected function assertSourceNotDestination(string $source, array $destinations): void
     {
         if (in_array($source, array_map(static fn (mixed $id): string => (string) $id, $destinations), true)) {
             throw ValidationException::withMessages([
@@ -205,12 +202,12 @@ class SyncPipelinesController extends Controller
         }
     }
 
-    private function accountRule(string $workspaceId): Exists
+    protected function accountRule(string $workspaceId): Exists
     {
         return Rule::exists('connected_accounts', 'id')->where('workspace_id', $workspaceId);
     }
 
-    private function authorizeManage(User $user, string $workspaceId): void
+    protected function authorizeManage(User $user, string $workspaceId): void
     {
         abort_unless($user->hasAllPermissions(['workspace.settings.manage'], $workspaceId), 403);
     }

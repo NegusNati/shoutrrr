@@ -3,20 +3,17 @@
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\InstanceSettings;
-use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::registration());
 });
 
-test('registration screen can be rendered', function () {
-    $response = $this->get(route('register'));
-
-    $response->assertOk();
+test('registration screen redirects to the SPA', function () {
+    $this->get(route('register'))->assertRedirect('/app/register');
 });
 
-test('registration screen preloads the email for a valid invitation', function () {
+test('registration screen redirects to the SPA with the invitation preserved', function () {
     [$plain, $hash] = WorkspaceInvitation::generateToken();
     WorkspaceInvitation::factory()->create([
         'email' => 'invited@example.com',
@@ -24,10 +21,12 @@ test('registration screen preloads the email for a valid invitation', function (
     ]);
 
     $this->get(route('register', ['invitation' => $plain]))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/register')
-            ->where('invitation', $plain)
-            ->where('invitationEmail', 'invited@example.com'));
+        ->assertRedirect('/app/register?invitation='.$plain);
+
+    $this->getJson('/api/v1/auth/options?invitation='.$plain)
+        ->assertOk()
+        ->assertJsonPath('invitation', $plain)
+        ->assertJsonPath('invitationEmail', 'invited@example.com');
 });
 
 test('new users can register', function () {
@@ -96,20 +95,24 @@ test('registration screen redirects to login when public registration is disable
     ]);
 
     $this->get(route('register'))
-        ->assertRedirect(route('login', absolute: false))
-        ->assertSessionMissing('status');
+        ->assertRedirect('/app/register');
+
+    $this->getJson('/api/v1/auth/options')
+        ->assertJsonPath('canRegister', false)
+        ->assertJsonPath('registrationDisabledMessage', fn ($m) => $m !== null);
 });
 
-test('login screen knows public registration is disabled', function () {
+test('auth options report public registration is disabled', function () {
     User::factory()->instanceOwner()->create();
 
     app(InstanceSettings::class)->update([
         'registrations_enabled' => false,
     ]);
 
-    $this->get(route('login'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/login')
-            ->where('canRegister', false)
-            ->where('registrationDisabledMessage', 'Registration is disabled for this instance.'));
+    $this->get(route('login'))->assertRedirect('/app/login');
+
+    $this->getJson('/api/v1/auth/options')
+        ->assertOk()
+        ->assertJsonPath('canRegister', false)
+        ->assertJsonPath('registrationDisabledMessage', 'Registration is disabled for this instance.');
 });

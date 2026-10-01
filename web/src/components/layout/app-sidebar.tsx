@@ -1,8 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
-import PostingScheduleController from '@/actions/App/Http/Controllers/Posts/PostingScheduleController';
-import SyncPipelinesController from '@/actions/App/Http/Controllers/Settings/SyncPipelinesController';
 import AppLogo from '@/components/layout/app-logo';
 import { NavUser } from '@/components/layout/nav-user';
 import { SidebarFooterCard } from '@/components/layout/sidebar-footer-card';
@@ -101,15 +99,31 @@ const versionBadgeClassName =
 
 const postsNavItems: NavItem[] = [
     { title: 'Posts', href: postsRoute(), icon: Inbox, spa: true },
-    { title: 'Calendar', href: calendarRoute(), icon: CalendarDays },
+    {
+        title: 'Calendar',
+        href: calendarRoute(),
+        icon: CalendarDays,
+        spa: true,
+    },
     {
         title: 'Queue',
-        href: PostingScheduleController.show(),
+        href: '/queue',
         icon: ListChecks,
+        spa: true,
     },
-    { title: 'Accounts', href: accountsRoute(), icon: Share2 },
-    { title: 'Engagement', href: engagementRoute(), icon: MessageCircle },
-    { title: 'Messages', href: messagesRoute(), icon: MessageSquare },
+    { title: 'Accounts', href: accountsRoute(), icon: Share2, spa: true },
+    {
+        title: 'Engagement',
+        href: engagementRoute(),
+        icon: MessageCircle,
+        spa: true,
+    },
+    {
+        title: 'Messages',
+        href: messagesRoute(),
+        icon: MessageSquare,
+        spa: true,
+    },
 ];
 
 /**
@@ -122,22 +136,22 @@ function NavItemLink({
     spa,
     className,
     children,
+    ...props
 }: {
     href: Href;
     spa?: boolean;
-    className?: string;
     children?: React.ReactNode;
-}) {
+} & Omit<React.ComponentProps<'a'>, 'href'>) {
     if (spa) {
         return (
-            <Link to={toUrl(href)} className={className}>
+            <Link to={toUrl(href)} className={className} {...props}>
                 {children}
             </Link>
         );
     }
 
     return (
-        <a href={toUrl(href)} className={className}>
+        <a href={toUrl(href)} className={className} {...props}>
             {children}
         </a>
     );
@@ -333,7 +347,10 @@ export function AppSidebar() {
                                             analyticsRoute(),
                                         )}
                                         render={
-                                            <a href={toUrl(analyticsRoute())} />
+                                            <NavItemLink
+                                                href={analyticsRoute()}
+                                                spa
+                                            />
                                         }
                                     >
                                         <ChartColumn aria-hidden="true" />
@@ -346,14 +363,12 @@ export function AppSidebar() {
                                     <SidebarMenuButton
                                         tooltip="Sync pipelines"
                                         isActive={isCurrentOrParentUrl(
-                                            SyncPipelinesController.index().url,
+                                            '/settings/sync',
                                         )}
                                         render={
-                                            <a
-                                                href={
-                                                    SyncPipelinesController.index()
-                                                        .url
-                                                }
+                                            <NavItemLink
+                                                href="/settings/sync"
+                                                spa
                                             />
                                         }
                                     >
@@ -383,8 +398,9 @@ export function AppSidebar() {
                                                 tooltip={item.title}
                                                 isActive={isItemActive(item)}
                                                 render={
-                                                    <a
-                                                        href={toUrl(item.href)}
+                                                    <NavItemLink
+                                                        href={item.href}
+                                                        spa
                                                     />
                                                 }
                                             >
@@ -416,8 +432,9 @@ export function AppSidebar() {
                                                 tooltip={item.title}
                                                 isActive={isItemActive(item)}
                                                 render={
-                                                    <a
-                                                        href={toUrl(item.href)}
+                                                    <NavItemLink
+                                                        href={item.href}
+                                                        spa
                                                     />
                                                 }
                                             >

@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router';
+
 import { UserInfo } from '@/components/layout/user-info';
 import {
     DropdownMenuGroup,
@@ -8,8 +10,6 @@ import {
 import { LogOut, Settings } from '@/components/ui/icons';
 import { useSidebar } from '@/components/ui/sidebar';
 import { logout } from '@/features/auth/logout';
-import { toUrl } from '@/lib/href';
-import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
 type Props = {
@@ -31,9 +31,9 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuGroup>
                 <DropdownMenuItem
                     render={
-                        <a
+                        <Link
                             className="block w-full cursor-pointer"
-                            href={toUrl(edit())}
+                            to="/settings/profile"
                             onClick={cleanup}
                         />
                     }

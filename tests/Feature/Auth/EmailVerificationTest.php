@@ -15,9 +15,8 @@ beforeEach(function () {
 test('email verification screen can be rendered', function () {
     $user = User::factory()->unverified()->create();
 
-    $response = $this->actingAs($user)->get(route('verification.notice'));
-
-    $response->assertOk();
+    $this->actingAs($user)->get(route('verification.notice'))
+        ->assertRedirect('/app/verify-email');
 });
 
 test('email can be verified', function () {
@@ -150,7 +149,6 @@ test('unverified users are treated as verified when mail delivery verification i
 
     expect($user->hasVerifiedEmail())->toBeTrue();
 
-    $response = $this->actingAs($user)->get(route('dashboard'));
-
-    $response->assertOk();
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertRedirect('/app/dashboard');
 });

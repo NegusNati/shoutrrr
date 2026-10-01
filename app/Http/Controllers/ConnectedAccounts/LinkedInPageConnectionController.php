@@ -23,7 +23,7 @@ use Illuminate\Validation\Rule;
  */
 class LinkedInPageConnectionController extends Controller
 {
-    private const string SESSION_KEY = 'accounts.linkedin.connect';
+    protected const string SESSION_KEY = 'accounts.linkedin.connect';
 
     public function __construct(private readonly AccountConnectionService $connections) {}
 
@@ -31,10 +31,30 @@ class LinkedInPageConnectionController extends Controller
     {
         $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
 
+        $created = $this->connectSelected($request);
+
+        if ($created === null) {
+            return redirect()->route('accounts.index')->with('error', 'Your LinkedIn connection expired. Please try again.');
+        }
+
+        return redirect()->route('accounts.index')->with(
+            'success',
+            $created === 1 ? '1 account connected.' : "{$created} accounts connected.",
+        );
+    }
+
+    /**
+     * Persists every picker selection from the session stash and clears it.
+     * Returns the count of connected accounts, or null when the stash is
+     * missing/expired. Shared by the Inertia store and the API
+     * connect-linkedin endpoint (which returns JSON instead of a redirect).
+     */
+    protected function connectSelected(Request $request): ?int
+    {
         $stash = $request->session()->get(self::SESSION_KEY);
 
         if (! is_array($stash)) {
-            return redirect()->route('accounts.index')->with('error', 'Your LinkedIn connection expired. Please try again.');
+            return null;
         }
 
         /** @var array<string, array{id: string, urn: string, name: string, vanityName: string}> $organizations */
@@ -98,9 +118,6 @@ class LinkedInPageConnectionController extends Controller
         $created = count($validated['selected']);
         $request->session()->forget(self::SESSION_KEY);
 
-        return redirect()->route('accounts.index')->with(
-            'success',
-            $created === 1 ? '1 account connected.' : "{$created} accounts connected.",
-        );
+        return $created;
     }
 }

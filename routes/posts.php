@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\PostStatus;
 use App\Http\Controllers\AccountSets\AccountSetController;
-use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Gifs\PostGifController;
-use App\Http\Controllers\Posts\CalendarController;
-use App\Http\Controllers\Posts\ComposerController;
 use App\Http\Controllers\Posts\NextSlotController;
 use App\Http\Controllers\Posts\PostController;
 use App\Http\Controllers\Posts\PostImageEditController;
@@ -25,6 +22,7 @@ use App\Models\AccountSet;
 use App\Models\Post;
 use App\Models\PostShare;
 use App\Models\PostTarget;
+use App\Support\SpaRedirect;
 use Illuminate\Support\Facades\Route;
 
 // Route-model binding runs before WorkspaceMiddleware sets the Context, so scope
@@ -50,21 +48,21 @@ Route::bind('target', fn (string $value): PostTarget => PostTarget::query()
 Route::bind('share', fn (string $value): PostShare => PostShare::query()->whereKey($value)->firstOrFail());
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('analytics', [AnalyticsController::class, 'index'])->middleware('metrics.enabled')->name('analytics.index');
+    Route::get('analytics', SpaRedirect::to('/analytics'))->middleware('metrics.enabled')->name('analytics.index');
 
-    Route::get('calendar', [CalendarController::class, 'redirectToCurrent'])->name('calendar.index');
-    Route::get('calendar/{yyyymm}', [CalendarController::class, 'show'])
+    Route::get('calendar', SpaRedirect::to('/calendar'))->name('calendar.index');
+    Route::get('calendar/{yyyymm}', fn (string $yyyymm) => redirect("/app/calendar?month={$yyyymm}"))
         ->where('yyyymm', '\d{4}-\d{2}')->name('calendar.month');
 
-    Route::get('queue', [PostingScheduleController::class, 'show'])->name('queue.show');
+    Route::get('queue', SpaRedirect::to('/queue'))->name('queue.show');
     Route::put('queue', [PostingScheduleController::class, 'update'])->name('queue.update');
 
     Route::get('posts/next-slot', [NextSlotController::class, 'show'])->name('posts.next-slot');
-    Route::get('posts', [PostController::class, 'index'])->name('posts.index');
+    Route::get('posts', SpaRedirect::to('/posts'))->name('posts.index');
 
     Route::post('posts', [PostController::class, 'store'])->name('posts.store');
     Route::put('posts/{post}', [PostController::class, 'update'])->name('posts.update');
-    Route::get('posts/{post}', [ComposerController::class, 'show'])->name('posts.show');
+    Route::get('posts/{post}', fn (string $post) => redirect("/app/posts/{$post}"))->name('posts.show');
     Route::delete('posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
     // Throttled: each call copies every media file on the source post.
     Route::post('posts/{post}/duplicate', [PostController::class, 'duplicate'])

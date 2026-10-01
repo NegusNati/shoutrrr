@@ -10,29 +10,30 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Settings\SyncPipelinesController;
 use App\Http\Controllers\Settings\WorkspaceSettingsController;
+use App\Support\SpaRedirect;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
-    Route::redirect('settings', '/settings/profile');
+    Route::redirect('settings', '/app/settings/profile');
 
-    Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('settings/profile', SpaRedirect::to('/settings/profile'))->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 
-    Route::get('settings/workspace', [WorkspaceSettingsController::class, 'showOverview'])->name('settings.workspace');
+    Route::get('settings/workspace', SpaRedirect::to('/settings/workspace'))->name('settings.workspace');
     Route::patch('settings/workspace', [WorkspaceSettingsController::class, 'update'])->name('settings.workspace.update');
     Route::put('settings/workspace/timezone', [WorkspaceSettingsController::class, 'updateTimezone'])->name('settings.workspace.timezone');
-    Route::get('settings/workspace/members', [WorkspaceSettingsController::class, 'showMembers'])->name('settings.workspace.members');
+    Route::get('settings/workspace/members', SpaRedirect::to('/settings/workspace/members'))->name('settings.workspace.members');
     Route::post('settings/workspace/invite', [WorkspaceSettingsController::class, 'inviteUser'])->name('settings.workspace.invite');
     Route::patch('settings/workspace/members/{membership}', [WorkspaceSettingsController::class, 'updateMemberRole'])->name('settings.workspace.members.update');
     Route::delete('settings/workspace/members/{membership}', [WorkspaceSettingsController::class, 'removeMember'])->name('settings.workspace.members.remove');
     Route::delete('settings/workspace/invitations/{invitation}', [WorkspaceSettingsController::class, 'cancelInvitation'])->name('settings.workspace.invitations.cancel');
 
-    Route::get('settings/workspace/api-keys', [ApiKeysController::class, 'index'])->name('settings.workspace.api-keys');
+    Route::get('settings/workspace/api-keys', SpaRedirect::to('/settings/workspace/api-keys'))->name('settings.workspace.api-keys');
     Route::post('settings/workspace/api-keys', [ApiKeysController::class, 'store'])->name('settings.workspace.api-keys.store');
     Route::delete('settings/workspace/api-keys/{apiKey}', [ApiKeysController::class, 'destroy'])->name('settings.workspace.api-keys.destroy');
 
-    Route::get('sync', [SyncPipelinesController::class, 'index'])->name('sync.index');
+    Route::get('sync', SpaRedirect::to('/sync'))->name('sync.index');
     Route::post('sync', [SyncPipelinesController::class, 'store'])->name('sync.store');
     Route::patch('sync/{syncPipeline}', [SyncPipelinesController::class, 'update'])->name('sync.update');
     Route::delete('sync/{syncPipeline}', [SyncPipelinesController::class, 'destroy'])->name('sync.destroy');
@@ -40,34 +41,34 @@ Route::middleware(['auth'])->group(function () {
     Route::post('sync/native-tracking/{account}', [NativeTrackingController::class, 'store'])->name('sync.native-tracking.store');
     Route::delete('sync/native-tracking/{account}', [NativeTrackingController::class, 'destroy'])->name('sync.native-tracking.destroy');
 
-    Route::get('settings/connections', [ConnectionsController::class, 'edit'])->name('connections.edit');
+    Route::get('settings/connections', SpaRedirect::to('/settings/connections'))->name('connections.edit');
     Route::delete('settings/connections/{socialAccount}', [ConnectionsController::class, 'destroy'])->name('connections.destroy');
 
-    Route::get('settings/notifications', [NotificationPreferencesController::class, 'edit'])->name('notifications.preferences');
+    Route::get('settings/notifications', SpaRedirect::to('/settings/notifications'))->name('notifications.preferences');
     Route::put('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('notifications.preferences.update');
 
-    Route::get('settings/instance', [InstanceSettingsController::class, 'edit'])->name('instance-settings.edit');
+    Route::get('settings/instance', SpaRedirect::to('/settings/instance'))->name('instance-settings.edit');
     Route::put('settings/instance', [InstanceSettingsController::class, 'update'])->name('instance-settings.update');
-    Route::get('settings/instance/polling', [InstanceSettingsController::class, 'polling'])->name('instance-settings.polling');
+    Route::get('settings/instance/polling', SpaRedirect::to('/settings/instance/polling'))->name('instance-settings.polling');
     Route::put('settings/instance/polling', [InstanceSettingsController::class, 'updatePolling'])->name('instance-settings.polling.update');
-    Route::get('settings/instance/platforms', [InstanceSettingsController::class, 'platforms'])->name('instance-settings.platforms');
+    Route::get('settings/instance/platforms', SpaRedirect::to('/settings/instance/platforms'))->name('instance-settings.platforms');
     Route::put('settings/instance/platforms', [InstanceSettingsController::class, 'updatePlatforms'])->name('instance-settings.updatePlatforms');
-    Route::get('settings/instance/usage', [InstanceSettingsController::class, 'usage'])->name('instance-settings.usage');
+    Route::get('settings/instance/usage', SpaRedirect::to('/settings/instance/usage'))->name('instance-settings.usage');
     Route::get('settings/instance/usage/x', [InstanceSettingsController::class, 'xUsage'])->name('instance-settings.usage.x');
     Route::put('settings/instance/usage/workspaces/{workspace}/budget', [InstanceSettingsController::class, 'updateWorkspaceBudget'])->name('instance-settings.usage.budget');
-    Route::get('settings/instance/admins', [InstanceSettingsController::class, 'admins'])->name('instance-settings.admins');
+    Route::get('settings/instance/admins', SpaRedirect::to('/settings/instance/admins'))->name('instance-settings.admins');
     Route::post('settings/instance/admins', [InstanceSettingsController::class, 'storeAdmin'])->name('instance-settings.admins.store');
     Route::delete('settings/instance/admins/{owner}', [InstanceSettingsController::class, 'destroyAdmin'])->name('instance-settings.admins.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('settings/workspace/subscription', [BillingController::class, 'index'])->name('billing.index');
+    Route::get('settings/workspace/subscription', SpaRedirect::to('/settings/workspace/subscription'))->name('billing.index');
     Route::post('billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
     Route::post('billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
 
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('settings/security', [SecurityController::class, 'edit'])
+    Route::get('settings/security', SpaRedirect::to('/settings/security'))
         ->middleware(RequirePassword::class)
         ->name('security.edit');
 
@@ -75,5 +76,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
-    Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+    Route::get('settings/appearance', SpaRedirect::to('/settings/appearance'))->name('appearance.edit');
 });

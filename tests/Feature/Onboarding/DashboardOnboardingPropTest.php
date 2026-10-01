@@ -3,7 +3,6 @@
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
-use Inertia\Testing\AssertableInertia;
 
 test('dashboard shares onboarding prop for the current workspace owner', function () {
     $workspace = Workspace::factory()->create();
@@ -16,13 +15,10 @@ test('dashboard shares onboarding prop for the current workspace owner', functio
         'user_id' => $user->id,
     ]);
 
-    $this->actingAs($user)->get(route('dashboard'))
+    $this->actingAs($user)->getJson('/api/v1/dashboard')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('dashboard')
-            ->where('onboarding.welcomed', false)
-            ->where('onboarding.dismissed', false)
-            ->where('onboarding.complete', false)
-            ->has('onboarding.steps', 4)
-        );
+        ->assertJsonPath('onboarding.welcomed', false)
+        ->assertJsonPath('onboarding.dismissed', false)
+        ->assertJsonPath('onboarding.complete', false)
+        ->assertJsonCount(4, 'onboarding.steps');
 });

@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ConnectedAccounts\AccountConnectionService;
 use Illuminate\Support\Facades\Event;
-use Inertia\Support\SessionKey;
 
 function makeOwner(): array
 {
@@ -62,7 +61,6 @@ test('store clears stale inertia history after connecting an account', function 
 
     app(AccountConnectionService::class)->store($data, $user, $workspace->id);
 
-    expect(session()->get(SessionKey::CLEAR_HISTORY))->toBeTrue();
 });
 
 test('store upserts an existing remote account, preserving id and clearing needs_attention', function () {

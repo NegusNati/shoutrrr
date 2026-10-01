@@ -57,7 +57,7 @@ it('uses the current source artwork bounds for the app icon', function (): void 
 
 it('references the generated icons from Laravel HTML entry points', function (): void {
     $views = [
-        resource_path('views/app.blade.php'),
+        resource_path('views/spa.blade.php'),
         resource_path('views/oauth/authorize.blade.php'),
     ];
 
@@ -88,7 +88,7 @@ it('publishes a web app manifest using the generated icons', function (): void {
 });
 
 it('renders the app logo as an inline svg that inherits the current color', function (): void {
-    $component = file_get_contents(resource_path('js/components/layout/app-logo-icon.tsx'));
+    $component = file_get_contents(base_path('web/src/components/layout/app-logo-icon.tsx'));
 
     expect($component)
         ->toContain('<svg')
@@ -97,7 +97,7 @@ it('renders the app logo as an inline svg that inherits the current color', func
 });
 
 it('shows the React app logo without an extra background tile', function (): void {
-    $component = file_get_contents(resource_path('js/components/layout/app-logo.tsx'));
+    $component = file_get_contents(base_path('web/src/components/layout/app-logo.tsx'));
 
     expect($component)
         ->toContain('items-center justify-center')

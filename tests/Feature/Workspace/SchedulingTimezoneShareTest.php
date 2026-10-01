@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Context;
-use Inertia\Testing\AssertableInertia;
 
 /**
  * Create a workspace member whose current workspace + request Context are set.
@@ -38,18 +37,16 @@ test('exposes the posting schedule timezone as workspaces.current.timezone', fun
     ]);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('workspaces.current.timezone', 'Asia/Kolkata')
-        );
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('workspaces.current.timezone', 'Asia/Kolkata');
 });
 
 test('defaults timezone to UTC when no posting schedule exists', function (): void {
     [$user] = schedulingTimezoneTestMember();
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('workspaces.current.timezone', 'UTC')
-        );
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('workspaces.current.timezone', 'UTC');
 });

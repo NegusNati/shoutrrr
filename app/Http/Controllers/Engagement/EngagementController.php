@@ -31,95 +31,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
 
 class EngagementController extends Controller
 {
-    public function index(Request $request, InstanceSettings $settings): InertiaResponse
-    {
-        $account = $request->string('account')->toString();
-        $platform = $request->string('platform')->toString();
-        $target = $request->string('target')->toString();
-        $post = $request->string('post')->toString();
-        $unread = $request->boolean('unread');
-        $archived = $request->boolean('archived');
-
-        $apply = fn ($query) => $query
-            ->where('is_ours', false)
-            ->when(
-                $archived,
-                fn ($q) => $q->where('status', ReplyStatus::Archived->value),
-                fn ($q) => $q->where('status', '!=', ReplyStatus::Archived->value),
-            )
-            ->when($unread && ! $archived, fn ($q) => $q->whereNull('read_at'))
-            ->when($platform !== '', fn ($q) => $q->whereHas('target',
-                fn ($t) => $t->where('platform', $platform)))
-            ->when($target !== '', fn ($q) => $q->where('post_target_id', $target))
-            ->when($post !== '', fn ($q) => $q->whereHas('target',
-                fn ($t) => $t->where('post_id', $post)))
-            ->when($account !== '', fn ($q) => $q->whereHas('target',
-                fn ($t) => $t->where('connected_account_id', $account)));
-
-        $accounts = ConnectedAccount::query()->get(['id', 'handle', 'platform'])
-            ->map(fn (ConnectedAccount $a): array => [
-                'id' => $a->id,
-                'handle' => $a->handle,
-                'platform' => $a->platform->value,
-            ])->all();
-
-        // Posts with at least one live (inbound, unarchived) reply, plus a
-        // running count, so the inbox can be filtered by which post drew them.
-        // Qualify the columns: this closure runs inside whereHas/withCount joins
-        // where `status`/`is_ours` also exist on posts and post_targets.
-        $liveReplies = fn ($q) => $q
-            ->where('post_target_replies.is_ours', false)
-            ->where('post_target_replies.status', '!=', ReplyStatus::Archived->value);
-
-        $posts = Post::query()
-            ->whereHas('replies', $liveReplies)
-            ->withCount(['replies as reply_count' => $liveReplies])
-            ->orderByDesc('reply_count')
-            ->limit(50)
-            ->get()
-            ->map(fn (Post $p): array => [
-                'id' => $p->id,
-                'excerpt' => $p->excerpt(),
-                'count' => (int) $p->getAttribute('reply_count'),
-            ])->all();
-
-        return Inertia::render('engagement/index', [
-            'replies' => Inertia::scroll(fn () => $this->conversationPaginator($apply, $request))->defer(),
-            'filters' => [
-                'account' => $account,
-                'platform' => $platform,
-                'target' => $target,
-                'post' => $post,
-                'unread' => $unread && ! $archived,
-                'archived' => $archived,
-            ],
-            'facets' => ['accounts' => $accounts, 'posts' => $posts],
-            'engagementEnabled' => [
-                'x' => $settings->engagementPollingEnabled(Platform::X),
-                'bluesky' => $settings->engagementPollingEnabled(Platform::Bluesky),
-                'linkedin' => $settings->engagementPollingEnabled(Platform::LinkedIn),
-            ],
-            // LinkedIn engagement is off by default until the operator declares
-            // their app is approved for the restricted Community Management scope.
-            // The UI uses this to keep LinkedIn out of the "temporarily disabled"
-            // banner in that expected-off state.
-            'linkedinCommunityManagementEnabled' => $settings->linkedinCommunityManagementEnabled(),
-            // The reply box reuses the composer's @-mention picker, so it needs
-            // the same saved-mention library the composer receives.
-            'savedMentions' => WorkspaceMention::withoutGlobalScopes()
-                ->where('workspace_id', $request->user()->current_workspace_id)
-                ->orderBy('name')
-                ->get()
-                ->map(fn (WorkspaceMention $mention): array => WorkspaceMentionController::view($mention))
-                ->all(),
-        ]);
-    }
-
     public function thread(PostTargetReply $reply): JsonResponse
     {
         $onTarget = PostTargetReply::query()
@@ -151,6 +65,111 @@ class EngagementController extends Controller
         ]);
     }
 
+    /**
+     * The inbox stream's filter predicate, shared by the Inertia and API
+     * indexes so both paginate the same conversation groups.
+     *
+     * @return callable(Builder<PostTargetReply>): Builder<PostTargetReply>
+     */
+    protected function engagementReplyFilter(Request $request): callable
+    {
+        $account = $request->string('account')->toString();
+        $platform = $request->string('platform')->toString();
+        $target = $request->string('target')->toString();
+        $post = $request->string('post')->toString();
+        $unread = $request->boolean('unread');
+        $archived = $request->boolean('archived');
+
+        return fn ($query) => $query
+            ->where('is_ours', false)
+            ->when(
+                $archived,
+                fn ($q) => $q->where('status', ReplyStatus::Archived->value),
+                fn ($q) => $q->where('status', '!=', ReplyStatus::Archived->value),
+            )
+            ->when($unread && ! $archived, fn ($q) => $q->whereNull('read_at'))
+            ->when($platform !== '', fn ($q) => $q->whereHas('target',
+                fn ($t) => $t->where('platform', $platform)))
+            ->when($target !== '', fn ($q) => $q->where('post_target_id', $target))
+            ->when($post !== '', fn ($q) => $q->whereHas('target',
+                fn ($t) => $t->where('post_id', $post)))
+            ->when($account !== '', fn ($q) => $q->whereHas('target',
+                fn ($t) => $t->where('connected_account_id', $account)));
+    }
+
+    /**
+     * The non-replies index payload — filters, facets, and feature flags —
+     * shared by the Inertia and API indexes.
+     *
+     * @return array{filters: array<string, mixed>, facets: array{accounts: list<array<string, mixed>>, posts: list<array<string, mixed>>}, engagementEnabled: array{x: bool, bluesky: bool, linkedin: bool}, linkedinCommunityManagementEnabled: bool, savedMentions: list<array<string, mixed>>}
+     */
+    protected function engagementIndexProps(Request $request, InstanceSettings $settings): array
+    {
+        $account = $request->string('account')->toString();
+        $platform = $request->string('platform')->toString();
+        $target = $request->string('target')->toString();
+        $post = $request->string('post')->toString();
+        $unread = $request->boolean('unread');
+        $archived = $request->boolean('archived');
+
+        $accounts = array_values(ConnectedAccount::query()->get(['id', 'handle', 'platform'])
+            ->map(fn (ConnectedAccount $a): array => [
+                'id' => $a->id,
+                'handle' => $a->handle,
+                'platform' => $a->platform->value,
+            ])->all());
+
+        // Posts with at least one live (inbound, unarchived) reply, plus a
+        // running count, so the inbox can be filtered by which post drew them.
+        // Qualify the columns: this closure runs inside whereHas/withCount joins
+        // where `status`/`is_ours` also exist on posts and post_targets.
+        $liveReplies = fn ($q) => $q
+            ->where('post_target_replies.is_ours', false)
+            ->where('post_target_replies.status', '!=', ReplyStatus::Archived->value);
+
+        $posts = array_values(Post::query()
+            ->whereHas('replies', $liveReplies)
+            ->withCount(['replies as reply_count' => $liveReplies])
+            ->orderByDesc('reply_count')
+            ->limit(50)
+            ->get()
+            ->map(fn (Post $p): array => [
+                'id' => $p->id,
+                'excerpt' => $p->excerpt(),
+                'count' => (int) $p->getAttribute('reply_count'),
+            ])->all());
+
+        return [
+            'filters' => [
+                'account' => $account,
+                'platform' => $platform,
+                'target' => $target,
+                'post' => $post,
+                'unread' => $unread && ! $archived,
+                'archived' => $archived,
+            ],
+            'facets' => ['accounts' => $accounts, 'posts' => $posts],
+            'engagementEnabled' => [
+                'x' => $settings->engagementPollingEnabled(Platform::X),
+                'bluesky' => $settings->engagementPollingEnabled(Platform::Bluesky),
+                'linkedin' => $settings->engagementPollingEnabled(Platform::LinkedIn),
+            ],
+            // LinkedIn engagement is off by default until the operator declares
+            // their app is approved for the restricted Community Management scope.
+            // The UI uses this to keep LinkedIn out of the "temporarily disabled"
+            // banner in that expected-off state.
+            'linkedinCommunityManagementEnabled' => $settings->linkedinCommunityManagementEnabled(),
+            // The reply box reuses the composer's @-mention picker, so it needs
+            // the same saved-mention library the composer receives.
+            'savedMentions' => array_values(WorkspaceMention::withoutGlobalScopes()
+                ->where('workspace_id', $request->user()->current_workspace_id)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (WorkspaceMention $mention): array => WorkspaceMentionController::view($mention))
+                ->all()),
+        ];
+    }
+
     public function markRead(PostTargetReply $reply): Response
     {
         PostTargetReply::query()
@@ -173,7 +192,7 @@ class EngagementController extends Controller
      * @param  callable(Builder<PostTargetReply>): Builder<PostTargetReply>  $apply
      * @return LengthAwarePaginator<int, non-empty-array<string, mixed>>
      */
-    private function conversationPaginator(callable $apply, Request $request): LengthAwarePaginator
+    protected function conversationPaginator(callable $apply, Request $request): LengthAwarePaginator
     {
         $perPage = 25;
         $page = LengthAwarePaginator::resolveCurrentPage();

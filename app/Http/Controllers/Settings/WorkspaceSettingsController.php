@@ -11,25 +11,24 @@ use App\Http\Requests\Workspace\UpdateWorkspaceRequest;
 use App\Http\Requests\Workspace\UpdateWorkspaceTimezoneRequest;
 use App\Models\PostingSchedule;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMembership;
 use App\Notifications\WorkspaceInviteNotification;
 use App\Support\FileStorage;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class WorkspaceSettingsController extends Controller
 {
-    public function showOverview(Request $request): Response
+    /**
+     * @return array{workspace: array<string, mixed>, canManage: bool, isOwner: bool, canDelete: bool, deleteDisabledReason: ?string, timezone: string, timezones: array<int, string>}
+     */
+    protected function overviewPayload(User $user, Workspace $workspace): array
     {
-        /** @var User $user */
-        $user = $request->user();
-        $workspace = $user->currentWorkspace;
-        abort_if($workspace === null, 404);
-
         $schedule = PostingSchedule::query()->where('workspace_id', $workspace->id)->first();
         $timezone = $schedule !== null ? $schedule->timezone : 'UTC';
 
@@ -38,7 +37,7 @@ class WorkspaceSettingsController extends Controller
             ->exists();
         $isProtectedInitialWorkspace = $workspace->is_initial && (bool) config('subscriptions.enabled');
 
-        return Inertia::render('settings/workspace/overview', [
+        return [
             'workspace' => [
                 'id' => $workspace->id,
                 'name' => $workspace->name,
@@ -56,7 +55,7 @@ class WorkspaceSettingsController extends Controller
             },
             'timezone' => $timezone,
             'timezones' => timezone_identifiers_list(),
-        ]);
+        ];
     }
 
     public function update(UpdateWorkspaceRequest $request): RedirectResponse
@@ -105,37 +104,40 @@ class WorkspaceSettingsController extends Controller
         return back()->with('success', 'Posting timezone saved.');
     }
 
-    public function showMembers(Request $request): Response
+    /**
+     * @return array{pendingInvitations: Collection<int, array{id: string, email: string, role: string, invited_by: string|null, expires_at: CarbonImmutable, created_at: CarbonImmutable|null}>, canManage: bool, availableRoles: array<int, string>}
+     */
+    protected function membersPayload(User $user, Workspace $workspace): array
     {
-        /** @var User $user */
-        $user = $request->user();
-        $workspace = $user->currentWorkspace;
-        abort_if($workspace === null, 404);
-
-        $pending = $workspace->invitations()->pending()->with('inviter')->get()->map(fn (WorkspaceInvitation $i) => [
-            'id' => $i->id,
-            'email' => $i->email,
-            'role' => $i->role,
-            'invited_by' => $i->inviter?->name,
-            'expires_at' => $i->expires_at,
-            'created_at' => $i->created_at,
-        ]);
-
-        return Inertia::render('settings/workspace/members', [
-            'members' => Inertia::defer(fn (): array => $workspace->members()->with('user')->get()->map(fn (WorkspaceMembership $m) => [
-                'id' => $m->id,
-                'user_id' => $m->user_id,
-                'name' => $m->user->name,
-                'email' => $m->user->email,
-                'avatar' => $m->user->avatar,
-                'role' => $m->role->value,
-                'is_owner' => $m->isOwner(),
-                'created_at' => $m->created_at,
-            ])->all()),
-            'pendingInvitations' => $pending,
+        return [
+            'pendingInvitations' => $workspace->invitations()->pending()->with('inviter')->get()->map(fn (WorkspaceInvitation $i) => [
+                'id' => $i->id,
+                'email' => $i->email,
+                'role' => $i->role,
+                'invited_by' => $i->inviter?->name,
+                'expires_at' => $i->expires_at,
+                'created_at' => $i->created_at,
+            ]),
             'canManage' => $user->hasAllPermissions(['workspace.users.manage'], $workspace->id),
             'availableRoles' => ['member', 'admin'],
-        ]);
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function membersList(Workspace $workspace): array
+    {
+        return $workspace->members()->with('user')->get()->map(fn (WorkspaceMembership $m) => [
+            'id' => $m->id,
+            'user_id' => $m->user_id,
+            'name' => $m->user->name,
+            'email' => $m->user->email,
+            'avatar' => $m->user->avatar,
+            'role' => $m->role->value,
+            'is_owner' => $m->isOwner(),
+            'created_at' => $m->created_at,
+        ])->all();
     }
 
     public function inviteUser(InviteMemberRequest $request): RedirectResponse
@@ -149,13 +151,24 @@ class WorkspaceSettingsController extends Controller
             return back()->withErrors(['email' => 'This user is already a member.']);
         }
 
+        $this->sendInvitation($workspace, $user, $request->validated('email'), $request->validated('role'));
+
+        return back()->with('success', 'Invitation sent.');
+    }
+
+    /**
+     * Create a pending invitation for the email and mail it. Returns the
+     * invitation; members-already-present must be checked by the caller.
+     */
+    protected function sendInvitation(Workspace $workspace, User $user, string $email, string $role): WorkspaceInvitation
+    {
         [$plain, $hash] = WorkspaceInvitation::generateToken();
 
         $invitation = WorkspaceInvitation::create([
             'workspace_id' => $workspace->id,
             'invited_by' => $user->id,
-            'email' => $request->validated('email'),
-            'role' => $request->validated('role'),
+            'email' => $email,
+            'role' => $role,
             'token' => $hash,
             'expires_at' => now()->addDays((int) config('kit.workspaces.invitation_ttl_days')),
         ]);
@@ -169,7 +182,7 @@ class WorkspaceSettingsController extends Controller
                 ->notify(new WorkspaceInviteNotification($invitation, $plain));
         }
 
-        return back()->with('success', 'Invitation sent.');
+        return $invitation;
     }
 
     public function updateMemberRole(UpdateMemberRoleRequest $request, WorkspaceMembership $membership): RedirectResponse

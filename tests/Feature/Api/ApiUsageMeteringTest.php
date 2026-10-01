@@ -8,7 +8,7 @@ test('an api request records an API_REQUEST usage event when metering is on', fu
     app(InstanceSettings::class)->update(['usage_tracking_enabled' => true]);
     [, $workspace, $token] = issuedKey();
 
-    $this->withToken($token)->getJson('/api/v1/connected-accounts')->assertOk();
+    $this->withToken($token)->getJson('/api/v1/posts')->assertOk();
 
     expect(UsageEvent::where('workspace_id', $workspace->id)
         ->where('operation', UsageOperation::API_REQUEST)->exists())->toBeTrue();
@@ -17,7 +17,7 @@ test('an api request records an API_REQUEST usage event when metering is on', fu
 test('nothing is recorded when metering is off', function () {
     [, $workspace, $token] = issuedKey();
 
-    $this->withToken($token)->getJson('/api/v1/connected-accounts')->assertOk();
+    $this->withToken($token)->getJson('/api/v1/posts')->assertOk();
 
     expect(UsageEvent::where('workspace_id', $workspace->id)->exists())->toBeFalse();
 });

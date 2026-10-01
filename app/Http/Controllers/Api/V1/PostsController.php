@@ -140,7 +140,7 @@ class PostsController extends Controller
         $this->authorize('create', Post::class);
 
         $validated = $request->validate([
-            'base_text' => ['present', 'nullable', 'string'],
+            'base_text' => ['sometimes', 'nullable', 'string'],
             'segments' => ['array'],
             'segments.*' => ['string'],
             'mentions' => ['array'],
@@ -152,8 +152,10 @@ class PostsController extends Controller
             'mentions.*.handles.linkedin' => ['nullable', 'string'],
             'mentions.*.handles.linkedin_urn' => ['nullable', 'string', 'max:255'],
             'destination' => ['required', 'array'],
-            'destination.kind' => ['required', Rule::in(['all', 'set', 'account'])],
+            'destination.kind' => ['required', Rule::in(['all', 'none', 'set', 'account', 'accounts'])],
             'destination.id' => ['nullable', 'string', 'required_if:destination.kind,set,account'],
+            'destination.ids' => ['array', 'required_if:destination.kind,accounts'],
+            'destination.ids.*' => ['string'],
             'auto_repost' => ['sometimes', 'nullable', 'boolean'],
         ]);
 
@@ -182,7 +184,7 @@ class PostsController extends Controller
         $this->authorize('update', $model);
 
         $validated = $request->validate([
-            'base_text' => ['present', 'nullable', 'string'],
+            'base_text' => ['sometimes', 'nullable', 'string'],
             'segments' => ['array'],
             'segments.*' => ['string'],
             'mentions' => ['array'],
@@ -194,8 +196,10 @@ class PostsController extends Controller
             'mentions.*.handles.linkedin' => ['nullable', 'string'],
             'mentions.*.handles.linkedin_urn' => ['nullable', 'string', 'max:255'],
             'destination' => ['required', 'array'],
-            'destination.kind' => ['required', Rule::in(['all', 'set', 'account'])],
+            'destination.kind' => ['required', Rule::in(['all', 'none', 'set', 'account', 'accounts'])],
             'destination.id' => ['nullable', 'string', 'required_if:destination.kind,set,account'],
+            'destination.ids' => ['array', 'required_if:destination.kind,accounts'],
+            'destination.ids.*' => ['string'],
             'targets' => ['array'],
             'targets.*.connected_account_id' => ['required', 'string'],
             'targets.*.auto_split' => ['boolean'],

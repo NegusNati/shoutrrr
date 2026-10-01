@@ -7,27 +7,25 @@ namespace App\Http\Controllers\Settings;
 use App\Enums\NotificationType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\UpdateNotificationPreferencesRequest;
+use App\Models\User;
 use App\Support\Notifications\NotificationPreferences;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class NotificationPreferencesController extends Controller
 {
     /**
-     * Show the notification preferences settings page.
+     * @return array{preferences: array<string, mixed>, alwaysOn: array<int, string>}
      */
-    public function edit(Request $request): Response
+    protected function preferencesPayload(User $user): array
     {
-        return Inertia::render('settings/notifications', [
-            'preferences' => $request->user()->notificationPreferences()->toArray(),
+        return [
+            'preferences' => $user->notificationPreferences()->toArray(),
             'alwaysOn' => collect(NotificationType::cases())
                 ->filter(fn (NotificationType $t): bool => $t->inAppAlwaysOn())
                 ->map(fn (NotificationType $t): string => $t->value)
                 ->values()
                 ->all(),
-        ]);
+        ];
     }
 
     /**
@@ -40,8 +38,6 @@ class NotificationPreferencesController extends Controller
                 $request->validated('preferences'),
             ),
         ]);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Notification preferences updated.')]);
 
         return to_route('notifications.preferences');
     }

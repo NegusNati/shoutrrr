@@ -107,16 +107,13 @@
         /* Completeness */
         // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
         "skipLibCheck": true /* Skip type checking all .d.ts files. */,
-        "paths": {
-            "@/*": ["./resources/js/*"]
-        },
         "jsx": "react-jsx",
         "types": ["node", "@testing-library/jest-dom"]
     },
     "include": [
-        "resources/js/**/*.ts",
-        "resources/js/**/*.d.ts",
-        "resources/js/**/*.tsx",
-        "vitest.setup.ts"
+        "vite.spa.config.ts",
+        "vitest.spa.config.ts",
+        "vitest.setup.ts",
+        "resolve-app-version.ts"
     ]
 }

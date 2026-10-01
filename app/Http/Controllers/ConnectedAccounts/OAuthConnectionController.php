@@ -16,8 +16,6 @@ use App\Support\InstanceSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\InvalidStateException;
@@ -44,7 +42,7 @@ class OAuthConnectionController extends Controller
         return $this->driver($resolved)->setScopes($this->scopesFor($resolved))->redirect();
     }
 
-    public function callback(Request $request, string $platform): RedirectResponse|InertiaResponse
+    public function callback(Request $request, string $platform): RedirectResponse
     {
         $resolved = $this->resolveOAuthPlatform($platform);
 
@@ -162,7 +160,7 @@ class OAuthConnectionController extends Controller
      *
      * @param  list<string>  $grantedScopes
      */
-    private function renderLinkedInPagePicker(Request $request, ConnectedAccountData $data, array $grantedScopes): ?InertiaResponse
+    private function renderLinkedInPagePicker(Request $request, ConnectedAccountData $data, array $grantedScopes): ?RedirectResponse
     {
         $organizations = $this->linkedInOrganizations->administeredOrganizations((string) $data->accessToken);
 
@@ -196,15 +194,14 @@ class OAuthConnectionController extends Controller
             'approvedScopes' => $grantedScopes,
         ]);
 
-        return Inertia::render('accounts/connect-linkedin', [
-            'person' => $person,
-            'organizations' => array_values($stashedOrganizations),
-        ]);
+        // The picker lives in the SPA — the stash above is what
+        // GET /api/v1/connected-accounts/connect/linkedin reads.
+        return redirect('/app/accounts/connect-linkedin');
     }
 
     private function failed(string $message): RedirectResponse
     {
-        return redirect()->route('accounts.index')->with('error', $message);
+        return redirect('/app/accounts?'.http_build_query(['error' => $message]));
     }
 
     private function successMessage(Platform $platform): string

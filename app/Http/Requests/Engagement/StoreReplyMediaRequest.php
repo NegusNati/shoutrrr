@@ -12,7 +12,7 @@ class StoreReplyMediaRequest extends FormRequest
     {
         // The {reply} binding is already scoped to the user's workspace (404s
         // otherwise), so reaching here means the reply belongs to the user.
-        return $this->route('reply') !== null;
+        return $this->route('reply') !== null || $this->route('replyId') !== null;
     }
 
     /**

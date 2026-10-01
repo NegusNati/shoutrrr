@@ -4,19 +4,14 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
-use App\Enums\SocialProvider;
 use App\Http\Responses\EmailVerificationNotificationSentResponse;
-use App\Models\WorkspaceInvitation;
-use App\Support\InstanceSettings;
+use App\Support\SpaRedirect;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
-use Inertia\Inertia;
 use Laravel\Fortify\Contracts\EmailVerificationNotificationSentResponse as EmailVerificationNotificationSentResponseContract;
-use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use Override;
 
@@ -54,79 +49,30 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Configure Fortify views.
+     * Configure Fortify views — all auth pages are served by the SPA under
+     * /app, so every GET view redirects there (the SPA fetches the feature
+     * flags the old pages embedded from /api/v1/auth/options instead).
      */
     private function configureViews(): void
     {
-        Fortify::loginView(function (Request $request) {
-            $settings = app(InstanceSettings::class);
-            $canRegister = $settings->registrationsAllowed($request->query('invitation'));
+        Fortify::loginView(fn (Request $request) => SpaRedirect::to('/login')($request));
 
-            return Inertia::render('auth/login', [
-                'canResetPassword' => Features::enabled(Features::resetPasswords()),
-                'canRegister' => $canRegister,
-                'registrationDisabledMessage' => $canRegister ? null : 'Registration is disabled for this instance.',
-                'status' => $request->session()->get('status'),
-                'providers' => SocialProvider::enabledProvidersWithLabels(),
-                'invitation' => $request->query('invitation'),
-                ...$this->defaultLoginCredentials(),
-            ]);
-        });
+        Fortify::resetPasswordView(fn (Request $request) => redirect()->to(
+            '/app/reset-password?'.http_build_query([
+                'token' => $request->route('token'),
+                'email' => $request->email,
+            ])
+        ));
 
-        Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
-            'email' => $request->email,
-            'token' => $request->route('token'),
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
-        ]));
+        Fortify::requestPasswordResetLinkView(fn (Request $request) => SpaRedirect::to('/forgot-password')($request));
 
-        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/forgot-password', [
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::verifyEmailView(fn () => redirect('/app/verify-email'));
 
-        Fortify::verifyEmailView(fn () => Inertia::render('auth/verify-email'));
+        Fortify::registerView(fn (Request $request) => SpaRedirect::to('/register')($request));
 
-        Fortify::registerView(function (Request $request) {
-            $invitationToken = $request->query('invitation');
-            $invitationToken = is_string($invitationToken) ? $invitationToken : null;
+        Fortify::twoFactorChallengeView(fn () => redirect('/app/two-factor-challenge'));
 
-            if (! app(InstanceSettings::class)->registrationsAllowed($invitationToken)) {
-                return redirect()->route('login');
-            }
-
-            $invitation = $invitationToken !== null
-                ? WorkspaceInvitation::findByToken($invitationToken)
-                : null;
-
-            return Inertia::render('auth/register', [
-                'passwordRules' => Password::defaults()->toPasswordRulesString(),
-                'providers' => SocialProvider::enabledProvidersWithLabels(),
-                'invitation' => $invitationToken,
-                'invitationEmail' => $invitation?->isValid() ? $invitation->email : null,
-            ]);
-        });
-
-        Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
-
-        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
-    }
-
-    /**
-     * Get default login credentials for local development.
-     *
-     * @return array<string, array{email: string, password: string}>
-     */
-    private function defaultLoginCredentials(): array
-    {
-        if (! app()->isLocal()) {
-            return [];
-        }
-
-        return [
-            'defaultLogin' => [
-                'email' => 'test@example.com',
-                'password' => 'password',
-            ],
-        ];
+        Fortify::confirmPasswordView(fn (Request $request) => SpaRedirect::to('/confirm-password')($request));
     }
 
     /**

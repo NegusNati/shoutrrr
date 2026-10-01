@@ -17,8 +17,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\User as SocialiteUser;
@@ -39,7 +37,7 @@ use Throwable;
  */
 class MetaConnectionController extends Controller
 {
-    private const string SESSION_KEY = 'accounts.meta.connect';
+    protected const string SESSION_KEY = 'accounts.meta.connect';
 
     public function __construct(
         private readonly MetaAssetEnumerator $enumerator,
@@ -85,7 +83,7 @@ class MetaConnectionController extends Controller
         }
     }
 
-    public function callback(Request $request): RedirectResponse|InertiaResponse
+    public function callback(Request $request): RedirectResponse
     {
         $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
 
@@ -172,6 +170,22 @@ class MetaConnectionController extends Controller
     {
         $request->user()->can('create', ConnectedAccount::class) ?: abort(403);
 
+        $created = $this->connectSelected($request);
+
+        return redirect()->route('accounts.index')->with(
+            'success',
+            $created === 1 ? '1 account connected.' : "{$created} accounts connected.",
+        );
+    }
+
+    /**
+     * Validates the picker's `selected` pairs against the session stash,
+     * persists each as a ConnectedAccount, and clears the stash. Returns how
+     * many accounts were connected. Shared by the Inertia store and the API
+     * connect-meta endpoint (which returns JSON instead of a redirect).
+     */
+    protected function connectSelected(Request $request): int
+    {
         $stash = $request->session()->get(self::SESSION_KEY);
         /** @var array<string, array{pageId: string, pageName: string, pageAccessToken: string, igUserId: ?string, igUsername: ?string, igAvatarUrl: ?string}> $stashedAssets */
         $stashedAssets = is_array($stash) ? ($stash['assets'] ?? []) : [];
@@ -186,6 +200,8 @@ class MetaConnectionController extends Controller
             'selected.*.assetKey' => ['required', 'string', Rule::in(array_keys($stashedAssets))],
             'selected.*.platform' => ['required', 'string', Rule::in($launchedPlatforms)],
         ]);
+
+        $created = 0;
 
         $created = 0;
 
@@ -210,10 +226,7 @@ class MetaConnectionController extends Controller
 
         $request->session()->forget(self::SESSION_KEY);
 
-        return redirect()->route('accounts.index')->with(
-            'success',
-            $created === 1 ? '1 account connected.' : "{$created} accounts connected.",
-        );
+        return $created;
     }
 
     /**
@@ -308,7 +321,7 @@ class MetaConnectionController extends Controller
      * @param  array<string, array{pageId: string, pageName: string, pageAccessToken: string, igUserId: ?string, igUsername: ?string, igAvatarUrl: ?string}>  $stashedAssets
      * @return list<array{key: string, pageId: string, pageName: string, igUserId: ?string, igUsername: ?string, igAvatarUrl: ?string, platforms: list<string>}>
      */
-    private function projectAssets(array $stashedAssets): array
+    protected function projectAssets(array $stashedAssets): array
     {
         $projected = [];
 
@@ -331,7 +344,7 @@ class MetaConnectionController extends Controller
      * @param  array{igUserId: ?string}  $asset
      * @return list<string>
      */
-    private function availablePlatformsFor(array $asset): array
+    protected function availablePlatformsFor(array $asset): array
     {
         $available = Platform::availableMetaGraphPlatforms();
         $platforms = [];
@@ -349,7 +362,7 @@ class MetaConnectionController extends Controller
 
     private function failed(string $message): RedirectResponse
     {
-        return redirect()->route('accounts.index')->with('error', $message);
+        return redirect('/app/accounts?'.http_build_query(['error' => $message]));
     }
 
     /**
@@ -365,14 +378,11 @@ class MetaConnectionController extends Controller
         return is_array($stash) && is_array($stash['assets'] ?? null) && $stash['assets'] !== [];
     }
 
-    private function renderAssetPicker(Request $request): InertiaResponse
+    private function renderAssetPicker(Request $request): RedirectResponse
     {
-        /** @var array{assets: array<string, array{pageId: string, pageName: string, pageAccessToken: string, igUserId: ?string, igUsername: ?string, igAvatarUrl: ?string}>} $stash */
-        $stash = $request->session()->get(self::SESSION_KEY);
-
-        return Inertia::render('accounts/connect-meta', [
-            'assets' => $this->projectAssets($stash['assets']),
-        ]);
+        // The picker lives in the SPA — the session stash is what
+        // GET /api/v1/connected-accounts/connect/meta reads.
+        return redirect('/app/accounts/connect-meta');
     }
 
     private function isAuthorizationCodeUsed(Throwable $exception): bool

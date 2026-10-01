@@ -21,29 +21,11 @@ use App\Support\MessageListItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response as InertiaResponse;
 
 class MessagingController extends Controller
 {
-    public function index(Request $request): InertiaResponse
-    {
-        $workspaceId = $request->user()->current_workspace_id;
-        $showArchived = $request->boolean('archived');
-
-        return Inertia::render('messages/index', [
-            'conversations' => Inertia::scroll(fn () => Conversation::query()
-                ->where('workspace_id', $workspaceId)
-                ->when($showArchived, fn ($q) => $q->whereNotNull('archived_at'), fn ($q) => $q->whereNull('archived_at'))
-                ->with('account')
-                ->orderByDesc('last_message_at')
-                ->paginate(30)
-                ->through(fn (Conversation $c) => ConversationListItem::make($c)))->defer(),
-            'filters' => ['archived' => $showArchived],
-        ]);
-    }
-
     public function thread(Conversation $conversation): JsonResponse
     {
         $messages = $conversation->messages()
@@ -53,6 +35,25 @@ class MessagingController extends Controller
             ->map(fn (DirectMessage $m) => MessageListItem::make($m));
 
         return response()->json(['conversation' => ConversationListItem::make($conversation), 'messages' => $messages]);
+    }
+
+    /**
+     * The conversation list, shared by the Inertia and API indexes.
+     *
+     * @return LengthAwarePaginator<int, array<string, mixed>>
+     */
+    protected function conversationPaginator(Request $request): LengthAwarePaginator
+    {
+        $workspaceId = $request->user()->current_workspace_id;
+        $showArchived = $request->boolean('archived');
+
+        return Conversation::query()
+            ->where('workspace_id', $workspaceId)
+            ->when($showArchived, fn ($q) => $q->whereNotNull('archived_at'), fn ($q) => $q->whereNull('archived_at'))
+            ->with('account')
+            ->orderByDesc('last_message_at')
+            ->paginate(30)
+            ->through(fn (Conversation $c) => ConversationListItem::make($c));
     }
 
     public function markRead(Conversation $conversation): Response

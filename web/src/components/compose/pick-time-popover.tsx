@@ -1,6 +1,5 @@
 import { useState } from 'react';
 
-import { showOverview as workspaceSettings } from '@/actions/App/Http/Controllers/Settings/WorkspaceSettingsController';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarClock } from '@/components/ui/icons';
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { dayjs, userTz } from '@/lib/datetime/dayjs';
+import { appUrl } from '@/lib/href';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -285,7 +285,7 @@ export function PickTimePopover({ value, onChange, tz }: Props) {
                     <br />
                     You can change it in{' '}
                     <a
-                        href={workspaceSettings().url}
+                        href={appUrl('/settings/workspace')}
                         className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
                     >
                         workspace settings

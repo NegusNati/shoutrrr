@@ -20,8 +20,17 @@ class RespondToReplyRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var PostTargetReply $reply */
-        $reply = $this->route('reply');
+        $reply = $this->route('reply') ?? $this->route('replyId');
+        // API routes pass the raw id — implicit binding does not run in the
+        // /api/v1 group, so resolve it the same way the web binder does.
+        if (! $reply instanceof PostTargetReply) {
+            $reply = PostTargetReply::query()
+                ->withoutGlobalScopes()
+                ->where('workspace_id', $this->user()?->current_workspace_id)
+                ->whereKey($reply)
+                ->firstOrFail();
+        }
+
         $max = $reply->target?->account?->maxTextLength() ?? $reply->platform->maxLength();
 
         // maxMedia() is the composer's per-post limit and says nothing about

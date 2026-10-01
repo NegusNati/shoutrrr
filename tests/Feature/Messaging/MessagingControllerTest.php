@@ -17,7 +17,7 @@ use App\Support\MessageListItem;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 beforeEach(function (): void {
     config()->set('messages.enabled', true);
@@ -41,11 +41,10 @@ test('index renders messages page with conversations', function (): void {
     ]);
     Conversation::factory()->for($account, 'account')->create(['workspace_id' => $this->workspace->id]);
 
-    $this->actingAs($this->user)->get('/messages')
+    $this->actingAs($this->user)->getJson('/api/v1/messages')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('messages/index')
-            ->loadDeferredProps(fn ($reload) => $reload->has('conversations')));
+        ->assertJson(fn (Assert $json) => $json
+            ->has('conversations')->etc());
 });
 
 test('markRead zeroes unread and stamps read_at', function (): void {

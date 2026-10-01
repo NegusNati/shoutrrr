@@ -31,17 +31,12 @@ test('cloud defers a billing prop for billing managers and no community prop', f
     config(['subscriptions.enabled' => true]);
     actingOwnerInWorkspace();
 
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page
-        ->missing('billing')
-        ->missing('community')
-        ->missing('updateAvailable')
-        ->loadDeferredProps('sidebar', fn ($reload) => $reload
-            ->where('billing.subscribed', false)
-            ->where('billing.manageUrl', route('billing.index'))
-            ->where('community', null)
-            ->where('updateAvailable', false)
-        )
-    );
+    $this->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('billing.subscribed', false)
+        ->assertJsonPath('billing.manageUrl', route('billing.index'))
+        ->assertJsonPath('community', null)
+        ->assertJsonPath('updateAvailable', false);
 });
 
 test('members without billing.manage do not receive a billing prop', function () {
@@ -56,12 +51,9 @@ test('members without billing.manage do not receive a billing prop', function ()
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
     Context::add('workspace_id', $workspace->id);
 
-    $this->actingAs($user)->get(route('dashboard'))->assertInertia(fn ($page) => $page
-        ->missing('billing')
-        ->loadDeferredProps('sidebar', fn ($reload) => $reload
-            ->where('billing', null)
-        )
-    );
+    $this->actingAs($user)->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('billing', null);
 });
 
 test('self-hosted defers a community prop and the update flag, no billing prop', function () {
@@ -73,17 +65,13 @@ test('self-hosted defers a community prop and the update flag, no billing prop',
     Cache::put(CommunityStats::LatestOverallCacheKey, 'v99.0.0');
     actingOwnerInWorkspace();
 
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page
-        ->missing('community')
-        ->missing('updateAvailable')
-        ->loadDeferredProps('sidebar', fn ($reload) => $reload
-            ->where('billing', null)
-            ->where('community.repoUrl', 'https://github.com/coollabsio/shoutrrr')
-            ->where('community.sponsorUrl', 'https://github.com/sponsors/coollabsio')
-            ->where('community.stars', 4210)
-            ->where('updateAvailable', true)
-        )
-    );
+    $this->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('billing', null)
+        ->assertJsonPath('community.repoUrl', 'https://github.com/coollabsio/shoutrrr')
+        ->assertJsonPath('community.sponsorUrl', 'https://github.com/sponsors/coollabsio')
+        ->assertJsonPath('community.stars', 4210)
+        ->assertJsonPath('updateAvailable', true);
 });
 
 test('self-hosted names the available version and links to its release', function () {
@@ -93,14 +81,11 @@ test('self-hosted names the available version and links to its release', functio
     Cache::put(CommunityStats::LatestOverallCacheKey, 'v99.0.0');
     actingOwnerInWorkspace();
 
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page
-        ->missing('latestVersion')
-        ->loadDeferredProps('sidebar', fn ($reload) => $reload
-            ->where('updateAvailable', true)
-            ->where('latestVersion', 'v99.0.0')
-            ->where('latestReleaseUrl', 'https://github.com/coollabsio/shoutrrr/releases/tag/v99.0.0')
-        )
-    );
+    $this->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('updateAvailable', true)
+        ->assertJsonPath('latestVersion', 'v99.0.0')
+        ->assertJsonPath('latestReleaseUrl', 'https://github.com/coollabsio/shoutrrr/releases/tag/v99.0.0');
 });
 
 test('self-hosted up-to-date exposes no available version', function () {
@@ -108,14 +93,11 @@ test('self-hosted up-to-date exposes no available version', function () {
     Cache::put(CommunityStats::LatestOverallCacheKey, AppVersion::current());
     actingOwnerInWorkspace();
 
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page
-        ->missing('updateAvailable')
-        ->loadDeferredProps('sidebar', fn ($reload) => $reload
-            ->where('updateAvailable', false)
-            ->where('latestVersion', null)
-            ->where('latestReleaseUrl', null)
-        )
-    );
+    $this->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('updateAvailable', false)
+        ->assertJsonPath('latestVersion', null)
+        ->assertJsonPath('latestReleaseUrl', null);
 });
 
 test('cloud never exposes an available version', function () {
@@ -123,12 +105,9 @@ test('cloud never exposes an available version', function () {
     Cache::put(CommunityStats::LatestOverallCacheKey, 'v99.0.0');
     actingOwnerInWorkspace();
 
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page
-        ->missing('updateAvailable')
-        ->loadDeferredProps('sidebar', fn ($reload) => $reload
-            ->where('updateAvailable', false)
-            ->where('latestVersion', null)
-            ->where('latestReleaseUrl', null)
-        )
-    );
+    $this->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('updateAvailable', false)
+        ->assertJsonPath('latestVersion', null)
+        ->assertJsonPath('latestReleaseUrl', null);
 });

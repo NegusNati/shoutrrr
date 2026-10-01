@@ -6,7 +6,6 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\Auth\SocialiteService;
 use Illuminate\Database\QueryException;
-use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\AbstractProvider;
@@ -244,25 +243,17 @@ test('login and register pages receive the enabled providers prop with labels', 
 
     $expected = [['provider' => 'google', 'label' => 'Google']];
 
-    $this->get(route('login'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/login')
-            ->where('providers', $expected),
-        );
+    $this->get(route('login'))->assertRedirect('/app/login');
+    $this->get(route('register'))->assertRedirect('/app/register');
 
-    $this->get(route('register'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/register')
-            ->where('providers', $expected),
-        );
+    $this->getJson('/api/v1/auth/options')
+        ->assertOk()
+        ->assertJsonPath('providers', $expected);
 });
 
-test('login page forwards an invitation token from the query string', function () {
+test('login page forwards an invitation token to the SPA', function () {
     $this->get(route('login', ['invitation' => 'inv-token-123']))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/login')
-            ->where('invitation', 'inv-token-123'),
-        );
+        ->assertRedirect('/app/login?invitation=inv-token-123');
 });
 
 test('callback with a provider that shares no email redirects to login with an error', function () {
@@ -339,9 +330,7 @@ test('login and register pages expose x and linkedin when enabled', function () 
         ['provider' => 'linkedin', 'label' => 'LinkedIn'],
     ];
 
-    $this->get(route('login'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/login')
-            ->where('providers', $expected),
-        );
+    $this->getJson('/api/v1/auth/options')
+        ->assertOk()
+        ->assertJsonPath('providers', $expected);
 });

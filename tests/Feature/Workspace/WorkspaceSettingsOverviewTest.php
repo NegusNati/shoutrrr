@@ -13,7 +13,8 @@ test('owner can view and update workspace', function () {
     $owner = User::factory()->create(['current_workspace_id' => $workspace->id]);
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->get(route('settings.workspace'))->assertOk();
+    $this->actingAs($owner)->get(route('settings.workspace'))
+        ->assertRedirect('/app/settings/workspace');
 
     $this->actingAs($owner)->patch(route('settings.workspace.update'), ['name' => 'New'])
         ->assertRedirect();

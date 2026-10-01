@@ -2,7 +2,6 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
 test('security page is displayed', function () {
@@ -16,18 +15,20 @@ test('security page is displayed', function () {
         'confirmPassword' => true,
     ]);
 
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('security.edit'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/security')
-            ->where('canManagePasskeys', true)
-            ->where('passkeys', [])
-            ->where('canManageTwoFactor', true)
-            ->where('twoFactorEnabled', false),
-        );
+        ->withHeaders(['Referer' => 'http://localhost'])
+        ->postJson('/user/confirm-password', ['password' => 'password'])
+        ->assertCreated();
+
+    $this->withHeaders(['Referer' => 'http://localhost'])
+        ->getJson('/api/v1/settings/security')
+        ->assertOk()
+        ->assertJsonPath('canManagePasskeys', true)
+        ->assertJsonPath('passkeys', [])
+        ->assertJsonPath('canManageTwoFactor', true)
+        ->assertJsonPath('twoFactorEnabled', false);
 });
 
 test('security page requires password confirmation when enabled', function () {
@@ -51,20 +52,23 @@ test('security page renders without two factor when feature is disabled', functi
 
     config(['fortify.features' => []]);
 
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('security.edit'))
+        ->withHeaders(['Referer' => 'http://localhost'])
+        ->postJson('/user/confirm-password', ['password' => 'password'])
+        ->assertCreated();
+
+    $this->withHeaders(['Referer' => 'http://localhost'])
+        ->getJson('/api/v1/settings/security')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/security')
-            ->where('canManagePasskeys', false)
-            ->where('passkeys', [])
-            ->where('canManageTwoFactor', false)
+        ->assertJsonPath('canManagePasskeys', false)
+        ->assertJsonPath('passkeys', [])
+        ->assertJsonPath('canManageTwoFactor', false)
+        ->assertJson(fn ($json) => $json
             ->missing('twoFactorEnabled')
-            ->missing('requiresConfirmation'),
-        );
+            ->missing('requiresConfirmation')
+            ->etc());
 });
 
 test('password can be updated', function () {

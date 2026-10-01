@@ -2,6 +2,7 @@
 
 use App\Dto\Publishing\PublishContext;
 use App\Dto\Publishing\PublishResult;
+use App\Enums\InstanceRole;
 use App\Enums\Platform;
 use App\Enums\PostStatus;
 use App\Enums\WorkspaceRole;
@@ -238,6 +239,20 @@ function ownerActingIn(): array
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
     test()->actingAs($user);
+
+    return [$user, $workspace];
+}
+
+/**
+ * Session-authenticated *instance* owner for instance-settings endpoints —
+ * the user owns the current workspace AND carries InstanceRole::Owner.
+ *
+ * @return array{0: User, 1: Workspace}
+ */
+function instanceOwnerActingIn(): array
+{
+    [$user, $workspace] = ownerActingIn();
+    $user->forceFill(['instance_role' => InstanceRole::Owner])->save();
 
     return [$user, $workspace];
 }

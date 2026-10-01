@@ -28,14 +28,12 @@ beforeEach(function (): void {
 
 test('analytics page renders with accounts and range', function (): void {
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('analytics/index', shouldExist: false)
-            ->has('accounts')
-            ->has('posts')
-            ->has('comparison')
-            ->where('rangeDays', 90));
+        ->assertJsonStructure(['accounts'])
+        ->assertJsonStructure(['posts'])
+        ->assertJsonStructure(['comparison'])
+        ->assertJsonPath('rangeDays', 90);
 });
 
 test('the summary reports total followers with a window delta', function (): void {
@@ -46,13 +44,12 @@ test('the summary reports total followers with a window delta', function (): voi
     AccountMetric::factory()->create(['connected_account_id' => $account->id, 'captured_at' => Date::now(), 'followers' => 130]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('summary.account_count', 1)
-            ->where('summary.followers.value', 130)
-            ->where('summary.followers.delta', 30)
-            ->where('accounts.0.followers_delta', 30));
+        ->assertJsonPath('summary.account_count', 1)
+        ->assertJsonPath('summary.followers.value', 130)
+        ->assertJsonPath('summary.followers.delta', 30)
+        ->assertJsonPath('accounts.0.followers_delta', 30);
 });
 
 test('the follower delta is null without two comparable readings', function (): void {
@@ -60,12 +57,11 @@ test('the follower delta is null without two comparable readings', function (): 
     AccountMetric::factory()->create(['connected_account_id' => $account->id, 'captured_at' => Date::now(), 'followers' => 100]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('summary.followers.value', 100)
-            ->where('summary.followers.delta', null)
-            ->where('accounts.0.followers_delta', null));
+        ->assertJsonPath('summary.followers.value', 100)
+        ->assertJsonPath('summary.followers.delta', null)
+        ->assertJsonPath('accounts.0.followers_delta', null);
 });
 
 test('the engagement summary compares against the previous window', function (): void {
@@ -96,13 +92,12 @@ test('the engagement summary compares against the previous window', function ():
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index', ['days' => 10]))
+        ->getJson('/api/v1/analytics?days=10')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('summary.engagement.value', 100)
-            ->where('summary.engagement.delta', 60)
-            ->where('summary.posts.value', 1)
-            ->where('summary.posts.delta', 0));
+        ->assertJsonPath('summary.engagement.value', 100)
+        ->assertJsonPath('summary.engagement.delta', 60)
+        ->assertJsonPath('summary.posts.value', 1)
+        ->assertJsonPath('summary.posts.delta', 0);
 });
 
 test('deltas are null when the previous window has no baseline posts', function (): void {
@@ -119,12 +114,11 @@ test('deltas are null when the previous window has no baseline posts', function 
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index', ['days' => 7]))
+        ->getJson('/api/v1/analytics?days=7')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('summary.engagement.value', 50)
-            ->where('summary.engagement.delta', null)
-            ->where('summary.posts.delta', null));
+        ->assertJsonPath('summary.engagement.value', 50)
+        ->assertJsonPath('summary.engagement.delta', null)
+        ->assertJsonPath('summary.posts.delta', null);
 });
 
 test('engagement delta is null when the previous window has posts but no captured metrics', function (): void {
@@ -155,14 +149,13 @@ test('engagement delta is null when the previous window has posts but no capture
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index', ['days' => 10]))
+        ->getJson('/api/v1/analytics?days=10')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('summary.engagement.value', 50)
+        ->assertJsonPath('summary.engagement.value', 50)
             // No measured post last window → no fake "+50" spike.
-            ->where('summary.engagement.delta', null)
+        ->assertJsonPath('summary.engagement.delta', null)
             // The post count baseline still exists (one post each window).
-            ->where('summary.posts.delta', 0));
+        ->assertJsonPath('summary.posts.delta', 0);
 });
 
 test('analytics polling settings are keyed by platform enum values', function (): void {
@@ -184,32 +177,30 @@ test('analytics polling settings are keyed by platform enum values', function ()
         ->all();
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('polling.post_metrics_enabled', [
-                ...$expectedPlatforms,
-                Platform::X->value => false,
-            ])
-            ->where('polling.account_metrics_enabled', [
-                ...$expectedPlatforms,
-                Platform::Bluesky->value => false,
-            ]));
+        ->assertJsonPath('polling.post_metrics_enabled', [
+            ...$expectedPlatforms,
+            Platform::X->value => false,
+        ])
+        ->assertJsonPath('polling.account_metrics_enabled', [
+            ...$expectedPlatforms,
+            Platform::Bluesky->value => false,
+        ]);
 });
 
 test('range is clamped to 365', function (): void {
     $this->actingAs($this->user)
-        ->get(route('analytics.index', ['days' => 5000]))
+        ->getJson('/api/v1/analytics?days=5000')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('rangeDays', 365));
+        ->assertJsonPath('rangeDays', 365);
 });
 
 test('analytics 404s when metrics disabled', function (): void {
     config(['metrics.enabled' => false]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertNotFound();
 });
 
@@ -235,15 +226,13 @@ test('comparison collapses to single ranked list when fewer than 10 eligible pos
     }
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('analytics/index', shouldExist: false)
-            ->where('comparison.bottom', [])
-            ->has('comparison.top', 3)
-            ->where('comparison.top.0.engagement', 30)
-            ->where('comparison.top.1.engagement', 20)
-            ->where('comparison.top.2.engagement', 10));
+        ->assertJsonPath('comparison.bottom', [])
+        ->assertJsonCount(3, 'comparison.top')
+        ->assertJsonPath('comparison.top.0.engagement', 30)
+        ->assertJsonPath('comparison.top.1.engagement', 20)
+        ->assertJsonPath('comparison.top.2.engagement', 10);
 });
 
 test('discord accounts are excluded from follower analytics', function (): void {
@@ -259,12 +248,11 @@ test('discord accounts are excluded from follower analytics', function (): void 
     ]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->has('accounts', 1)
-            ->where('accounts.0.id', $x->id)
-            ->where('accounts.0.platform', Platform::X->value));
+        ->assertJsonCount(1, 'accounts')
+        ->assertJsonPath('accounts.0.id', $x->id)
+        ->assertJsonPath('accounts.0.platform', Platform::X->value);
 });
 
 test('the follower series is downsampled to one point per day', function (): void {
@@ -278,26 +266,25 @@ test('the follower series is downsampled to one point per day', function (): voi
     AccountMetric::factory()->create(['connected_account_id' => $account->id, 'captured_at' => Date::now()->setTime(9, 0), 'followers' => 40]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->has('accounts.0.series', 2)
-            ->where('accounts.0.series.0.followers', 30)
-            ->where('accounts.0.series.1.followers', 40)
-            ->where('accounts.0.latest_followers', 40));
+        ->assertJsonCount(2, 'accounts.0.series')
+        ->assertJsonPath('accounts.0.series.0.followers', 30)
+        ->assertJsonPath('accounts.0.series.1.followers', 40)
+        ->assertJsonPath('accounts.0.latest_followers', 40);
 });
 
 test('the analytics rollup reflects newly captured metrics on the next page load', function (): void {
     $account = ConnectedAccount::factory()->for($this->workspace)->create();
     AccountMetric::factory()->create(['connected_account_id' => $account->id, 'captured_at' => Date::now()->subHours(2), 'followers' => 100]);
 
-    $this->actingAs($this->user)->get(route('analytics.index'))->assertOk();
+    $this->actingAs($this->user)->getJson('/api/v1/analytics')->assertOk();
 
     AccountMetric::factory()->create(['connected_account_id' => $account->id, 'captured_at' => Date::now(), 'followers' => 999]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
-        ->assertInertia(fn ($page) => $page->where('accounts.0.latest_followers', 999));
+        ->getJson('/api/v1/analytics')
+        ->assertJsonPath('accounts.0.latest_followers', 999);
 });
 
 test('disconnecting an account removes it from cached analytics', function (): void {
@@ -308,18 +295,17 @@ test('disconnecting an account removes it from cached analytics', function (): v
     AccountMetric::factory()->create(['connected_account_id' => $disconnectedAccount->id, 'captured_at' => Date::now(), 'followers' => 200]);
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->has('accounts', 2));
+        ->assertJsonCount(2, 'accounts');
 
     $this->actingAs($this->user)
         ->delete(route('accounts.destroy', $disconnectedAccount))
         ->assertRedirect(route('accounts.index'));
 
     $this->actingAs($this->user)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->has('accounts', 1)
-            ->where('accounts.0.id', $keptAccount->id));
+        ->assertJsonCount(1, 'accounts')
+        ->assertJsonPath('accounts.0.id', $keptAccount->id);
 });

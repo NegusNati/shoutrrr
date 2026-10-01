@@ -10,27 +10,12 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use App\Support\FileStorage;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Show the user's profile settings page.
-     */
-    public function edit(Request $request): Response
-    {
-        return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => config('auth.email_verification.enabled', false) && $request->user() instanceof MustVerifyEmail,
-            'status' => $request->session()->get('status'),
-        ]);
-    }
-
     /**
      * Update the user's profile information.
      */
@@ -41,15 +26,54 @@ class ProfileController extends Controller
         $validated = $request->validated();
         unset($validated['photo']);
 
+        $photoError = $this->applyProfileUpdate($user, $validated, $request->file('photo'));
+
+        if ($photoError !== null) {
+            return back()->withErrors(['photo' => $photoError]);
+        }
+
+        return to_route('profile.edit');
+    }
+
+    /**
+     * Delete the user's profile.
+     */
+    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($this->deletionBlockReason($user) !== null) {
+            return back()->withErrors([
+                'password' => 'Transfer ownership or delete workspaces where you are the only owner before deleting your account.',
+            ]);
+        }
+
+        $this->deleteAccount($user);
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+
+    /**
+     * Apply the validated profile fields plus an optional avatar upload.
+     * Returns an error message when the photo could not be stored.
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    protected function applyProfileUpdate(User $user, array $validated, mixed $photo): ?string
+    {
         $user->fill($validated);
 
-        if ($request->hasFile('photo')) {
+        if ($photo !== null) {
             $oldAvatarPath = $user->avatar_path;
             $disk = FileStorage::publicImageDiskName();
-            $path = $request->file('photo')->store('profile-photos', $disk);
+            $path = $photo->store('profile-photos', $disk);
 
             if ($path === false) {
-                return back()->withErrors(['photo' => 'The profile photo could not be saved.']);
+                return 'The profile photo could not be saved.';
             }
 
             $user->avatar_path = $path;
@@ -65,34 +89,37 @@ class ProfileController extends Controller
 
         $user->save();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
-
-        return to_route('profile.edit');
+        return null;
     }
 
     /**
-     * Delete the user's profile.
+     * Reason the account cannot be deleted right now, or null. Blocks while the
+     * user is the sole owner of a workspace that still has other members.
      */
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    protected function deletionBlockReason(User $user): ?string
     {
-        /** @var User $user */
-        $user = $request->user();
-
         $ownedMemberships = $user->workspaceMemberships()
             ->where('role', WorkspaceRole::Owner->value)
             ->get();
 
-        // Block deletion while the user is the sole owner of a workspace that still
-        // has other members — they must transfer ownership or delete it first.
         $blocking = $ownedMemberships->filter(
             fn (WorkspaceMembership $membership): bool => WorkspaceMembership::where('workspace_id', $membership->workspace_id)->count() > 1
         );
 
-        if ($blocking->isNotEmpty()) {
-            return back()->withErrors([
-                'password' => 'Transfer ownership or delete workspaces where you are the only owner before deleting your account.',
-            ]);
-        }
+        return $blocking->isNotEmpty()
+            ? 'Transfer ownership or delete workspaces where you are the only owner before deleting your account.'
+            : null;
+    }
+
+    /**
+     * Delete the user plus every workspace they solely own, inside one
+     * transaction. Callers must run deletionBlockReason() first.
+     */
+    protected function deleteAccount(User $user): void
+    {
+        $ownedMemberships = $user->workspaceMemberships()
+            ->where('role', WorkspaceRole::Owner->value)
+            ->get();
 
         DB::transaction(function () use ($user, $ownedMemberships): void {
             // After the guard, every workspace this user owns is single-member, so
@@ -104,10 +131,5 @@ class ProfileController extends Controller
 
             $user->delete();
         });
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect('/');
     }
 }

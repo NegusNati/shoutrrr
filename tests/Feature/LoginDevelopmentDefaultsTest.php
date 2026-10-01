@@ -1,22 +1,18 @@
 <?php
 
-use Inertia\Testing\AssertableInertia as Assert;
-
-it('prefills the login form with development default credentials in local', function (): void {
+it('exposes development default credentials via auth options in local', function (): void {
     $this->app->detectEnvironment(fn () => 'local');
 
-    $this->get(route('login'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/login')
-            ->where('defaultLogin.email', 'test@example.com')
-            ->where('defaultLogin.password', 'password'));
+    $this->getJson('/api/v1/auth/options')
+        ->assertOk()
+        ->assertJsonPath('defaultLogin.email', 'test@example.com')
+        ->assertJsonPath('defaultLogin.password', 'password');
 });
 
 it('does not expose development default credentials outside local', function (): void {
     $this->app->detectEnvironment(fn () => 'production');
 
-    $this->get(route('login'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/login')
-            ->missing('defaultLogin'));
+    $this->getJson('/api/v1/auth/options')
+        ->assertOk()
+        ->assertJson(fn ($json) => $json->missing('defaultLogin')->etc());
 });

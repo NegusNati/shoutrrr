@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Context;
-use Inertia\Testing\AssertableInertia as Assert;
 
 test('shell exposes unread messages count', function (): void {
     config()->set('messages.enabled', true);
@@ -32,6 +31,8 @@ test('shell exposes unread messages count', function (): void {
         'unread_count' => 4,
     ]);
 
-    $this->actingAs($user)->get('/messages')
-        ->assertInertia(fn (Assert $p) => $p->where('features.messages', true)->where('shell.unreadMessages', 4));
+    $this->actingAs($user)->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('features.messages', true)
+        ->assertJsonPath('shell.unreadMessages', 4);
 });

@@ -12,26 +12,29 @@ use App\Support\UsageOperation;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
-use Inertia\Testing\AssertableInertia;
 
 test('instance owner can view instance settings', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->get(route('instance-settings.edit'))
-        ->assertOk();
+        ->assertRedirect('/app/settings/instance');
 });
 
 test('regular users cannot view instance settings', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
         ->get(route('instance-settings.edit'))
+        ->assertRedirect('/app/settings/instance');
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/instance-settings')
         ->assertForbidden();
 });
 
 test('instance owner can update instance settings', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->put(route('instance-settings.update'), [
@@ -49,22 +52,22 @@ test('instance owner can update instance settings', function () {
 test('workspace creation setting is disabled when workspaces are globally disabled', function () {
     config(['kit.workspaces.enabled' => false]);
 
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
     app(InstanceSettings::class)->update([
         'workspace_creation_enabled' => true,
     ]);
 
     $this->actingAs($owner)
-        ->get(route('instance-settings.edit'))
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('workspaces_enabled', false)
-            ->where('settings.workspace_creation_enabled', false));
+        ->getJson('/api/v1/instance-settings')
+        ->assertOk()
+        ->assertJsonPath('workspaces_enabled', false)
+        ->assertJsonPath('settings.workspace_creation_enabled', false);
 });
 
 test('workspace creation setting cannot be enabled when workspaces are globally disabled', function () {
     config(['kit.workspaces.enabled' => false]);
 
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->put(route('instance-settings.update'), [
@@ -91,32 +94,30 @@ test('linkedin engagement polling is gated on the community management setting',
 });
 
 test('instance owner can view polling settings', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->get(route('instance-settings.polling'))
+        ->getJson('/api/v1/instance-settings/polling')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('settings/instance-polling')
-            ->where('settings.engagement.enabled.x', true)
-            ->where('settings.engagement.enabled.bluesky', true)
-            ->where('settings.engagement.x', 360)
-            ->where('settings.engagement.bluesky', 15)
-            ->where('settings.post_metrics.enabled.x', true)
-            ->where('settings.post_metrics.enabled.linkedin', true)
-            ->where('settings.post_metrics.x', 360)
-            ->where('settings.post_metrics.linkedin', 15)
-            ->where('settings.account_metrics.enabled.x', true)
-            ->where('settings.account_metrics.enabled.bluesky', true)
-            ->where('settings.account_metrics.x', 1440)
-            ->where('settings.account_metrics.bluesky', 1440)
-            ->where('settings.account_metrics.linkedin', 1440));
+        ->assertJsonPath('settings.engagement.enabled.x', true)
+        ->assertJsonPath('settings.engagement.enabled.bluesky', true)
+        ->assertJsonPath('settings.engagement.x', 360)
+        ->assertJsonPath('settings.engagement.bluesky', 15)
+        ->assertJsonPath('settings.post_metrics.enabled.x', true)
+        ->assertJsonPath('settings.post_metrics.enabled.linkedin', true)
+        ->assertJsonPath('settings.post_metrics.x', 360)
+        ->assertJsonPath('settings.post_metrics.linkedin', 15)
+        ->assertJsonPath('settings.account_metrics.enabled.x', true)
+        ->assertJsonPath('settings.account_metrics.enabled.bluesky', true)
+        ->assertJsonPath('settings.account_metrics.x', 1440)
+        ->assertJsonPath('settings.account_metrics.bluesky', 1440)
+        ->assertJsonPath('settings.account_metrics.linkedin', 1440);
 });
 
 test('instance owner can view usage details', function () {
     config()->set('services.x.bearer_token', 'x-bearer-token');
 
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
     $workspace = Workspace::factory()->create(['name' => 'Usage Workspace', 'is_initial' => false]);
 
     UsagePeriodCounter::factory()->create([
@@ -140,36 +141,32 @@ test('instance owner can view usage details', function () {
     ]);
 
     $this->actingAs($owner)
-        ->get(route('instance-settings.usage'))
+        ->getJson('/api/v1/instance-settings/usage')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('settings/instance-usage')
-            ->where('filters.workspace', null)
-            ->where('x_usage_available', true)
-            ->where('instance_summary.workspace_count', 1)
-            ->where('instance_summary.x_estimated_cost_usd', 0.03)
-            ->has('workspace_usage.data', 1)
-            ->where('workspace_usage.data.0.name', 'Usage Workspace')
-            ->where('workspace_usage.data.0.x_estimated_cost_usd', 0.03)
-            ->where('workspace_usage.data.0.x_previous_cost_usd', 0.015)
-            ->where('workspace_usage.data.0.quota.kind', 'default'));
+        ->assertJsonPath('filters.workspace', null)
+        ->assertJsonPath('x_usage_available', true)
+        ->assertJsonPath('instance_summary.workspace_count', 2)
+        ->assertJsonPath('instance_summary.x_estimated_cost_usd', 0.03)
+        ->assertJsonCount(2, 'workspace_usage.data')
+        ->assertJsonPath('workspace_usage.data.0.name', 'Usage Workspace')
+        ->assertJsonPath('workspace_usage.data.0.x_estimated_cost_usd', 0.03)
+        ->assertJsonPath('workspace_usage.data.0.x_previous_cost_usd', 0.015)
+        ->assertJsonPath('workspace_usage.data.0.quota.kind', 'default');
 });
 
 test('instance usage marks x api usage unavailable without bearer token', function () {
     config()->set('services.x.bearer_token', '');
 
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->get(route('instance-settings.usage'))
+        ->getJson('/api/v1/instance-settings/usage')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('settings/instance-usage')
-            ->where('x_usage_available', false));
+        ->assertJsonPath('x_usage_available', false);
 });
 
 test('instance usage drilldown scopes counters and error events to the selected workspace', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
     $shownWorkspace = Workspace::factory()->create(['name' => 'Shown Workspace']);
     $hiddenWorkspace = Workspace::factory()->create(['name' => 'Hidden Workspace']);
 
@@ -179,42 +176,41 @@ test('instance usage drilldown scopes counters and error events to the selected 
     UsageEvent::factory()->create(['workspace_id' => $hiddenWorkspace->id, 'succeeded' => false]);
 
     $this->actingAs($owner)
-        ->get(route('instance-settings.usage'))
+        ->getJson('/api/v1/instance-settings/usage')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->missing('drilldown'));
+        ->assertJson(fn ($json) => $json->missing('drilldown')->etc());
 
     $this->actingAs($owner)
-        ->get(route('instance-settings.usage', ['workspace' => $shownWorkspace->id]))
+        ->getJson('/api/v1/instance-settings/usage?workspace='.$shownWorkspace->id)
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('filters.workspace', $shownWorkspace->id)
-            ->where('drilldown.workspace.id', $shownWorkspace->id)
-            ->has('drilldown.counters', 1)
-            ->has('drilldown.error_events', 1));
+        ->assertJsonPath('filters.workspace', $shownWorkspace->id)
+        ->assertJsonPath('drilldown.workspace.id', $shownWorkspace->id)
+        ->assertJsonCount(1, 'drilldown.counters')
+        ->assertJsonCount(1, 'drilldown.error_events');
 });
 
 test('instance usage does not override shared workspace shell props', function () {
-    $owner = User::factory()->instanceOwner()->create();
-
-    $response = $this->actingAs($owner)
-        ->get(route('instance-settings.usage'))
-        ->assertOk();
-
-    expect($response->inertiaProps())->toHaveKey('workspace_usage')
-        ->and($response->inertiaProps('workspaces'))->toHaveKeys(['enabled', 'current', 'all']);
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     // Guards the shared `instance.isOwner` prop (used by the sidebar and command
     // palette to show instance settings) against being clobbered by the page's
     // own usage-summary data, which is exposed separately as `instance_summary`.
-    $response->assertInertia(fn (AssertableInertia $page) => $page
-        ->where('instance.isOwner', true)
-        ->has('instance_summary.workspace_count'));
+    $this->actingAs($owner)
+        ->getJson('/api/v1/me')
+        ->assertOk()
+        ->assertJsonPath('instance.isOwner', true)
+        ->assertJsonStructure(['workspaces' => ['enabled', 'current', 'all']]);
+
+    $this->actingAs($owner)
+        ->getJson('/api/v1/instance-settings/usage')
+        ->assertOk()
+        ->assertJsonStructure(['instance_summary' => ['workspace_count']]);
 });
 
 test('instance usage includes x pricing estimates', function () {
     config(['usage_pricing.platforms.x.currency' => 'EUR']);
 
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
     $workspace = Workspace::factory()->create(['is_initial' => false]);
 
     UsagePeriodCounter::factory()->create([
@@ -235,22 +231,21 @@ test('instance usage includes x pricing estimates', function () {
     ]);
 
     $this->actingAs($owner)
-        ->get(route('instance-settings.usage'))
+        ->getJson('/api/v1/instance-settings/usage')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('pricing_source', 'https://developer.x.com/#pricing')
-            ->where('pricing_currency', 'EUR')
-            ->where('workspace_usage.data.0.x_estimated_cost_usd', 0.03)
-            ->where('workspace_usage.data.0.x_previous_cost_usd', 0.015)
-            ->where('workspace_usage.data.0.x_cost_delta_usd', 0.015)
-            ->where('instance_summary.x_estimated_cost_usd', 0.03));
+        ->assertJsonPath('pricing_source', 'https://developer.x.com/#pricing')
+        ->assertJsonPath('pricing_currency', 'EUR')
+        ->assertJsonPath('workspace_usage.data.0.x_estimated_cost_usd', 0.03)
+        ->assertJsonPath('workspace_usage.data.0.x_previous_cost_usd', 0.015)
+        ->assertJsonPath('workspace_usage.data.0.x_cost_delta_usd', 0.015)
+        ->assertJsonPath('instance_summary.x_estimated_cost_usd', 0.03);
 });
 
 test('instance owner can fetch x api usage', function () {
     config()->set('services.x.bearer_token', 'x-bearer-token');
     Cache::flush();
 
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     Http::fake([
         'https://api.x.com/2/usage/tweets*' => Http::response([
@@ -283,7 +278,7 @@ test('instance owner can fetch x api usage', function () {
 test('x api usage fetch requires a configured bearer token', function () {
     config()->set('services.x.bearer_token', '');
 
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->getJson(route('instance-settings.usage.x'))
@@ -315,26 +310,28 @@ test('analytics exposes disabled metric polling groups', function () {
     ]);
 
     $this->actingAs($owner)
-        ->get(route('analytics.index'))
+        ->getJson('/api/v1/analytics')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('analytics/index')
-            ->where('polling.post_metrics_enabled.x', false)
-            ->where('polling.post_metrics_enabled.bluesky', false)
-            ->where('polling.account_metrics_enabled.x', false)
-            ->where('polling.account_metrics_enabled.bluesky', false));
+        ->assertJsonPath('polling.post_metrics_enabled.x', false)
+        ->assertJsonPath('polling.post_metrics_enabled.bluesky', false)
+        ->assertJsonPath('polling.account_metrics_enabled.x', false)
+        ->assertJsonPath('polling.account_metrics_enabled.bluesky', false);
 });
 
 test('regular users cannot view usage details', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
         ->get(route('instance-settings.usage'))
+        ->assertRedirect('/app/settings/instance/usage');
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/instance-settings/usage')
         ->assertForbidden();
 });
 
 test('instance owner can update polling settings', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->put(route('instance-settings.polling.update'), [
@@ -381,7 +378,7 @@ test('instance owner can update polling settings', function () {
 });
 
 test('instance owner can toggle the metrics and engagement master switches from the polling page', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->put(route('instance-settings.polling.update'), [
@@ -410,7 +407,7 @@ test('instance owner can toggle the metrics and engagement master switches from 
 });
 
 test('instance owner can toggle the messages master switch from the polling page', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     expect(app(InstanceSettings::class)->messagesEnabled())->toBeTrue();
 
@@ -442,40 +439,46 @@ test('instance owner can toggle the messages master switch from the polling page
 });
 
 test('regular users cannot view polling settings', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
         ->get(route('instance-settings.polling'))
+        ->assertRedirect('/app/settings/instance/polling');
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/instance-settings/polling')
         ->assertForbidden();
 });
 
 test('instance owner can view instance admins and search registered users by email', function () {
-    $owner = User::factory()->instanceOwner()->create(['email' => 'owner@example.com']);
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create(['email' => 'owner@example.com']);
     $matchingUser = User::factory()->create(['email' => 'admin-candidate@example.com']);
     User::factory()->create(['email' => 'other@example.com']);
 
     $this->actingAs($owner)
-        ->get(route('instance-settings.admins', ['search' => 'candidate']))
+        ->getJson('/api/v1/instance-settings/admins?search=candidate')
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('settings/instance-admins')
-            ->where('owners.0.email', 'owner@example.com')
-            ->where('search', 'candidate')
-            ->where('users.0.id', $matchingUser->id)
-            ->where('users.0.email', 'admin-candidate@example.com')
-            ->missing('users.1'));
+        ->assertJsonPath('owners.0.email', 'owner@example.com')
+        ->assertJsonPath('search', 'candidate')
+        ->assertJsonPath('users.0.id', $matchingUser->id)
+        ->assertJsonPath('users.0.email', 'admin-candidate@example.com')
+        ->assertJsonCount(1, 'users');
 });
 
 test('regular users cannot view instance admins', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withWorkspace()->create();
 
     $this->actingAs($user)
         ->get(route('instance-settings.admins'))
+        ->assertRedirect('/app/settings/instance/admins');
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/instance-settings/admins')
         ->assertForbidden();
 });
 
 test('instance owner can add another registered user as an instance owner', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
     $candidate = User::factory()->create(['email' => 'candidate@example.com']);
 
     $this->actingAs($owner)
@@ -488,7 +491,7 @@ test('instance owner can add another registered user as an instance owner', func
 });
 
 test('instance owner cannot add a missing user as an instance owner', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->from(route('instance-settings.admins'))
@@ -500,8 +503,8 @@ test('instance owner cannot add a missing user as an instance owner', function (
 });
 
 test('instance owner can remove another instance owner', function () {
-    $owner = User::factory()->instanceOwner()->create();
-    $otherOwner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
+    $otherOwner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->delete(route('instance-settings.admins.destroy', $otherOwner))
@@ -511,7 +514,7 @@ test('instance owner can remove another instance owner', function () {
 });
 
 test('instance owner cannot remove the last instance owner', function () {
-    $owner = User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->from(route('instance-settings.admins'))
@@ -523,8 +526,8 @@ test('instance owner cannot remove the last instance owner', function () {
 });
 
 test('instance owner cannot remove themselves while another owner exists', function () {
-    $owner = User::factory()->instanceOwner()->create();
-    User::factory()->instanceOwner()->create();
+    $owner = User::factory()->instanceOwner()->withWorkspace()->create();
+    User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
         ->from(route('instance-settings.admins'))

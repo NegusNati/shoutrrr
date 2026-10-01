@@ -38,13 +38,14 @@ test('linkedin callback renders the page picker when organizations are administe
     ]);
 
     test()->get('/accounts/callback/linkedin?code=abc&state=xyz')
-        // The `accounts/connect-linkedin` picker page is a later task; skip
-        // Inertia's page-file existence check (mirrors ConnectMetaTest).
-        ->assertInertia(fn ($page) => $page
-            ->component('accounts/connect-linkedin', false)
-            ->where('person.remoteAccountId', 'PERSON1')
-            ->has('organizations', 1)
-            ->where('organizations.0.name', 'Acme Inc'));
+        // The picker now lives in the SPA; the callback stashes the OAuth
+        // payload and redirects there for the user to choose.
+        ->assertRedirect('/app/accounts/connect-linkedin');
+
+    $stash = session('accounts.linkedin.connect');
+    expect($stash['person']['remoteAccountId'])->toBe('PERSON1')
+        ->and($stash['organizations'])->toHaveCount(1)
+        ->and(array_values($stash['organizations'])[0]['name'])->toBe('Acme Inc');
 
     expect(ConnectedAccount::count())->toBe(0); // nothing persisted until the user picks
 });

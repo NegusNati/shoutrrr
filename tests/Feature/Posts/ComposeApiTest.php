@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use App\Models\WorkspaceMention;
-use Inertia\Testing\AssertableInertia;
+use Illuminate\Testing\Fluent\AssertableJson as Assert;
 
 function actingMember(int $accounts = 2): array
 {
@@ -226,14 +226,13 @@ test('GET /posts/{post} renders the composer page for an existing post', functio
     ])->save();
     $post = Post::factory()->create(['workspace_id' => $workspace->id, 'base_text' => 'hello']);
 
-    test()->get("/posts/{$post->id}")
+    test()->getJson("/api/v1/posts/{$post->id}/compose")
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('compose/index')
+        ->assertJson(fn (Assert $json) => $json
             ->where('post.id', $post->id)
             ->where('post.base_text', 'hello')
             ->where('accounts.0.status', 'needs_attention')
-            ->where('accounts.0.auto_repost_enabled', true));
+            ->where('accounts.0.auto_repost_enabled', true)->etc());
 });
 
 test('GET /posts/{post} includes saved workspace mentions', function () {
@@ -249,13 +248,12 @@ test('GET /posts/{post} includes saved workspace mentions', function () {
         'handles' => ['x' => '@foreign_x'],
     ]);
 
-    test()->get("/posts/{$post->id}")
+    test()->getJson("/api/v1/posts/{$post->id}/compose")
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('compose/index')
+        ->assertJson(fn (Assert $json) => $json
             ->has('savedMentions', 1)
             ->where('savedMentions.0.name', '@saved')
-            ->where('savedMentions.0.handles.x', '@saved_x'));
+            ->where('savedMentions.0.handles.x', '@saved_x')->etc());
 });
 
 test('the old /compose/{post} URL no longer exists', function () {

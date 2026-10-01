@@ -9,7 +9,6 @@ use App\Http\Middleware\EnsureGifsEnabled;
 use App\Http\Middleware\EnsureMessagesEnabled;
 use App\Http\Middleware\EnsureMetricsEnabled;
 use App\Http\Middleware\HandleAppearance;
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\WorkspaceMiddleware;
 use Illuminate\Foundation\Application;
@@ -55,12 +54,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // the security headers onto the final response.
             SecurityHeaders::class,
             HandleAppearance::class,
-            // WorkspaceMiddleware must run BEFORE HandleInertiaRequests: Inertia
-            // resolves share() (which reads workspace-scoped shell data) inside
-            // its own handle() before calling $next, so the workspace_id context
-            // must be set first or scoped queries leak across workspaces.
+            // WorkspaceMiddleware must run early so scoped queries resolve the
+            // current workspace before any controller logic executes.
             WorkspaceMiddleware::class,
-            HandleInertiaRequests::class,
             // NOTE: AddLinkHeadersForPreloadedAssets is intentionally not
             // registered. It emits a `Link: rel=preload` HTTP header for each
             // Vite asset, but under Octane the underlying preloadedAssets list

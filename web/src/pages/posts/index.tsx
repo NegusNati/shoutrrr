@@ -28,6 +28,7 @@ import { Filter, Inbox, Search, SearchX, X } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { postsInfiniteQuery } from '@/features/posts/posts';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { STATUS_TABS, type StatusTab } from '@/lib/posts/status-tabs';
 import { dashboard } from '@/routes';
 
@@ -67,6 +68,7 @@ function FilterChip({
 }
 
 export default function PostsIndexPage({ search }: { search: PostsSearch }) {
+    useDocumentTitle('Posts');
     const navigate = useNavigate();
 
     const [localQ, setLocalQ] = useState(search.q);
