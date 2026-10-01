@@ -220,6 +220,38 @@ export async function apiCall<T>(
 }
 
 /**
+ * Calls non-API (web) endpoints such as Fortify's auth routes, the passkeys
+ * routes, and the legacy workspace lifecycle routes that have no `/api/v1`
+ * equivalent. Same XSRF contract as apiFetch, but the path is absolute.
+ * Note: redirects land on HTML pages, so a followed 302 resolves `{}` —
+ * callers that need the error bag get it via a non-2xx status instead.
+ */
+export async function webFetch<T = unknown>(
+    url: string,
+    options: ApiOptions = {},
+): Promise<T> {
+    const response = await fetch(url, {
+        method: options.method ?? 'GET',
+        credentials: 'include',
+        headers: {
+            Accept: 'application/json',
+            ...(options.body !== undefined && {
+                'Content-Type': 'application/json',
+            }),
+            ...(options.method !== undefined && options.method !== 'GET'
+                ? xsrfHeader()
+                : {}),
+            ...options.headers,
+        },
+        ...(options.body !== undefined && {
+            body: JSON.stringify(options.body),
+        }),
+    });
+
+    return parseJsonResponse<T>(response);
+}
+
+/**
  * POSTs to non-API (web) endpoints such as Fortify's auth routes and the
  * logout route. Same XSRF contract as apiFetch, but the path is absolute.
  */
@@ -227,16 +259,5 @@ export async function webPost<T = unknown>(
     url: string,
     body: Record<string, unknown> = {},
 ): Promise<T> {
-    const response = await fetch(url, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...xsrfHeader(),
-        },
-        body: JSON.stringify(body),
-    });
-
-    return parseJsonResponse<T>(response);
+    return webFetch<T>(url, { method: 'POST', body });
 }
