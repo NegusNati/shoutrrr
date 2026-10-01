@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\AccountSetsController;
+use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AuthOptionsController;
 use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\ConnectedAccountsController;
@@ -109,6 +110,7 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
     ->group(function (): void {
         Route::get('me', [MeController::class, 'show']);
         Route::get('dashboard', [DashboardController::class, 'index']);
+        Route::get('analytics', [AnalyticsController::class, 'index']);
 
         Route::get('workspaces', [WorkspacesController::class, 'index']);
         Route::post('workspaces', [WorkspacesController::class, 'store']);

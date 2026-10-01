@@ -2,25 +2,28 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\Platform;
+use App\Http\Controllers\Controller;
 use App\Models\Post;
+use App\Models\User;
 use App\Support\AnalyticsData;
 use App\Support\InstanceSettings;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class AnalyticsController extends Controller
 {
-    public function index(Request $request, InstanceSettings $settings, AnalyticsData $analytics): Response
+    public function index(Request $request, InstanceSettings $settings, AnalyticsData $analytics): JsonResponse
     {
-        abort_unless($request->user()->can('viewAny', Post::class), 403);
+        /** @var User|null $user */
+        $user = $request->user();
+        abort_unless($user?->can('viewAny', Post::class), 403);
 
         $days = max(7, min(365, (int) $request->integer('days', 90)));
 
-        return Inertia::render('analytics/index', [
+        return response()->json([
             ...$analytics->build($days),
             'rangeDays' => $days,
             'polling' => [

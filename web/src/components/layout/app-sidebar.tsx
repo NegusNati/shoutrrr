@@ -63,7 +63,7 @@ import {
 } from '@/lib/navigation/workspace-settings-nav';
 import { appVersion, githubReleaseUrl } from '@/lib/version';
 import { index as accountsRoute } from '@/routes/accounts';
-import { index as analyticsRoute } from '@/routes/analytics';
+
 import { index as engagementRoute } from '@/routes/engagement';
 import { index as messagesRoute } from '@/routes/messages';
 import { index as postsRoute } from '@/routes/posts';
@@ -329,10 +329,13 @@ export function AppSidebar() {
                                     <SidebarMenuButton
                                         tooltip="Analytics"
                                         isActive={isCurrentUrl(
-                                            analyticsRoute(),
+                                            '/analytics',
                                         )}
                                         render={
-                                            <a href={toUrl(analyticsRoute())} />
+                                            <NavItemLink
+                                                href="/analytics"
+                                                spa
+                                            />
                                         }
                                     >
                                         <ChartColumn aria-hidden="true" />

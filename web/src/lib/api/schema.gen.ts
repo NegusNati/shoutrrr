@@ -72,6 +72,22 @@ export interface paths {
         patch: operations["accountSets.update"];
         trace?: never;
     };
+    "/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["analytics.index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/options": {
         parameters: {
             query?: never;
@@ -1725,6 +1741,103 @@ export interface operations {
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "analytics.index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accounts: {
+                            id: string;
+                            platform: string;
+                            handle: string;
+                            display_name: string | null;
+                            avatar_url: string | null;
+                            status: string | null;
+                            latest_followers: number | null;
+                            followers_delta: number | null;
+                            series: {
+                                at: string;
+                                followers: number | null;
+                                following: number | null;
+                            }[];
+                        }[];
+                        posts: {
+                            id: string;
+                            title: string;
+                            published_at: string | null;
+                            platforms: string[];
+                        }[];
+                        summary: {
+                            account_count: number;
+                            followers: {
+                                value: number;
+                                delta: number | null;
+                            };
+                            engagement: {
+                                value: number;
+                                delta: number | null;
+                            };
+                            posts: {
+                                value: number;
+                                delta: number | null;
+                            };
+                        };
+                        comparison: {
+                            top: {
+                                id: string;
+                                title: string;
+                                published_at: string | null;
+                                platforms: string[];
+                                engagement: number;
+                            }[];
+                            bottom: {
+                                id: string;
+                                title: string;
+                                published_at: string | null;
+                                platforms: string[];
+                                engagement: number;
+                            }[];
+                        };
+                        rangeDays: unknown;
+                        polling: {
+                            post_metrics_enabled: {
+                                [key: string]: string;
+                            };
+                            account_metrics_enabled: {
+                                [key: string]: string;
+                            };
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
         };
     };
     "authOptions.show": {
