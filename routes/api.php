@@ -44,6 +44,7 @@ use App\Http\Controllers\Api\V1\UserProfileController;
 use App\Http\Controllers\Api\V1\UserSecurityController;
 use App\Http\Controllers\Api\V1\WorkspaceApiKeysController;
 use App\Http\Controllers\Api\V1\WorkspaceInvitationsController;
+use App\Http\Controllers\Api\V1\WorkspaceLifecycleController;
 use App\Http\Controllers\Api\V1\WorkspaceMentionsController;
 use App\Http\Controllers\Api\V1\WorkspacesController;
 use App\Http\Controllers\Api\V1\WorkspaceSettingsController;
@@ -97,6 +98,18 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'
 // current workspace — API keys stay out while ResolveApiWorkspace installs
 // the workspace_id Context the shared FormRequests authorize against.
 Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWorkspace::class, 'throttle:api'])->group(function (): void {
+    // Workspace lifecycle (leave, delete, ownership transfer) — session-only
+    // like workspaces/switch: these act on the signed-in user's memberships,
+    // which a workspace-bound API key cannot express. `verified` mirrors the
+    // legacy routes/workspace.php group. The {workspace} binding stays
+    // unscoped; membership is checked per action exactly as the web routes did.
+    Route::delete('workspaces/{workspace}', [WorkspaceLifecycleController::class, 'destroy'])
+        ->middleware('verified');
+    Route::delete('workspaces/{workspace}/leave', [WorkspaceLifecycleController::class, 'leave'])
+        ->middleware('verified');
+    Route::post('workspaces/{workspace}/transfer', [WorkspaceLifecycleController::class, 'transfer'])
+        ->middleware('verified');
+
     Route::get('settings/workspace', [WorkspaceSettingsController::class, 'showOverviewApi']);
     Route::patch('settings/workspace', [WorkspaceSettingsController::class, 'updateWorkspace']);
     Route::put('settings/workspace/timezone', [WorkspaceSettingsController::class, 'updateTimezoneApi']);
