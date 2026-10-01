@@ -26,6 +26,9 @@ use App\Http\Controllers\Api\V1\Settings\ConnectionsController as ConnectionsSet
 use App\Http\Controllers\Api\V1\Settings\NotificationPreferencesController as NotificationSettingsController;
 use App\Http\Controllers\Api\V1\Settings\ProfileController as ProfileSettingsController;
 use App\Http\Controllers\Api\V1\Settings\SecurityController as SecuritySettingsController;
+use App\Http\Controllers\Api\V1\Settings\WorkspaceApiKeysController;
+use App\Http\Controllers\Api\V1\Settings\WorkspaceSettingsController;
+use App\Http\Controllers\Api\V1\Settings\WorkspaceSubscriptionController;
 use App\Http\Controllers\Api\V1\SharesController;
 use App\Http\Controllers\Api\V1\WorkspaceInvitationsController;
 use App\Http\Controllers\Api\V1\WorkspaceMentionsController;
@@ -58,6 +61,32 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'
     Route::delete('settings/connections/{socialAccount}', [ConnectionsSettingsController::class, 'destroy']);
     Route::get('settings/notifications', [NotificationSettingsController::class, 'show']);
     Route::put('settings/notifications', [NotificationSettingsController::class, 'update']);
+});
+
+// Session-only + current-workspace bound: workspace settings operate on the
+// caller's current_workspace_id, so API keys are rejected (session surface)
+// and the workspace Context must resolve for the shared FormRequests.
+Route::middleware([
+    'auth:api,sanctum',
+    RequireSessionAuth::class,
+    ResolveApiWorkspace::class,
+    'throttle:api',
+])->group(function (): void {
+    Route::get('settings/workspace', [WorkspaceSettingsController::class, 'show']);
+    Route::patch('settings/workspace', [WorkspaceSettingsController::class, 'update']);
+    Route::delete('settings/workspace', [WorkspaceSettingsController::class, 'destroy']);
+    Route::put('settings/workspace/timezone', [WorkspaceSettingsController::class, 'updateTimezone']);
+    Route::get('settings/workspace/members', [WorkspaceSettingsController::class, 'members']);
+    Route::post('settings/workspace/invite', [WorkspaceSettingsController::class, 'inviteUser']);
+    Route::patch('settings/workspace/members/{membership}', [WorkspaceSettingsController::class, 'updateMemberRole']);
+    Route::delete('settings/workspace/members/{membership}', [WorkspaceSettingsController::class, 'removeMember']);
+    Route::delete('settings/workspace/invitations/{invitation}', [WorkspaceSettingsController::class, 'cancelInvitation']);
+    Route::post('settings/workspace/leave', [WorkspaceSettingsController::class, 'leave']);
+    Route::post('settings/workspace/transfer', [WorkspaceSettingsController::class, 'transferOwnership']);
+    Route::get('settings/workspace/api-keys', [WorkspaceApiKeysController::class, 'index']);
+    Route::post('settings/workspace/api-keys', [WorkspaceApiKeysController::class, 'store']);
+    Route::delete('settings/workspace/api-keys/{apiKey}', [WorkspaceApiKeysController::class, 'destroy']);
+    Route::get('settings/workspace/subscription', [WorkspaceSubscriptionController::class, 'show']);
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session

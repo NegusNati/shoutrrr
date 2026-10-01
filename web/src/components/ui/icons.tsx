@@ -20,6 +20,7 @@ import {
     BubbleChatIcon,
     Building02Icon,
     Calendar01Icon,
+    Camera01Icon,
     CalendarClockIcon,
     CalendarDaysIcon,
     CalendarXIcon,
@@ -146,6 +147,7 @@ export const Bookmark = icon(Bookmark01Icon);
 export const Bot = icon(BotIcon);
 export const Building2 = icon(Building02Icon);
 export const Calendar = icon(Calendar01Icon);
+export const Camera = icon(Camera01Icon);
 export const CalendarClock = icon(CalendarClockIcon);
 export const CalendarDays = icon(CalendarDaysIcon);
 export const CalendarX = icon(CalendarXIcon);

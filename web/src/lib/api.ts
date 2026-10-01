@@ -111,6 +111,13 @@ export const api = {
         apiFetch<T>(path, { method: 'DELETE' }),
 };
 
+/** User-facing message for a thrown request error (ApiError message wins). */
+export function getErrorMessage(error: unknown, fallback: string): string {
+    return error instanceof ApiError && error.message !== ''
+        ? error.message
+        : fallback;
+}
+
 /**
  * Generated-schema typed client — paths, params, and response shapes come from
  * `web/src/lib/api/schema.gen.ts` (built by `bun run api:gen` from the Scramble
