@@ -5,10 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const source = () =>
     readFileSync(
-        resolve(
-            process.cwd(),
-            'web/src/components/queue/schedule-editor.tsx',
-        ),
+        resolve(process.cwd(), 'web/src/components/queue/schedule-editor.tsx'),
         'utf8',
     );
 

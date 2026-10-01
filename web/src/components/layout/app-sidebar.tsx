@@ -1,8 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
-import PostingScheduleController from '@/actions/App/Http/Controllers/Posts/PostingScheduleController';
-import SyncPipelinesController from '@/actions/App/Http/Controllers/Settings/SyncPipelinesController';
 import AppLogo from '@/components/layout/app-logo';
 import { NavUser } from '@/components/layout/nav-user';
 import { SidebarFooterCard } from '@/components/layout/sidebar-footer-card';
@@ -109,7 +107,7 @@ const postsNavItems: NavItem[] = [
     },
     {
         title: 'Queue',
-        href: PostingScheduleController.show(),
+        href: '/queue',
         icon: ListChecks,
         spa: true,
     },
@@ -365,14 +363,12 @@ export function AppSidebar() {
                                     <SidebarMenuButton
                                         tooltip="Sync pipelines"
                                         isActive={isCurrentOrParentUrl(
-                                            SyncPipelinesController.index().url,
+                                            '/settings/sync',
                                         )}
                                         render={
-                                            <a
-                                                href={
-                                                    SyncPipelinesController.index()
-                                                        .url
-                                                }
+                                            <NavItemLink
+                                                href="/settings/sync"
+                                                spa
                                             />
                                         }
                                     >

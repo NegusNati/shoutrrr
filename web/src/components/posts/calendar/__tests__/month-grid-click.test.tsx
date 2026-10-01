@@ -1,4 +1,5 @@
 import { DndContext } from '@dnd-kit/core';
+import type * as TanStackRouter from '@tanstack/react-router';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -6,7 +7,6 @@ import { MonthGrid } from '@/components/posts/calendar/month-grid';
 import type { PostRowData } from '@/components/posts/post-row';
 import { dayjs } from '@/lib/datetime/dayjs';
 import type { PlatformName } from '@/types/compose';
-import type * as TanStackRouter from '@tanstack/react-router';
 
 const navigate = vi.hoisted(() => vi.fn());
 vi.mock('@tanstack/react-router', async (importOriginal) => {

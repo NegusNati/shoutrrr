@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import WorkspaceSettingsController from '@/actions/App/Http/Controllers/Settings/WorkspaceSettingsController';
 import { ScheduleEditor } from '@/components/queue/schedule-editor';
 import { QueueSkeleton } from '@/components/skeletons/queue-skeleton';
 import {
@@ -9,6 +8,7 @@ import {
     updatePostingSchedule,
 } from '@/features/queue/queue';
 import { useDocumentTitle } from '@/hooks/use-document-title';
+import { appUrl } from '@/lib/href';
 import { queryClient } from '@/lib/query-client';
 import { normalizeSlots, type Slot } from '@/lib/queue/queue-schedule';
 
@@ -40,7 +40,7 @@ export default function QueueIndexPage() {
                     </span>{' '}
                     ·{' '}
                     <a
-                        href={WorkspaceSettingsController.showOverview().url}
+                        href={appUrl('/settings/workspace')}
                         className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
                     >
                         change

@@ -5,10 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const source = () =>
     readFileSync(
-        resolve(
-            process.cwd(),
-            'web/src/components/queue/add-time-popover.tsx',
-        ),
+        resolve(process.cwd(), 'web/src/components/queue/add-time-popover.tsx'),
         'utf8',
     );
 

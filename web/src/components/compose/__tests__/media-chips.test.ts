@@ -5,10 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const source = () =>
     readFileSync(
-        resolve(
-            process.cwd(),
-            'web/src/components/compose/media-chips.tsx',
-        ),
+        resolve(process.cwd(), 'web/src/components/compose/media-chips.tsx'),
         'utf8',
     );
 

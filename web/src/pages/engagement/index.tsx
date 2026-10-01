@@ -3,7 +3,6 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { toast } from 'sonner';
 
-import { appUrl } from '@/lib/href';
 import { PlatformGlyph } from '@/components/common/platform-glyph';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -51,6 +50,7 @@ import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { errorMessage } from '@/lib/api';
+import { appUrl } from '@/lib/href';
 import {
     disabledPlatformLabels,
     platformKeys,

@@ -190,10 +190,7 @@ describe('saved mention editing', () => {
 
 describe('linkedin mention field', () => {
     const source = readFileSync(
-        resolve(
-            process.cwd(),
-            'web/src/components/compose/mention-picker.tsx',
-        ),
+        resolve(process.cwd(), 'web/src/components/compose/mention-picker.tsx'),
         'utf8',
     );
 
@@ -242,10 +239,7 @@ describe('linkedin mention field', () => {
 
 describe('discord mention field', () => {
     const source = readFileSync(
-        resolve(
-            process.cwd(),
-            'web/src/components/compose/mention-picker.tsx',
-        ),
+        resolve(process.cwd(), 'web/src/components/compose/mention-picker.tsx'),
         'utf8',
     );
 

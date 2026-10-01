@@ -6,10 +6,7 @@ import { describe, expect, it } from 'vitest';
 describe('composer platform tabs', () => {
     it('uses the section count chip for every platform', () => {
         const source = readFileSync(
-            resolve(
-                process.cwd(),
-                'web/src/components/compose/composer.tsx',
-            ),
+            resolve(process.cwd(), 'web/src/components/compose/composer.tsx'),
             'utf8',
         );
 

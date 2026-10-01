@@ -52,10 +52,7 @@ describe('queue slot selection', () => {
 
     it('wires the picked queue slot into the submit payload', () => {
         const submitBar = readFileSync(
-            resolve(
-                process.cwd(),
-                'web/src/components/compose/submit-bar.tsx',
-            ),
+            resolve(process.cwd(), 'web/src/components/compose/submit-bar.tsx'),
             'utf8',
         );
 

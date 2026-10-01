@@ -32,7 +32,9 @@ describe('subscription checkout', () => {
         );
 
         expect(workspaceSettingsNav).toContain("title: 'Subscription'");
-        expect(workspaceSettingsNav).toContain('BillingController.index()');
+        expect(workspaceSettingsNav).toContain(
+            "'/settings/workspace/subscription'",
+        );
         expect(spaRoute).toContain('/_app/settings/workspace/subscription');
     });
 
