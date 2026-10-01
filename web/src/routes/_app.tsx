@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
+import FeedbackWidget from '@/components/feedback/feedback-widget';
 import { AppContent } from '@/components/layout/app-content';
 import { AppShell } from '@/components/layout/app-shell';
 import { AppSidebar } from '@/components/layout/app-sidebar';
@@ -36,6 +37,7 @@ function AppLayoutRoute() {
                 <AppSidebarHeader />
                 <Outlet />
             </AppContent>
+            <FeedbackWidget />
         </AppShell>
     );
 }

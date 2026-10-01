@@ -184,7 +184,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Full composer payload for the SPA — same shape the Inertia page received,
+         * Full composer payload for the SPA — same shape the old page received,
          *     with `metricsEnabled` instead of the deferred `stats` prop (the SPA lazy
          *     loads stats via the metrics-refresh endpoint when needed)
          */
@@ -579,6 +579,22 @@ export interface paths {
         post?: never;
         /** Delete an outbound reply (only replies the workspace posted) */
         delete: operations["engagement.destroyReply"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1.feedback"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1212,7 +1228,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Resolved equivalent of the Inertia deferred `stats` prop: metrics for a
+         * Resolved equivalent of the old deferred `stats` payload: metrics for a
          *     post once it has at least one published target, else null
          */
         get: operations["postMetrics.show"];
@@ -1973,6 +1989,11 @@ export interface components {
             /** Format: uri */
             webhook_url: string;
         };
+        /**
+         * FeedbackType
+         * @enum {string}
+         */
+        FeedbackType: "bug" | "feedback" | "question";
         /**
          * InstanceRole
          * @enum {string}
@@ -3834,6 +3855,48 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "v1.feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    type: components["schemas"]["FeedbackType"];
+                    message: string;
+                    url?: string | null;
+                    browser?: string | null;
+                    /**
+                     * Format: binary
+                     * @description Maximum file size: 5120 kilobytes.
+                     */
+                    screenshot?: string | null;
+                    /**
+                     * Format: binary
+                     * @description KB → 5 MB
+                     */
+                    diagnostics?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "gifBrowser.index": {
