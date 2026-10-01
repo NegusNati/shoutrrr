@@ -82,9 +82,7 @@ return Application::configure(basePath: dirname(__DIR__))
         Integration::handles($exceptions);
 
         // Render exceptions as JSON for API paths and for any client that
-        // explicitly asks for JSON (e.g. the composer's useHttp XHR autosave).
-        // Inertia visits send `Accept: text/html` + `X-Inertia`, so their
-        // validation-error redirect flow is unaffected.
+        // explicitly asks for JSON (the SPA always sends Accept: json).
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

@@ -15,7 +15,7 @@ use Laravel\Fortify\Features;
 
 /**
  * Public options for the SPA's auth pages — the JSON equivalent of the props
- * the Fortify view callbacks used to inject into the Inertia auth pages
+ * the Fortify view callbacks previously used by the server-rendered auth pages
  * (provider buttons, registration/reset feature flags, password rules).
  */
 class AuthOptionsController extends Controller

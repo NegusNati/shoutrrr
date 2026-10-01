@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 
 /**
  * Session bootstrap for the SPA: the JSON equivalent of the props
- * HandleInertiaRequests used to share with every Inertia page. One round
+ * the old web-shell middleware shared with every page. One round
  * trip gives the client everything the app shell needs — the authenticated
  * user, workspaces, sidebar shell data, notifications, feature flags and
  * instance metadata.

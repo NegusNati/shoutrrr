@@ -46,7 +46,7 @@ test('store persists an account, its secret, marks it active, and fires the even
     Event::assertDispatched(ConnectedAccountConnected::class);
 });
 
-test('store clears stale inertia history after connecting an account', function () {
+test('store connects an account', function () {
     [$user, $workspace] = makeOwner();
 
     $data = new ConnectedAccountData(

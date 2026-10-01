@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 
 /**
  * API surface for the analytics page — the same account/post/summary/comparison
- * payload the Inertia page renders, as JSON.
+ * payload the SPA page renders, as JSON.
  */
 class AnalyticsController extends WebAnalyticsController
 {

@@ -38,8 +38,7 @@ function copyEmojiData() {
 /**
  * Build config for the standalone SPA (web/), served by Laravel at /app/*.
  * It shares the repo's single dependency set but emits to its own build
- * directory (public/build-spa) and hot file (public/spa.hot) so it never
- * collides with the legacy Inertia bundle (public/build, public/hot).
+ * directory (public/build-spa) and hot file (public/spa.hot).
  *
  * Dev: run `vite --config vite.spa.config.ts` for module serving + HMR and
  * open the app through Laravel (e.g. http://localhost:8000/app) — API calls

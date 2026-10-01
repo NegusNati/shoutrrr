@@ -42,7 +42,7 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
         // 423 Locked — Laravel's password.confirm middleware. The action needs
         // a fresh password confirmation; send the user through the confirm
-        // page and back (mirrors the Inertia app's behavior).
+        // page and back.
         if (
             response.status === 423 &&
             !window.location.pathname.endsWith('/confirm-password')

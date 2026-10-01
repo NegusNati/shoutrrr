@@ -49,8 +49,7 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        {{-- The SPA bundle lives in public/build-spa with its own hot file so
-             it cannot collide with the legacy Inertia build (public/build). --}}
+        {{-- The SPA bundle lives in public/build-spa with its own hot file. --}}
         @php
             Vite::useHotFile(public_path('spa.hot'));
         @endphp

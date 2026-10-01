@@ -21,14 +21,12 @@ enum EngagementStatus: string
      * The HTTP status a connector outcome is reported as by the engagement
      * action endpoints.
      *
-     * 422 is deliberately absent and must never be used here. Inertia's
-     * `useHttp` special-cases status 422 into its validation-errors path
-     * (@inertiajs/react/dist/index.js:1845), parsing the body as `data.errors`
-     * and firing `onError`. A connector failure returned as 422 would therefore
-     * fire `onError({})` — an empty bag — silently swallowing the message and
-     * skipping `onHttpException`, which is where the client rolls the optimistic
-     * update back and toasts the reason. That is precisely the silent-lie bug
-     * this map exists to fix, so 422 stays reserved for real validation errors.
+     * 422 is deliberately absent and must never be used here. The SPA treats
+     * 422 as the validation-errors path, parsing the body as `data.errors`.
+     * A connector failure returned as 422 would therefore surface an empty
+     * error bag — silently swallowing the message and skipping the rollback /
+     * error toast. That is precisely the silent-lie bug this map exists to
+     * fix, so 422 stays reserved for real validation errors.
      */
     public function httpStatus(): int
     {

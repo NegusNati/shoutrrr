@@ -11,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 
 /**
  * Public, unauthenticated share view — the token is the bearer secret, same as
- * the legacy /share/{token} Inertia page.
+ * the legacy /share/{token} page.
  */
 class PublicShareController extends Controller
 {
