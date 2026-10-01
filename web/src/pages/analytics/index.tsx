@@ -20,7 +20,6 @@ import { useDocumentTitle } from '@/hooks/use-document-title';
 import { dayjs } from '@/lib/datetime/dayjs';
 import { disabledPlatformLabels } from '@/lib/platforms';
 import { cn } from '@/lib/utils';
-import { show as postRoute } from '@/routes/posts';
 import type { AnalyticsComparisonRow } from '@/types/metrics';
 
 // Lazily loaded so recharts is fetched only when there is series data to plot.
@@ -126,10 +125,10 @@ type ComparisonItemProps = {
 };
 
 function ComparisonItem({ row, rank, isTop }: ComparisonItemProps) {
-    // Plain <a>: the post show page is still on the legacy Inertia app.
     return (
-        <a
-            href={postRoute(row.id).url}
+        <Link
+            to="/posts/$postId"
+            params={{ postId: row.id }}
             className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
         >
             <span
@@ -163,7 +162,7 @@ function ComparisonItem({ row, rank, isTop }: ComparisonItemProps) {
                 </p>
                 <p className="text-xs text-muted-foreground">engagement</p>
             </div>
-        </a>
+        </Link>
     );
 }
 
