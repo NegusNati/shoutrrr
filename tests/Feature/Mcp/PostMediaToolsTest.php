@@ -1,11 +1,13 @@
 <?php
 
+use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\ShoutrrrServer;
 use App\Mcp\Tools\AddPostMediaTool;
 use App\Mcp\Tools\RemovePostMediaTool;
 use App\Models\PostMedia;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -18,6 +20,10 @@ test('add_post_media downloads a public image into the workspace', function (): 
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
 
     $response = ShoutrrrServer::actingAs($user)->tool(AddPostMediaTool::class, [
@@ -32,6 +38,10 @@ test('remove_post_media deletes a media row in the workspace', function (): void
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
 
     $media = PostMedia::factory()->for($workspace)->create();

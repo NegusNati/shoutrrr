@@ -28,19 +28,19 @@ test('404s when no api key is configured', function () {
     config()->set('services.klipy.key', null);
 
     $this->actingAs(User::factory()->withWorkspace()->create())
-        ->getJson('/gifs/gif')
+        ->getJson('/api/v1/gifs/gif')
         ->assertNotFound();
 });
 
 test('requires authentication', function () {
-    $this->getJson('/gifs/gif')->assertUnauthorized();
+    $this->getJson('/api/v1/gifs/gif')->assertUnauthorized();
 });
 
 test('returns normalized items', function () {
     Http::fake(['https://api.klipy.com/*' => Http::response(gifPayload())]);
 
     $this->actingAs(User::factory()->withWorkspace()->create())
-        ->getJson('/gifs/gif?q=yay')
+        ->getJson('/api/v1/gifs/gif?q=yay')
         ->assertOk()
         ->assertJsonPath('has_next', false)
         ->assertJsonPath('items.0.slug', 'yay-1')
@@ -50,26 +50,26 @@ test('returns normalized items', function () {
 
 test('rejects an unknown catalog', function () {
     $this->actingAs(User::factory()->withWorkspace()->create())
-        ->getJson('/gifs/memes')
+        ->getJson('/api/v1/gifs/memes')
         ->assertNotFound();
 });
 
 test('rejects an unknown catalog on the recent route', function () {
     $this->actingAs(User::factory()->withWorkspace()->create())
-        ->getJson('/gifs/memes/recent')
+        ->getJson('/api/v1/gifs/memes/recent')
         ->assertNotFound();
 });
 
 test('rejects an unknown catalog for a guest', function () {
-    $this->getJson('/gifs/memes')->assertNotFound();
+    $this->getJson('/api/v1/gifs/memes')->assertNotFound();
 });
 
 test('caches repeat queries so klipy is hit once', function () {
     Http::fake(['https://api.klipy.com/*' => Http::response(gifPayload())]);
     $user = User::factory()->withWorkspace()->create();
 
-    $this->actingAs($user)->getJson('/gifs/gif?q=yay')->assertOk();
-    $this->actingAs($user)->getJson('/gifs/gif?q=yay')->assertOk();
+    $this->actingAs($user)->getJson('/api/v1/gifs/gif?q=yay')->assertOk();
+    $this->actingAs($user)->getJson('/api/v1/gifs/gif?q=yay')->assertOk();
 
     Http::assertSentCount(1);
 });
@@ -78,7 +78,7 @@ test('returns 502 when klipy is down', function () {
     Http::fake(['https://api.klipy.com/*' => Http::response('boom', 500)]);
 
     $this->actingAs(User::factory()->withWorkspace()->create())
-        ->getJson('/gifs/gif?q=down')
+        ->getJson('/api/v1/gifs/gif?q=down')
         ->assertStatus(502);
 });
 

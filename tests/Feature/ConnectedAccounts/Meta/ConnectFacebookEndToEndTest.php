@@ -27,6 +27,10 @@ function facebookOwnerActingIn(): array
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];

@@ -15,7 +15,15 @@ class UpdatePostRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('post'));
+        // /api/v1 spells the param {id} and the controller authorizes the
+        // resolved model itself — there is no bound {post} to check here.
+        $post = $this->route('post');
+
+        if ($post === null) {
+            return $this->route('id') !== null;
+        }
+
+        return $this->user()->can('update', $post);
     }
 
     /**
@@ -25,7 +33,7 @@ class UpdatePostRequest extends FormRequest
     {
         return [
             'base_text' => ['sometimes', 'nullable', 'string'],
-            'segments' => ['present', 'array'],
+            'segments' => ['sometimes', 'array'],
             'segments.*' => ['nullable', 'string'],
             'mentions' => ['array'],
             'mentions.*.id' => ['required', 'string'],

@@ -16,6 +16,10 @@ function toggleOwner(): array
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     return [$user, $workspace];
 }
@@ -65,6 +69,10 @@ test('a member without account-manage permission cannot toggle', function () {
         'role' => WorkspaceRole::Member,
     ]);
     $member->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $member->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     test()->actingAs($member)->patchJson("/api/v1/connected-accounts/{$account->id}/toggle")
         ->assertForbidden();

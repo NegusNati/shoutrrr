@@ -2,10 +2,12 @@
 
 use App\Dto\Post\DraftData;
 use App\Enums\Platform;
+use App\Enums\WorkspaceRole;
 use App\Models\ConnectedAccount;
 use App\Models\PostMedia;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use App\Services\Posts\DraftService;
 use Illuminate\Support\Facades\Context;
 
@@ -13,6 +15,10 @@ test('saving a draft writes placement rows and target provenance', function (): 
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $account = ConnectedAccount::factory()->create([
@@ -52,6 +58,10 @@ test('a partial update that omits placements and segment breaks preserves them',
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $account = ConnectedAccount::factory()->create([
@@ -101,6 +111,10 @@ test('a partial update that omits media_ids preserves attached media and placeme
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $account = ConnectedAccount::factory()->create([
@@ -147,6 +161,10 @@ test('explicitly sending an empty media_ids array still detaches all media', fun
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $account = ConnectedAccount::factory()->create([
@@ -189,6 +207,10 @@ test('an update with diverged per-account placements writes distinct placement r
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $accountA = ConnectedAccount::factory()->create([
@@ -258,6 +280,10 @@ test('creating a draft persists segment breaks on its targets', function (): voi
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $account = ConnectedAccount::factory()->create([

@@ -24,7 +24,7 @@ beforeEach(function (): void {
 it('mints a share and returns the plaintext url once', function (): void {
     $this->actingAs($this->user)
         ->postJson("/api/v1/posts/{$this->post->id}/shares", ['expires_at' => null])
-        ->assertOk()
+        ->assertCreated()
         ->assertJsonStructure(['id', 'url', 'expires_at']);
 
     expect(PostShare::query()->where('post_id', $this->post->id)->count())->toBe(1);
@@ -38,7 +38,7 @@ it('lists only active shares', function (): void {
     $this->actingAs($this->user)
         ->getJson("/api/v1/posts/{$this->post->id}/shares")
         ->assertOk()
-        ->assertJsonCount(1);
+        ->assertJsonCount(1, 'data');
 });
 
 it('revokes a share', function (): void {
@@ -46,7 +46,8 @@ it('revokes a share', function (): void {
 
     $this->actingAs($this->user)
         ->deleteJson("/api/v1/posts/{$this->post->id}/shares/{$share->id}")
-        ->assertNoContent();
+        ->assertOk()
+        ->assertJsonPath('revoked', true);
 
     expect($share->fresh()->revoked_at)->not->toBeNull();
 });

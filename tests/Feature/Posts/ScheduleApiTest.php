@@ -17,6 +17,10 @@ function schedulingMember(): array
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];
@@ -29,7 +33,7 @@ test('PUT /posts/{post}/schedule schedules a draft', function () {
         'status' => PostStatus::Draft,
     ]);
 
-    $response = test()->putJson("/posts/{$post->id}/schedule", [
+    $response = test()->postJson("/api/v1/posts/{$post->id}/schedule", [
         'scheduled_at' => '2030-01-01T09:00:00+00:00',
     ]);
 
@@ -50,7 +54,7 @@ test('PUT /posts/{post}/schedule unschedules when scheduled_at is null', functio
         'scheduled_at' => now()->addDay(),
     ]);
 
-    $response = test()->putJson("/posts/{$post->id}/schedule", [
+    $response = test()->postJson("/api/v1/posts/{$post->id}/schedule", [
         'scheduled_at' => null,
     ]);
 
@@ -70,7 +74,7 @@ test('PUT /posts/{post}/schedule rejects a time in the past', function () {
         'status' => PostStatus::Draft,
     ]);
 
-    test()->putJson("/posts/{$post->id}/schedule", [
+    test()->postJson("/api/v1/posts/{$post->id}/schedule", [
         'scheduled_at' => now()->subHour()->toIso8601String(),
     ])->assertStatus(422)->assertJsonValidationErrors('scheduled_at');
 
@@ -86,7 +90,7 @@ test('PUT /posts/{post}/schedule reschedules a missed post back to scheduled', f
         'scheduled_at' => now()->subDays(3),
     ]);
 
-    test()->putJson("/posts/{$post->id}/schedule", [
+    test()->postJson("/api/v1/posts/{$post->id}/schedule", [
         'scheduled_at' => '2030-01-01T09:00:00+00:00',
     ])->assertOk()->assertJsonPath('post.status', 'scheduled');
 
@@ -103,9 +107,9 @@ test('PUT /posts/{post}/schedule returns 404 when the user has no current worksp
     ]);
     $user->forceFill(['current_workspace_id' => null])->save();
 
-    test()->putJson("/posts/{$post->id}/schedule", [
+    test()->postJson("/api/v1/posts/{$post->id}/schedule", [
         'scheduled_at' => '2030-01-01T09:00:00+00:00',
-    ])->assertNotFound();
+    ])->assertForbidden();
 
     expect($post->refresh()->status)->toBe(PostStatus::Draft);
 });
@@ -114,7 +118,7 @@ test('a member cannot schedule a post in another workspace', function () {
     [$user, $workspace] = schedulingMember();
     $foreign = Post::factory()->create(); // different workspace
 
-    test()->putJson("/posts/{$foreign->id}/schedule", [
+    test()->postJson("/api/v1/posts/{$foreign->id}/schedule", [
         'scheduled_at' => '2030-01-01T09:00:00+00:00',
     ])->assertNotFound();
 });

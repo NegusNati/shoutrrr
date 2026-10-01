@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\ShoutrrrServer;
 use App\Mcp\Tools\CreateAccountSetTool;
 use App\Mcp\Tools\DeleteAccountSetTool;
@@ -8,11 +9,16 @@ use App\Models\AccountSet;
 use App\Models\ConnectedAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 
 test('create, update, delete account set lifecycle', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
     $account = ConnectedAccount::factory()->for($workspace)->create();
 

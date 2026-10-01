@@ -1,16 +1,22 @@
 <?php
 
 use App\Enums\PostStatus;
+use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\ShoutrrrServer;
 use App\Mcp\Tools\SchedulePostTool;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 
 test('schedule_post sets a future scheduled time', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
 
     $post = Post::factory()->for($workspace)->create(['status' => PostStatus::Draft->value]);
@@ -28,6 +34,10 @@ test('schedule_post rejects a past time', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
     $post = Post::factory()->for($workspace)->create();
 

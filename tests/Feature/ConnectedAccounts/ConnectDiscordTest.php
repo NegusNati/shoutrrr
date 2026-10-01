@@ -19,6 +19,10 @@ function discordOwner(): array
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];
@@ -62,6 +66,10 @@ test('a member cannot connect a Discord webhook', function () {
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     test()->actingAs($user)->postJson('/api/v1/connected-accounts/connect/discord', [
         'webhook_url' => 'https://discord.com/api/webhooks/1/t',

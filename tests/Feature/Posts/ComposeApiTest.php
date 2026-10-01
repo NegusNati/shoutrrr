@@ -20,6 +20,10 @@ function actingMember(int $accounts = 2): array
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     $list = collect(range(1, $accounts))->map(fn () => ConnectedAccount::factory()->create([
@@ -33,7 +37,7 @@ function actingMember(int $accounts = 2): array
 test('POST /posts lazily creates a draft and returns its view as JSON', function () {
     [$user, $workspace, $accounts] = actingMember(2);
 
-    $response = test()->postJson('/posts', [
+    $response = test()->postJson('/api/v1/posts', [
         'base_text' => 'first draft',
         'segments' => ['first draft'],
         'destination' => ['kind' => 'all'],
@@ -50,7 +54,7 @@ test('POST /posts lazily creates a draft and returns its view as JSON', function
 test('POST /posts persists the auto_repost override sent on create', function () {
     [$user, $workspace, $accounts] = actingMember(1);
 
-    test()->postJson('/posts', [
+    test()->postJson('/api/v1/posts', [
         'base_text' => 'boosted from the first save',
         'segments' => ['boosted from the first save'],
         'destination' => ['kind' => 'all'],
@@ -63,7 +67,7 @@ test('POST /posts persists the auto_repost override sent on create', function ()
 test('POST /posts accepts a custom accounts destination', function () {
     [$user, $workspace, $accounts] = actingMember(3);
 
-    test()->postJson('/posts', [
+    test()->postJson('/api/v1/posts', [
         'base_text' => 'custom draft',
         'segments' => ['custom draft'],
         'destination' => ['kind' => 'accounts', 'ids' => [$accounts[0]->id, $accounts[2]->id]],
@@ -75,7 +79,7 @@ test('POST /posts accepts a custom accounts destination', function () {
 
 test('PUT /posts/{post} accepts a "none" destination and clears every target', function () {
     [$user, $workspace, $accounts] = actingMember(2);
-    $created = test()->postJson('/posts', [
+    $created = test()->postJson('/api/v1/posts', [
         'base_text' => 'a',
         'segments' => ['a'],
         'destination' => ['kind' => 'all'],
@@ -83,7 +87,7 @@ test('PUT /posts/{post} accepts a "none" destination and clears every target', f
 
     expect($created['targets'])->toHaveCount(2);
 
-    test()->putJson("/posts/{$created['id']}", [
+    test()->patchJson("/api/v1/posts/{$created['id']}", [
         'base_text' => 'a',
         'segments' => ['a'],
         'destination' => ['kind' => 'none'],
@@ -97,9 +101,9 @@ test('PUT /posts/{post} accepts a "none" destination and clears every target', f
 
 test('PUT /posts/{post} autosaves edits and returns the new baseline', function () {
     [$user, $workspace, $accounts] = actingMember(1);
-    $created = test()->postJson('/posts', ['base_text' => 'a', 'segments' => ['a'], 'destination' => ['kind' => 'all']])->json('post');
+    $created = test()->postJson('/api/v1/posts', ['base_text' => 'a', 'segments' => ['a'], 'destination' => ['kind' => 'all']])->json('post');
 
-    $response = test()->putJson("/posts/{$created['id']}", [
+    $response = test()->patchJson("/api/v1/posts/{$created['id']}", [
         'base_text' => 'edited',
         'segments' => ['edited'],
         'destination' => ['kind' => 'all'],
@@ -114,7 +118,7 @@ test('POST /posts accepts the real client payload with segments and no base_text
     [$user, $workspace, $accounts] = actingMember(2);
 
     // Mirrors use-autosave.ts createPost(): {segments, mentions, destination} — no base_text.
-    $response = test()->postJson('/posts', [
+    $response = test()->postJson('/api/v1/posts', [
         'destination' => ['kind' => 'all'],
         'segments' => ['first post', 'second post'],
         'mentions' => [],
@@ -128,7 +132,7 @@ test('POST /posts accepts the real client payload with segments and no base_text
 test('POST /posts rejects an over-long linkedin_urn handle', function () {
     [$user, $workspace, $accounts] = actingMember(1);
 
-    test()->postJson('/posts', [
+    test()->postJson('/api/v1/posts', [
         'destination' => ['kind' => 'all'],
         'segments' => ['hello'],
         'mentions' => [[
@@ -149,13 +153,13 @@ test('PUT /posts/{post} keeps a Discord mention handle through request validatio
         'platform' => Platform::Discord->value,
     ]);
 
-    $created = test()->postJson('/posts', [
+    $created = test()->postJson('/api/v1/posts', [
         'destination' => ['kind' => 'all'],
         'segments' => ['Ping @adiology'],
         'mentions' => [],
     ])->json('post');
 
-    $response = test()->putJson("/posts/{$created['id']}", [
+    $response = test()->patchJson("/api/v1/posts/{$created['id']}", [
         'segments' => ['Ping @adiology'],
         'destination' => ['kind' => 'accounts', 'ids' => [$discord->id]],
         'targets' => [['connected_account_id' => $discord->id, 'auto_split' => true]],
@@ -174,14 +178,14 @@ test('PUT /posts/{post} keeps a Discord mention handle through request validatio
 
 test('PUT /posts/{post} accepts the real buildPutBody payload with no base_text', function () {
     [$user, $workspace, $accounts] = actingMember(1);
-    $created = test()->postJson('/posts', [
+    $created = test()->postJson('/api/v1/posts', [
         'destination' => ['kind' => 'all'],
         'segments' => ['a'],
         'mentions' => [],
     ])->json('post');
 
     // Mirrors composer-state.ts buildPutBody(): no base_text key.
-    $response = test()->putJson("/posts/{$created['id']}", [
+    $response = test()->patchJson("/api/v1/posts/{$created['id']}", [
         'segments' => ['edited'],
         'destination' => ['kind' => 'all'],
         'targets' => [['connected_account_id' => $accounts[0]->id, 'auto_split' => true, 'content_override' => null]],
@@ -197,9 +201,9 @@ test('PUT /posts/{post} accepts the real buildPutBody payload with no base_text'
 
 test('PUT with a stale expected_updated_at returns 409 with the latest view', function () {
     [$user, $workspace, $accounts] = actingMember(1);
-    $created = test()->postJson('/posts', ['base_text' => 'a', 'segments' => ['a'], 'destination' => ['kind' => 'all']])->json('post');
+    $created = test()->postJson('/api/v1/posts', ['base_text' => 'a', 'segments' => ['a'], 'destination' => ['kind' => 'all']])->json('post');
 
-    test()->putJson("/posts/{$created['id']}", [
+    test()->patchJson("/api/v1/posts/{$created['id']}", [
         'base_text' => 'edited',
         'segments' => ['edited'],
         'destination' => ['kind' => 'all'],
@@ -211,7 +215,7 @@ test('a user cannot autosave a post in another workspace', function () {
     [$user, $workspace, $accounts] = actingMember(1);
     $foreign = Post::factory()->create(); // different workspace
 
-    test()->putJson("/posts/{$foreign->id}", [
+    test()->patchJson("/api/v1/posts/{$foreign->id}", [
         'base_text' => 'x',
         'segments' => ['x'],
         'destination' => ['kind' => 'all'],
@@ -265,9 +269,9 @@ test('the old /compose/{post} URL no longer exists', function () {
 
 test('DELETE /posts/{post} removes the draft and its targets', function () {
     [$user, $workspace, $accounts] = actingMember(2);
-    $created = test()->postJson('/posts', ['base_text' => 'a', 'segments' => ['a'], 'destination' => ['kind' => 'all']])->json('post');
+    $created = test()->postJson('/api/v1/posts', ['base_text' => 'a', 'segments' => ['a'], 'destination' => ['kind' => 'all']])->json('post');
 
-    test()->delete("/posts/{$created['id']}")->assertRedirect();
+    test()->deleteJson("/api/v1/posts/{$created['id']}")->assertOk();
 
     expect(Post::withoutGlobalScopes()->whereKey($created['id'])->exists())->toBeFalse();
 });

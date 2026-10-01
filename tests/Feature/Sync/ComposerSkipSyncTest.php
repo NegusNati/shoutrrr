@@ -9,7 +9,7 @@ test('creating a draft persists skip_sync', function () {
     [, $workspace] = ownerActingIn();
     $account = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
 
-    $this->postJson('/posts', [
+    $this->postJson('/api/v1/posts', [
         'destination' => ['kind' => 'account', 'id' => $account->id],
         'segments' => ['hello'],
         'skip_sync' => true,

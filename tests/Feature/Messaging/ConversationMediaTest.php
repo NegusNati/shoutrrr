@@ -51,10 +51,10 @@ function conversationTinyGif(): string
 function conversationMediaEndpoints(): array
 {
     return [
-        ['postJson', 'messages.media.store', ['file' => UploadedFile::fake()->image('pic.jpg')]],
-        ['postJson', 'messages.media.video-url', ['content_type' => 'video/mp4']],
-        ['postJson', 'messages.media.video', ['key' => 'tmp/media/x/y.mp4', 'duration_seconds' => 5, 'width' => 10, 'height' => 10]],
-        ['postJson', 'messages.gifs.store', []],
+        ['postJson', '/media', ['file' => UploadedFile::fake()->image('pic.jpg')]],
+        ['postJson', '/media/video-url', ['content_type' => 'video/mp4']],
+        ['postJson', '/media/video', ['key' => 'tmp/media/x/y.mp4', 'duration_seconds' => 5, 'width' => 10, 'height' => 10]],
+        ['postJson', '/gifs', []],
     ];
 }
 
@@ -213,9 +213,9 @@ test('every attachment endpoint 404s on a bluesky conversation', function () {
     ]);
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id]);
 
-    foreach (conversationMediaEndpoints() as [$method, $name, $payload]) {
+    foreach (conversationMediaEndpoints() as [$method, $path, $payload]) {
         $this->actingAs($this->user)
-            ->{$method}(route($name, $bluesky), $payload)
+            ->{$method}("/api/v1/messages/{$bluesky->id}{$path}", $payload)
             ->assertNotFound();
     }
 
@@ -239,9 +239,9 @@ test('every attachment endpoint 404s on another workspace conversation', functio
         'workspace_id' => $foreignWorkspace->id, 'platform' => Platform::X,
     ]);
 
-    foreach (conversationMediaEndpoints() as [$method, $name, $payload]) {
+    foreach (conversationMediaEndpoints() as [$method, $path, $payload]) {
         $this->actingAs($this->user)
-            ->{$method}(route($name, $foreign), $payload)
+            ->{$method}("/api/v1/messages/{$foreign->id}{$path}", $payload)
             ->assertNotFound();
     }
 });

@@ -21,7 +21,7 @@ test('profile information can be updated', function () {
 
     $response = $this
         ->actingAs($user)
-        ->patchJson("/api/v1/settings/profile", [
+        ->putJson('/api/v1/settings/profile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
@@ -47,7 +47,7 @@ test('profile photo can be uploaded', function () {
     $photo = UploadedFile::fake()->image('avatar.jpg');
 
     $this->actingAs($user)
-        ->patchJson("/api/v1/settings/profile", [
+        ->putJson('/api/v1/settings/profile', [
             'name' => $user->name,
             'email' => $user->email,
             'photo' => $photo,
@@ -74,7 +74,7 @@ test('profile photo uses the configured public image disk', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->patchJson("/api/v1/settings/profile", [
+        ->putJson('/api/v1/settings/profile', [
             'name' => $user->name,
             'email' => $user->email,
             'photo' => UploadedFile::fake()->image('avatar.jpg'),
@@ -96,7 +96,7 @@ test('profile photo must be an image', function () {
 
     $this->actingAs($user)
         ->from(route('profile.edit'))
-        ->patchJson("/api/v1/settings/profile", [
+        ->putJson('/api/v1/settings/profile', [
             'name' => $user->name,
             'email' => $user->email,
             'photo' => UploadedFile::fake()->create('avatar.txt', 1, 'text/plain'),
@@ -113,7 +113,7 @@ test('email verification status is unchanged when the email address is unchanged
 
     $response = $this
         ->actingAs($user)
-        ->patchJson("/api/v1/settings/profile", [
+        ->putJson('/api/v1/settings/profile', [
             'name' => 'Test User',
             'email' => $user->email,
         ]);
@@ -131,7 +131,7 @@ test('email verification status is unchanged when mail delivery verification is 
 
     $this
         ->actingAs($user)
-        ->patchJson("/api/v1/settings/profile", [
+        ->putJson('/api/v1/settings/profile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
         ])
@@ -145,7 +145,7 @@ test('user can delete their account', function () {
 
     $response = $this
         ->actingAs($user)
-        ->deleteJson("/api/v1/settings/profile", [
+        ->deleteJson('/api/v1/settings/profile', [
             'password' => 'password',
         ]);
 
@@ -162,7 +162,7 @@ test('correct password must be provided to delete account', function () {
     $response = $this
         ->actingAs($user)
         ->from(route('profile.edit'))
-        ->deleteJson("/api/v1/settings/profile", [
+        ->deleteJson('/api/v1/settings/profile', [
             'password' => 'wrong-password',
         ]);
 

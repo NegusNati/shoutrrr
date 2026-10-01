@@ -75,7 +75,7 @@ it('persists platform toggles for an owner', function () {
             ],
             'linkedin_community_management_enabled' => false,
         ])
-        ->assertRedirect();
+        ->assertOk();
 
     expect(app(InstanceSettings::class)->platformAvailable(Platform::X))->toBeFalse();
 });
@@ -98,7 +98,7 @@ it('persists the linkedin community management toggle from the platforms page', 
             ],
             'linkedin_community_management_enabled' => true,
         ])
-        ->assertRedirect();
+        ->assertOk();
 
     expect(app(InstanceSettings::class)->linkedinCommunityManagementEnabled())->toBeTrue();
 });

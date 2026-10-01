@@ -2,10 +2,12 @@
 
 use App\Dto\Post\DraftData;
 use App\Enums\Platform;
+use App\Enums\WorkspaceRole;
 use App\Models\ConnectedAccount;
 use App\Models\PostMedia;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use App\Services\Posts\DraftService;
 use App\Services\Posts\PostStaleWriteException;
 use Illuminate\Support\Facades\Context;
@@ -15,6 +17,10 @@ function draftSetup(int $count = 2): array
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
     $accounts = collect(range(1, $count))->map(fn () => ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,

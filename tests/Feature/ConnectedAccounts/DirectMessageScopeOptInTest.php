@@ -103,6 +103,10 @@ test('bluesky connect records dm_enabled from the dm_access checkbox', function 
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     Http::fake([
@@ -138,6 +142,10 @@ test('bluesky connect defaults dm_enabled to false without the checkbox', functi
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     Http::fake([

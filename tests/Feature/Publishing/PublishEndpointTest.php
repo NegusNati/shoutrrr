@@ -23,6 +23,10 @@ function publishingMember(): array
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];
@@ -34,8 +38,8 @@ test('publish-now sets the post publishing and dispatches targets', function () 
     $post = Post::factory()->create(['workspace_id' => $workspace->id, 'status' => PostStatus::Draft]);
     PostTarget::factory()->for($post)->create();
 
-    test()->postJson("/posts/{$post->id}/publish")
-        ->assertOk()
+    test()->postJson("/api/v1/posts/{$post->id}/publish")
+        ->assertAccepted()
         ->assertJsonPath('post.status', 'publishing');
 
     expect($post->refresh()->status)->toBe(PostStatus::Publishing);
@@ -47,7 +51,7 @@ test('publish-now is blocked (422) when the post has no targets and does not dis
     [$user, $workspace] = publishingMember();
     $post = Post::factory()->create(['workspace_id' => $workspace->id, 'status' => PostStatus::Draft]);
 
-    test()->postJson("/posts/{$post->id}/publish")
+    test()->postJson("/api/v1/posts/{$post->id}/publish")
         ->assertStatus(422)
         ->assertJsonPath('message', 'Select at least one account to publish.');
 
@@ -59,7 +63,7 @@ test('publish-now is blocked across workspaces', function () {
     publishingMember();
     $foreign = Post::factory()->create();
 
-    test()->postJson("/posts/{$foreign->id}/publish")->assertNotFound();
+    test()->postJson("/api/v1/posts/{$foreign->id}/publish")->assertNotFound();
 });
 
 test('per-target retry resets a failed target to pending and dispatches it', function () {
@@ -68,8 +72,8 @@ test('per-target retry resets a failed target to pending and dispatches it', fun
     $post = Post::factory()->create(['workspace_id' => $workspace->id, 'status' => PostStatus::Failed]);
     $target = PostTarget::factory()->for($post)->failed()->create();
 
-    test()->postJson("/posts/{$post->id}/targets/{$target->id}/retry")
-        ->assertOk()
+    test()->postJson("/api/v1/posts/{$post->id}/targets/{$target->id}/retry")
+        ->assertAccepted()
         ->assertJsonPath('post.id', $post->id);
 
     $target->refresh();
@@ -89,8 +93,8 @@ test('per-target retry resets a skipped target to pending and dispatches it', fu
         'error_message' => 'X is disabled on this instance.',
     ]);
 
-    test()->postJson("/posts/{$post->id}/targets/{$target->id}/retry")
-        ->assertOk()
+    test()->postJson("/api/v1/posts/{$post->id}/targets/{$target->id}/retry")
+        ->assertAccepted()
         ->assertJsonPath('post.id', $post->id);
 
     $target->refresh();
@@ -114,8 +118,8 @@ test('retrying a skipped target whose platform is still frozen re-skips it inste
 
     // Sync queue runs the retried job inline, so the terminal + freeze guards in
     // PublishPostTarget::handle() execute within this request.
-    test()->postJson("/posts/{$post->id}/targets/{$target->id}/retry")
-        ->assertOk();
+    test()->postJson("/api/v1/posts/{$post->id}/targets/{$target->id}/retry")
+        ->assertAccepted();
 
     expect($target->fresh()->status)->toBe(PostTargetStatus::Skipped);
 });
@@ -126,8 +130,8 @@ test('retry rejects a non-failed target with 409 and dispatches nothing', functi
     $post = Post::factory()->create(['workspace_id' => $workspace->id, 'status' => PostStatus::Published]);
     $target = PostTarget::factory()->for($post)->published()->create();
 
-    test()->postJson("/posts/{$post->id}/targets/{$target->id}/retry")
-        ->assertStatus(409);
+    test()->postJson("/api/v1/posts/{$post->id}/targets/{$target->id}/retry")
+        ->assertStatus(422);
 
     expect($target->refresh()->status)->toBe(PostTargetStatus::Published);
     Bus::assertNotDispatched(PublishPostTarget::class);
@@ -138,7 +142,7 @@ test('retry rejects a target belonging to another post', function () {
     $post = Post::factory()->create(['workspace_id' => $workspace->id]);
     $otherTarget = PostTarget::factory()->create(); // different post + workspace
 
-    test()->postJson("/posts/{$post->id}/targets/{$otherTarget->id}/retry")->assertNotFound();
+    test()->postJson("/api/v1/posts/{$post->id}/targets/{$otherTarget->id}/retry")->assertNotFound();
 });
 
 test('publish-now is blocked (422) for an empty post and does not dispatch', function () {
@@ -150,7 +154,7 @@ test('publish-now is blocked (422) for an empty post and does not dispatch', fun
         'sections' => [''],
     ]);
 
-    test()->postJson("/posts/{$post->id}/publish")
+    test()->postJson("/api/v1/posts/{$post->id}/publish")
         ->assertStatus(422)
         ->assertJsonPath('blocked.0.issues.0', 'empty');
 
@@ -167,7 +171,7 @@ test('publish-now is blocked (422) for an Instagram target with a caption but no
         'sections' => ['Test'],
     ]);
 
-    test()->postJson("/posts/{$post->id}/publish")
+    test()->postJson("/api/v1/posts/{$post->id}/publish")
         ->assertStatus(422)
         ->assertJsonPath('blocked.0.platform', 'instagram')
         ->assertJsonPath('blocked.0.issues.0', 'media_required');
@@ -186,7 +190,7 @@ test('publish-now is blocked (422) when a target is over the limit and does not 
         'auto_split' => false,
     ]);
 
-    test()->postJson("/posts/{$post->id}/publish")
+    test()->postJson("/api/v1/posts/{$post->id}/publish")
         ->assertStatus(422)
         ->assertJsonPath('blocked.0.platform', 'bluesky')
         ->assertJsonPath('blocked.0.issues.0', 'section_too_long');

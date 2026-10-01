@@ -21,6 +21,10 @@ test('the compose page serializes target placements', function (): void {
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $workspace->forceFill(['default_connected_account_id' => null])->save();
 
     Context::add('workspace_id', $workspace->id);

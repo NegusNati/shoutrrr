@@ -12,6 +12,10 @@ test('a write tool is denied once the user is removed from the bound workspace',
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
 
     // Sanity: while a member, the tool works.
@@ -55,6 +59,10 @@ test('a member with workspace.read may still use write tools (authz parity not o
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     // bindTokenToWorkspace gives the user the Member role (workspace.read only).
     bindTokenToWorkspace($user, $workspace);
 

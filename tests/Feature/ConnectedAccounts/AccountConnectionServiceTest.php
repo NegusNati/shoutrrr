@@ -3,10 +3,12 @@
 use App\Dto\ConnectedAccount\ConnectedAccountData;
 use App\Enums\ConnectedAccountStatus;
 use App\Enums\Platform;
+use App\Enums\WorkspaceRole;
 use App\Events\ConnectedAccountConnected;
 use App\Models\ConnectedAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use App\Services\ConnectedAccounts\AccountConnectionService;
 use Illuminate\Support\Facades\Event;
 
@@ -15,6 +17,10 @@ function makeOwner(): array
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     return [$user, $workspace];
 }

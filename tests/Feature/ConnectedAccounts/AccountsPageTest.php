@@ -20,6 +20,10 @@ function viewerInWorkspace(WorkspaceRole $role): User
         'role' => $role,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
         'handle' => '@listed',
@@ -66,6 +70,10 @@ test('owners can refresh an X subscription tier without reconnecting', function 
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
         'status' => ConnectedAccountStatus::NeedsAttention->value,
@@ -116,6 +124,10 @@ test('a failed X tier lookup retains the existing account limit', function () {
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
         'token_expires_at' => now()->addHour(),
@@ -153,6 +165,10 @@ test('the accounts page exposes a saved custom PDS so reconnect can replay it', 
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $default = ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
@@ -195,6 +211,10 @@ test('owners can set a workspace default account from the accounts page', functi
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
 
     test()->actingAs($owner)
@@ -213,6 +233,10 @@ test('members cannot set a workspace default account', function () {
         'user_id' => $member->id,
     ]);
     $member->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $member->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
 
     test()->actingAs($member)
@@ -230,6 +254,10 @@ test('the accounts page marks and lists the workspace default account first', fu
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'handle' => '@regular']);
     $default = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'handle' => '@default']);
     $workspace->forceFill(['default_connected_account_id' => $default->id])->save();
@@ -249,6 +277,10 @@ test('disconnecting the workspace default account clears the default', function 
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
     $workspace->forceFill(['default_connected_account_id' => $account->id])->save();
 

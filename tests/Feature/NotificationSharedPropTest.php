@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
@@ -18,6 +19,10 @@ test('shared notifications prop only includes current-workspace notifications', 
         'user_id' => $user->id,
     ]);
     $user->forceFill(['current_workspace_id' => $wsA->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $wsA->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     // two stored database notifications, one per workspace
     $user->notifications()->create([
@@ -48,6 +53,10 @@ test('shared notifications prop includes global notifications in the current wor
         'user_id' => $user->id,
     ]);
     $user->forceFill(['current_workspace_id' => $ws->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $ws->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $user->notifications()->create([
         'id' => (string) Str::uuid(),
@@ -71,6 +80,10 @@ test('notifications are ordered by id desc when created_at is identical', functi
         'user_id' => $user->id,
     ]);
     $user->forceFill(['current_workspace_id' => $ws->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $ws->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $sameTime = Carbon::now();
 

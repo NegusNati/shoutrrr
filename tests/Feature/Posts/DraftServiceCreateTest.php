@@ -2,10 +2,12 @@
 
 use App\Enums\Platform;
 use App\Enums\PostStatus;
+use App\Enums\WorkspaceRole;
 use App\Models\AccountSet;
 use App\Models\ConnectedAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use App\Services\Posts\DraftService;
 use App\Support\PostView;
 use Illuminate\Support\Facades\Context;
@@ -15,6 +17,10 @@ function workspaceWithAccounts(int $count = 2): array
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $accounts = collect(range(1, $count))->map(fn () => ConnectedAccount::factory()->create([

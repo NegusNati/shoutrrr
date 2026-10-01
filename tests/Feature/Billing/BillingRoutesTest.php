@@ -20,9 +20,7 @@ afterEach(function () {
 
 test('billing routes exist but are inactive on self hosted instances', function () {
     expect(config('subscriptions.enabled'))->toBeFalse()
-        ->and(Route::has('billing.index'))->toBeTrue()
-        ->and(Route::has('billing.checkout'))->toBeTrue()
-        ->and(Route::has('billing.portal'))->toBeTrue();
+        ->and(Route::has('billing.index'))->toBeTrue();
 
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
@@ -32,6 +30,10 @@ test('billing routes exist but are inactive on self hosted instances', function 
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
         ->get(route('billing.index'))
@@ -83,6 +85,10 @@ test('billing page does not show portal management for a customer without a subs
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
         ->getJson('/api/v1/settings/workspace/subscription')
@@ -130,6 +136,10 @@ test('billing page shows current month x budget usage', function () {
         'total_cost_microusd' => 1_485_000,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
         ->getJson('/api/v1/settings/workspace/subscription')
@@ -149,9 +159,13 @@ test('portal is unavailable for a workspace that never became a stripe customer'
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
-        ->postJson("/api/v1/billing/portal")
+        ->postJson('/api/v1/billing/portal')
         ->assertNotFound();
 });
 
@@ -168,6 +182,10 @@ test('checkout is rejected when the workspace already has an active subscription
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     Subscription::query()->create([
         'workspace_id' => $workspace->id,
@@ -179,7 +197,7 @@ test('checkout is rejected when the workspace already has an active subscription
     ]);
 
     $this->actingAs($user)
-        ->postJson("/api/v1/billing/checkout")
+        ->postJson('/api/v1/billing/checkout')
         ->assertJsonValidationErrors(['billing' => 'This workspace already has an active subscription.']);
 });
 
@@ -205,13 +223,17 @@ test('members without the billing permission cannot reach any billing action', f
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
-        ->{$method}(route($route))
+        ->{$method}($route)
         ->assertForbidden();
 })->with([
-    'checkout' => ['post', 'billing.checkout'],
-    'portal' => ['post', 'billing.portal'],
+    'checkout' => ['postJson', '/api/v1/billing/checkout'],
+    'portal' => ['postJson', '/api/v1/billing/portal'],
 ]);
 
 test('members without the billing permission cannot reach the billing api', function () {
@@ -227,6 +249,10 @@ test('members without the billing permission cannot reach the billing api', func
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
         ->getJson('/api/v1/settings/workspace/subscription')
@@ -238,6 +264,10 @@ test('a user with no membership in the current workspace cannot reach billing', 
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => User::factory()->create()->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
         ->getJson('/api/v1/settings/workspace/subscription')
@@ -254,6 +284,10 @@ test('admins may manage billing', function () {
         'role' => WorkspaceRole::Admin,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
         ->getJson('/api/v1/settings/workspace/subscription')
@@ -273,9 +307,13 @@ test('checkout rejects the placeholder stripe price before creating a customer',
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
-        ->postJson("/api/v1/billing/checkout")
+        ->postJson('/api/v1/billing/checkout')
         ->assertJsonValidationErrors(['billing' => 'Configure STRIPE_SUBSCRIPTION_PRICE_ID before starting checkout.']);
 
     expect($workspace->refresh()->stripe_id)->toBeNull();

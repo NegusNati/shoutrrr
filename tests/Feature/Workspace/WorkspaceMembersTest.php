@@ -23,10 +23,10 @@ test('owner can invite a member', function () {
     Notification::fake();
     [$workspace, $owner] = ownerInWorkspace();
 
-    $this->actingAs($owner)->postJson("/api/v1/settings/workspace/invite", [
+    $this->actingAs($owner)->postJson('/api/v1/settings/workspace/invite', [
         'email' => 'new@example.com',
         'role' => 'member',
-    ])->assertOk();
+    ])->assertCreated();
 
     $this->assertDatabaseHas('workspace_invitations', [
         'workspace_id' => $workspace->id,
@@ -39,7 +39,7 @@ test('member cannot invite', function () {
     $member = User::factory()->create(['current_workspace_id' => $workspace->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $member->id]);
 
-    $this->actingAs($member)->postJson("/api/v1/settings/workspace/invite", [
+    $this->actingAs($member)->postJson('/api/v1/settings/workspace/invite', [
         'email' => 'new@example.com', 'role' => 'member',
     ])->assertForbidden();
 });
@@ -76,10 +76,10 @@ test('inviting an existing user sends an in-app notification to that user', func
     [$workspace, $owner] = ownerInWorkspace();
     $existingUser = User::factory()->create(['email' => 'existing@example.com']);
 
-    $this->actingAs($owner)->postJson("/api/v1/settings/workspace/invite", [
+    $this->actingAs($owner)->postJson('/api/v1/settings/workspace/invite', [
         'email' => 'existing@example.com',
         'role' => 'member',
-    ])->assertOk();
+    ])->assertCreated();
 
     Notification::assertSentTo($existingUser, WorkspaceInviteNotification::class);
 });
@@ -89,10 +89,10 @@ test('inviting an existing user stores the in-app notification immediately with 
     [$workspace, $owner] = ownerInWorkspace();
     $existingUser = User::factory()->create(['email' => 'stored@example.com']);
 
-    $this->actingAs($owner)->postJson("/api/v1/settings/workspace/invite", [
+    $this->actingAs($owner)->postJson('/api/v1/settings/workspace/invite', [
         'email' => 'stored@example.com',
         'role' => 'member',
-    ])->assertOk();
+    ])->assertCreated();
 
     $notification = $existingUser->notifications()->first();
 
@@ -108,10 +108,10 @@ test('inviting an unknown email sends an on-demand mail notification without a m
     Notification::fake();
     [$workspace, $owner] = ownerInWorkspace();
 
-    $this->actingAs($owner)->postJson("/api/v1/settings/workspace/invite", [
+    $this->actingAs($owner)->postJson('/api/v1/settings/workspace/invite', [
         'email' => 'unknown@example.com',
         'role' => 'member',
-    ])->assertOk();
+    ])->assertCreated();
 
     Notification::assertSentOnDemand(WorkspaceInviteNotification::class);
 

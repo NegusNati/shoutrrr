@@ -21,6 +21,10 @@ function memberWithVideoPost(): array
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => WorkspaceRole::Member]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
     ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'platform' => Platform::X->value]);
     $postData = test()->postJson('/api/v1/posts', ['base_text' => '', 'segments' => [''], 'destination' => ['kind' => 'all']])->json('post');

@@ -127,7 +127,9 @@ class ProfileController extends Controller
             Workspace::whereIn('id', $ownedMemberships->pluck('workspace_id'))
                 ->each(fn (Workspace $workspace) => $workspace->delete());
 
-            Auth::logout();
+            // The default guard may be a stateless RequestGuard under
+            // auth:api,sanctum — log the browser session out explicitly.
+            Auth::guard('web')->logout();
 
             $user->delete();
         });

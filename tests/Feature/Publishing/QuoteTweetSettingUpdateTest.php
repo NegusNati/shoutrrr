@@ -11,12 +11,12 @@ it('is disabled by default', function () {
 it('lets an instance owner enable quote tweets', function () {
     $owner = User::factory()->create(['instance_role' => InstanceRole::Owner->value]);
 
-    $this->actingAs($owner)->put('/settings/instance', [
+    $this->actingAs($owner)->put('/api/v1/instance-settings', [
         'registrations_enabled' => false,
         'workspace_creation_enabled' => true,
         'usage_tracking_enabled' => false,
         'quote_tweets_enabled' => true,
-    ])->assertRedirect();
+    ])->assertOk();
 
     expect(app(InstanceSettings::class)->quoteTweetsEnabled())->toBeTrue();
 });
@@ -24,9 +24,9 @@ it('lets an instance owner enable quote tweets', function () {
 it('rejects a missing quote_tweets_enabled field', function () {
     $owner = User::factory()->create(['instance_role' => InstanceRole::Owner->value]);
 
-    $this->actingAs($owner)->put('/settings/instance', [
+    $this->actingAs($owner)->put('/api/v1/instance-settings', [
         'registrations_enabled' => false,
         'workspace_creation_enabled' => true,
         'usage_tracking_enabled' => false,
-    ])->assertSessionHasErrors('quote_tweets_enabled');
+    ])->assertJsonValidationErrors('quote_tweets_enabled');
 });

@@ -25,7 +25,11 @@ class AttachGifRequest extends FormRequest
             return $this->user()->can('update', $post);
         }
 
-        return $this->route('reply') !== null || $this->route('conversation') !== null;
+        // The /api/v1 routes spell the params {replyId} / {conversationId} /
+        // {id} (the controller resolves the model itself), so accept those too.
+        return $this->route('reply') !== null || $this->route('conversation') !== null
+            || $this->route('replyId') !== null || $this->route('conversationId') !== null
+            || $this->route('id') !== null;
     }
 
     /**

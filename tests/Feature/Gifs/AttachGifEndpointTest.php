@@ -46,7 +46,7 @@ test('attaches a gif to a post and returns a media view', function () {
     $post = Post::factory()->create(['workspace_id' => $user->current_workspace_id]);
 
     $this->actingAs($user)
-        ->postJson("/posts/{$post->id}/gifs", attachPayload())
+        ->postJson("/api/v1/posts/{$post->id}/gifs", attachPayload())
         ->assertCreated()
         ->assertJsonPath('media.kind', 'image')
         ->assertJsonPath('media.mime', 'image/gif')
@@ -59,7 +59,7 @@ test('404s when gifs are not configured', function () {
     $post = Post::factory()->create(['workspace_id' => $user->current_workspace_id]);
 
     $this->actingAs($user)
-        ->postJson("/posts/{$post->id}/gifs", attachPayload())
+        ->postJson("/api/v1/posts/{$post->id}/gifs", attachPayload())
         ->assertNotFound();
 });
 
@@ -68,7 +68,7 @@ test('rejects a variant url off the klipy cdn with a 422', function () {
     $post = Post::factory()->create(['workspace_id' => $user->current_workspace_id]);
 
     $this->actingAs($user)
-        ->postJson("/posts/{$post->id}/gifs", attachPayload([
+        ->postJson("/api/v1/posts/{$post->id}/gifs", attachPayload([
             'variants' => [['url' => 'https://169.254.169.254/latest/meta-data', 'mime' => 'image/gif', 'width' => 1, 'height' => 1, 'bytes' => 100]],
         ]))
         ->assertStatus(422);
@@ -79,7 +79,7 @@ test('rejects an unknown catalog with a 422', function () {
     $post = Post::factory()->create(['workspace_id' => $user->current_workspace_id]);
 
     $this->actingAs($user)
-        ->postJson("/posts/{$post->id}/gifs", attachPayload(['catalog' => 'memes']))
+        ->postJson("/api/v1/posts/{$post->id}/gifs", attachPayload(['catalog' => 'memes']))
         ->assertStatus(422);
 });
 
@@ -88,7 +88,7 @@ test('cannot attach to another workspace post', function () {
     $foreign = Post::factory()->create();
 
     $this->actingAs($user)
-        ->postJson("/posts/{$foreign->id}/gifs", attachPayload())
+        ->postJson("/api/v1/posts/{$foreign->id}/gifs", attachPayload())
         ->assertNotFound();
 });
 
@@ -100,7 +100,7 @@ test('attaches a gif to a reply and returns a media view', function () {
         ->create(['workspace_id' => $user->current_workspace_id]);
 
     $this->actingAs($user)
-        ->postJson("/engagement/{$reply->id}/gifs", attachPayload())
+        ->postJson("/api/v1/engagement/{$reply->id}/gifs", attachPayload())
         ->assertCreated()
         ->assertJsonPath('media.kind', 'image')
         ->assertJsonPath('media.mime', 'image/gif');
@@ -113,7 +113,7 @@ test('cannot attach to another workspace reply', function () {
         ->create();
 
     $this->actingAs($user)
-        ->postJson("/engagement/{$foreignReply->id}/gifs", attachPayload())
+        ->postJson("/api/v1/engagement/{$foreignReply->id}/gifs", attachPayload())
         ->assertNotFound();
 });
 
@@ -126,7 +126,7 @@ test('404s on the reply route when gifs are not configured', function () {
         ->create(['workspace_id' => $user->current_workspace_id]);
 
     $this->actingAs($user)
-        ->postJson("/engagement/{$reply->id}/gifs", attachPayload())
+        ->postJson("/api/v1/engagement/{$reply->id}/gifs", attachPayload())
         ->assertNotFound();
 });
 
@@ -143,7 +143,7 @@ test('a client-declared existing clip blocks a second reply attachment with a 42
     ]);
 
     $this->actingAs($user)
-        ->postJson("/engagement/{$reply->id}/gifs", attachPayload([
+        ->postJson("/api/v1/engagement/{$reply->id}/gifs", attachPayload([
             'catalog' => 'clip',
             'variants' => [['url' => 'https://static.klipy.com/ok.mp4', 'mime' => 'video/mp4', 'width' => 320, 'height' => 240, 'bytes' => 40000]],
             'duration_seconds' => 5,
@@ -165,7 +165,7 @@ test('a client-declared existing image blocks a gif reply attachment with a 422'
     ]);
 
     $this->actingAs($user)
-        ->postJson("/engagement/{$reply->id}/gifs", attachPayload([
+        ->postJson("/api/v1/engagement/{$reply->id}/gifs", attachPayload([
             'media_ids' => [$existingImage->id],
         ]))
         ->assertStatus(422);
@@ -179,7 +179,7 @@ test('attaching a reply gif with no media_ids still succeeds', function () {
         ->create(['workspace_id' => $user->current_workspace_id]);
 
     $this->actingAs($user)
-        ->postJson("/engagement/{$reply->id}/gifs", attachPayload())
+        ->postJson("/api/v1/engagement/{$reply->id}/gifs", attachPayload())
         ->assertCreated();
 });
 
@@ -191,7 +191,7 @@ test('attaching a reply gif with an explicit empty media_ids array still succeed
         ->create(['workspace_id' => $user->current_workspace_id]);
 
     $this->actingAs($user)
-        ->postJson("/engagement/{$reply->id}/gifs", attachPayload(['media_ids' => []]))
+        ->postJson("/api/v1/engagement/{$reply->id}/gifs", attachPayload(['media_ids' => []]))
         ->assertCreated();
 });
 
@@ -215,7 +215,7 @@ test('ignores media ids from another workspace', function () {
     ]);
 
     $this->actingAs($user)
-        ->postJson("/engagement/{$reply->id}/gifs", attachPayload([
+        ->postJson("/api/v1/engagement/{$reply->id}/gifs", attachPayload([
             'media_ids' => [$foreignImage->id],
         ]))
         ->assertCreated();
@@ -234,7 +234,7 @@ test('rejects a post gif when the composer declares a draft video it holds', fun
     ]);
 
     $this->actingAs($user)
-        ->postJson("/posts/{$post->id}/gifs", attachPayload([
+        ->postJson("/api/v1/posts/{$post->id}/gifs", attachPayload([
             'media_ids' => [$draftVideo->id],
         ]))
         ->assertStatus(422);
@@ -254,7 +254,7 @@ test('attaches a post gif to an empty segment while another segment already hold
     ]);
 
     $this->actingAs($user)
-        ->postJson("/posts/{$post->id}/gifs", attachPayload(['media_ids' => []]))
+        ->postJson("/api/v1/posts/{$post->id}/gifs", attachPayload(['media_ids' => []]))
         ->assertCreated();
 });
 
@@ -269,7 +269,7 @@ test('attaches a post clip to an empty segment while another segment already hol
     ]);
 
     $this->actingAs($user)
-        ->postJson("/posts/{$post->id}/gifs", attachPayload([
+        ->postJson("/api/v1/posts/{$post->id}/gifs", attachPayload([
             'catalog' => 'clip',
             'variants' => [['url' => 'https://static.klipy.com/ok.mp4', 'mime' => 'video/mp4', 'width' => 320, 'height' => 240, 'bytes' => 40000]],
             'duration_seconds' => 5,
@@ -289,7 +289,7 @@ test('ignores post media ids from another workspace', function () {
     ]);
 
     $this->actingAs($user)
-        ->postJson("/posts/{$post->id}/gifs", attachPayload([
+        ->postJson("/api/v1/posts/{$post->id}/gifs", attachPayload([
             'media_ids' => [$foreignVideo->id],
         ]))
         ->assertCreated();

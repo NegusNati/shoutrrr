@@ -16,9 +16,13 @@ function memberWithDraft(): array
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => WorkspaceRole::Member]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
     ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'platform' => Platform::X->value]);
-    $post = test()->postJson('/posts', ['base_text' => '', 'segments' => [''], 'destination' => ['kind' => 'all']])->json('post');
+    $post = test()->postJson('/api/v1/posts', ['base_text' => '', 'segments' => [''], 'destination' => ['kind' => 'all']])->json('post');
 
     return [$user, $workspace, $post];
 }
@@ -30,7 +34,7 @@ test('POST /posts/{post}/media uploads and returns the media descriptor', functi
     // Multipart upload with an explicit JSON Accept header so validation
     // failures return 422 JSON rather than a redirect (postJson drops the
     // Accept header when a file is present).
-    test()->post("/posts/{$post['id']}/media", [
+    test()->postJson("/api/v1/posts/{$post['id']}/media", [
         'file' => UploadedFile::fake()->image('p.jpg', 800, 600)->size(300),
     ], ['Accept' => 'application/json'])->assertCreated()
         ->assertJsonPath('media.mime', 'image/jpeg')
@@ -41,7 +45,7 @@ test('it rejects a non-image upload', function () {
     Storage::fake('public');
     [$user, $workspace, $post] = memberWithDraft();
 
-    test()->post("/posts/{$post['id']}/media", [
+    test()->postJson("/api/v1/posts/{$post['id']}/media", [
         'file' => UploadedFile::fake()->create('notes.pdf', 100, 'application/pdf'),
     ], ['Accept' => 'application/json'])->assertStatus(422);
 });
@@ -54,7 +58,7 @@ test('it rejects an image whose resolution exceeds the pixel ceiling', function 
     // genuine 50-megapixel canvas; the rule reads the header only.
     config(['media.max_image_pixels' => 100]);
 
-    test()->post("/posts/{$post['id']}/media", [
+    test()->postJson("/api/v1/posts/{$post['id']}/media", [
         'file' => UploadedFile::fake()->image('huge.jpg', 800, 600)->size(300),
     ], ['Accept' => 'application/json'])
         ->assertStatus(422)
@@ -70,7 +74,7 @@ test('it rejects an image above the shipped pixel ceiling without any config ove
     // The validation rule itself reads the header only (no decode); the canvas that
     // UploadedFile::fake() allocates here is one-off test fixture setup, not the code
     // path under test.
-    test()->post("/posts/{$post['id']}/media", [
+    test()->postJson("/api/v1/posts/{$post['id']}/media", [
         'file' => UploadedFile::fake()->image('huge.jpg', 5000, 3500)->size(300),
     ], ['Accept' => 'application/json'])
         ->assertStatus(422)
@@ -82,7 +86,7 @@ test('it rejects an upload to a post that is no longer editable', function () {
     [$user, $workspace, $post] = memberWithDraft();
     Post::findOrFail($post['id'])->forceFill(['status' => 'published'])->save();
 
-    test()->post("/posts/{$post['id']}/media", [
+    test()->postJson("/api/v1/posts/{$post['id']}/media", [
         'file' => UploadedFile::fake()->image('p.jpg', 800, 600)->size(300),
     ], ['Accept' => 'application/json'])->assertStatus(422);
 });
@@ -90,11 +94,11 @@ test('it rejects an upload to a post that is no longer editable', function () {
 test('PATCH /posts/{post}/media/{media}/alt updates alt text', function () {
     Storage::fake('public');
     [$user, $workspace, $post] = memberWithDraft();
-    $media = test()->post("/posts/{$post['id']}/media", [
+    $media = test()->postJson("/api/v1/posts/{$post['id']}/media", [
         'file' => UploadedFile::fake()->image('p.jpg', 800, 600)->size(300),
     ], ['Accept' => 'application/json'])->json('media');
 
-    test()->patchJson("/posts/{$post['id']}/media/{$media['id']}/alt", ['alt_text' => 'a red bicycle'])
+    test()->patchJson("/api/v1/posts/{$post['id']}/media/{$media['id']}/alt", ['alt_text' => 'a red bicycle'])
         ->assertOk()
         ->assertJsonPath('media.alt_text', 'a red bicycle');
 });
@@ -102,11 +106,11 @@ test('PATCH /posts/{post}/media/{media}/alt updates alt text', function () {
 test('it rejects an alt-text update on a post that is no longer editable', function () {
     Storage::fake('public');
     [$user, $workspace, $post] = memberWithDraft();
-    $media = test()->post("/posts/{$post['id']}/media", [
+    $media = test()->postJson("/api/v1/posts/{$post['id']}/media", [
         'file' => UploadedFile::fake()->image('p.jpg', 800, 600)->size(300),
     ], ['Accept' => 'application/json'])->json('media');
     Post::findOrFail($post['id'])->forceFill(['status' => 'published'])->save();
 
-    test()->patchJson("/posts/{$post['id']}/media/{$media['id']}/alt", ['alt_text' => 'too late'])
+    test()->patchJson("/api/v1/posts/{$post['id']}/media/{$media['id']}/alt", ['alt_text' => 'too late'])
         ->assertStatus(422);
 });

@@ -46,6 +46,10 @@ test('switching works while the user sits on a workspace-scoped detail page', fu
     WorkspaceMembership::factory()->create(['workspace_id' => $current->id, 'user_id' => $user->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $next->id, 'user_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $current->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $current->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Post::factory()->for($current)->create(['author_id' => $user->id]);
 
     $this->actingAs($user)

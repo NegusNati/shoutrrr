@@ -18,6 +18,10 @@ function apiFeedbackUser(): User
         'workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     return $user;
@@ -71,6 +75,10 @@ it('forbids unverified session users', function () {
         'workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $this->actingAs($user)
         ->postJson('/api/v1/feedback', ['type' => 'bug', 'message' => 'hi'])

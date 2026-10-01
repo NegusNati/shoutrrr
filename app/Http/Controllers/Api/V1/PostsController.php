@@ -6,13 +6,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Dto\Post\DraftData;
 use App\Enums\PostStatus;
+use App\Enums\PostTargetStatus;
 use App\Http\Controllers\Api\V1\Concerns\ResolvesWorkspacePost;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Post\StorePostRequest;
+use App\Http\Requests\Post\UpdatePostRequest;
 use App\Jobs\DeletePostTarget;
 use App\Models\AccountSet;
 use App\Models\Post;
 use App\Models\PostTarget;
-use App\Models\User;
 use App\Services\Posts\DraftService;
 use App\Services\Posts\PostDuplicator;
 use App\Services\Posts\PostStaleWriteException;
@@ -23,7 +25,7 @@ use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class PostsController extends Controller
 {
@@ -135,91 +137,42 @@ class PostsController extends Controller
         return response()->json(['post' => PostView::make($model->load(['targets.account', 'media']))]);
     }
 
-    public function store(Request $request, DraftService $drafts): JsonResponse
+    public function store(StorePostRequest $request, DraftService $drafts): JsonResponse
     {
-        $this->authorize('create', Post::class);
-
-        $validated = $request->validate([
-            'base_text' => ['sometimes', 'nullable', 'string'],
-            'segments' => ['array'],
-            'segments.*' => ['string'],
-            'mentions' => ['array'],
-            'mentions.*.id' => ['required', 'string'],
-            'mentions.*.label' => ['required', 'string'],
-            'mentions.*.handles' => ['array'],
-            'mentions.*.handles.x' => ['nullable', 'string'],
-            'mentions.*.handles.bluesky' => ['nullable', 'string'],
-            'mentions.*.handles.linkedin' => ['nullable', 'string'],
-            'mentions.*.handles.linkedin_urn' => ['nullable', 'string', 'max:255'],
-            'destination' => ['required', 'array'],
-            'destination.kind' => ['required', Rule::in(['all', 'none', 'set', 'account', 'accounts'])],
-            'destination.id' => ['nullable', 'string', 'required_if:destination.kind,set,account'],
-            'destination.ids' => ['array', 'required_if:destination.kind,accounts'],
-            'destination.ids.*' => ['string'],
-            'auto_repost' => ['sometimes', 'nullable', 'boolean'],
-        ]);
-
-        /** @var User $user */
-        $user = $request->user();
-
-        $segments = isset($validated['segments']) && $validated['segments'] !== []
-            ? array_values($validated['segments'])
-            : [(string) ($validated['base_text'] ?? '')];
+        // DraftData derives the segments list (base_text collapses to a single
+        // segment) so API-key callers can post base_text-only drafts.
+        $data = DraftData::fromArray($request->validated());
 
         $post = $drafts->createDraft(
             (string) Context::get('workspace_id'),
-            $user,
-            $validated['destination'],
-            $segments,
-            $validated['mentions'] ?? [],
-            $validated['auto_repost'] ?? null,
+            $request->user(),
+            $request->validated('destination'),
+            $data->segments,
+            array_values($request->validated('mentions', [])),
+            $request->validated('auto_repost'),
+            $data,
         );
 
-        return response()->json(['post' => PostView::make($post->fresh(['targets.account', 'media']))], 201);
+        return response()->json(['post' => PostView::make($post->fresh(['targets.account', 'targets.placements', 'media']))], 201);
     }
 
-    public function update(Request $request, string $id, DraftService $drafts): JsonResponse
+    public function update(UpdatePostRequest $request, string $id, DraftService $drafts): JsonResponse
     {
         $model = $this->findPostOrFail($id);
         $this->authorize('update', $model);
 
-        $validated = $request->validate([
-            'base_text' => ['sometimes', 'nullable', 'string'],
-            'segments' => ['array'],
-            'segments.*' => ['string'],
-            'mentions' => ['array'],
-            'mentions.*.id' => ['required', 'string'],
-            'mentions.*.label' => ['required', 'string'],
-            'mentions.*.handles' => ['array'],
-            'mentions.*.handles.x' => ['nullable', 'string'],
-            'mentions.*.handles.bluesky' => ['nullable', 'string'],
-            'mentions.*.handles.linkedin' => ['nullable', 'string'],
-            'mentions.*.handles.linkedin_urn' => ['nullable', 'string', 'max:255'],
-            'destination' => ['required', 'array'],
-            'destination.kind' => ['required', Rule::in(['all', 'none', 'set', 'account', 'accounts'])],
-            'destination.id' => ['nullable', 'string', 'required_if:destination.kind,set,account'],
-            'destination.ids' => ['array', 'required_if:destination.kind,accounts'],
-            'destination.ids.*' => ['string'],
-            'targets' => ['array'],
-            'targets.*.connected_account_id' => ['required', 'string'],
-            'targets.*.auto_split' => ['boolean'],
-            'targets.*.content_override' => ['nullable', 'array'],
-            'targets.*.content_override.text' => ['nullable', 'string'],
-            'targets.*.content_override.media_ids' => ['array'],
-            'targets.*.content_override.media_ids.*' => ['string'],
-            'media_ids' => ['array'],
-            'media_ids.*' => ['string'],
-            'auto_repost' => ['sometimes', 'nullable', 'boolean'],
-            'expected_updated_at' => ['nullable', 'string'],
-        ]);
-
         try {
-            $updated = $drafts->updateDraft($model, DraftData::fromArray($validated));
-        } catch (PostStaleWriteException $e) {
-            abort(409, $e->getMessage());
+            $updated = $drafts->updateDraft($model, DraftData::fromArray($request->validated()));
+        } catch (PostStaleWriteException) {
+            // Mirrors the web update: 409 carries the latest post view so the
+            // SPA can surface the conflict state, not just an error banner.
+            return response()->json([
+                'post' => PostView::make($model->fresh(['targets.account', 'targets.placements', 'media'])),
+                'message' => 'stale_write',
+            ], 409);
         }
 
-        return response()->json(['post' => PostView::make($updated->fresh(['targets.account', 'media']))]);
+        return response()->json(['post' => PostView::make($updated->fresh(['targets.account', 'targets.placements', 'media']))]);
     }
 
     /**
@@ -252,21 +205,49 @@ class PostsController extends Controller
         $model = $this->findPostOrFail($id);
         $this->authorize('delete', $model);
 
-        $hadBeenPublished = in_array($model->status, [PostStatus::Published, PostStatus::Partial, PostStatus::Failed], true);
-
         $model->loadMissing('targets');
 
-        if (! $hadBeenPublished) {
+        $needsRemoteCleanup = in_array($model->status, [
+            PostStatus::Publishing, PostStatus::Published, PostStatus::Partial, PostStatus::Failed,
+        ], true);
+
+        if (! $needsRemoteCleanup) {
             $model->delete();
 
             return response()->json(['deleted' => true, 'remote' => false]);
         }
 
-        $model->targets
-            ->filter(fn (PostTarget $t): bool => $t->remote_id !== null)
-            ->each(fn (PostTarget $t) => DeletePostTarget::dispatch($t));
+        // Mirrors the legacy destroy: remote-posted targets go Deleting and get
+        // a DeletePostTarget job; the rest are marked Deleted inline. A target
+        // "has remote posts" when remote_id or remote_ids is non-empty.
+        $hasRemotePosts = fn (PostTarget $target): bool => $target->remote_id !== null || filled($target->remote_ids);
 
-        $model->forceFill(['status' => PostStatus::Deleted->value, 'deleted_at' => now()])->save();
+        $targetsToDelete = DB::transaction(function () use ($model, $hasRemotePosts) {
+            $targetsToDelete = $model->targets
+                ->filter($hasRemotePosts)
+                ->values();
+
+            $targetsToDelete->each(fn (PostTarget $target) => $target->forceFill([
+                'status' => PostTargetStatus::Deleting->value,
+                'next_attempt_at' => null,
+            ])->save());
+
+            $model->targets
+                ->reject($hasRemotePosts)
+                ->each(fn (PostTarget $target) => $target->forceFill([
+                    'status' => PostTargetStatus::Deleted->value,
+                    'next_attempt_at' => null,
+                ])->save());
+
+            $model->forceFill([
+                'status' => PostStatus::Deleted->value,
+                'deleted_at' => now(),
+            ])->save();
+
+            return $targetsToDelete;
+        });
+
+        $targetsToDelete->each(fn (PostTarget $target) => DeletePostTarget::dispatch($target));
 
         return response()->json(['deleted' => true, 'remote' => true, 'message' => 'Remote deletion queued for published targets.']);
     }
