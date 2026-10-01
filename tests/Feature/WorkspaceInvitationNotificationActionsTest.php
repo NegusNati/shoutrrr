@@ -59,14 +59,14 @@ test('workspace invite notifications include accept and deny actions', function 
             'label' => 'Accept',
             'variant' => 'primary',
             'method' => 'post',
-            'href' => route('workspace.invitations.accept', $invitation, absolute: false),
+            'href' => "/api/v1/workspace-invitations/{$invitation->id}/accept",
         ],
         [
             'key' => 'deny',
             'label' => 'Deny',
             'variant' => 'secondary',
             'method' => 'delete',
-            'href' => route('workspace.invitations.deny', $invitation, absolute: false),
+            'href' => "/api/v1/workspace-invitations/{$invitation->id}",
         ],
     ]);
 });
@@ -75,8 +75,8 @@ test('invitee can accept a workspace invitation from a notification action', fun
     [$invitee, $workspace, $invitation, $notificationId] = inviteeWithWorkspaceInvitation();
 
     $this->actingAs($invitee)
-        ->post(route('workspace.invitations.accept', $invitation))
-        ->assertRedirect(route('dashboard'));
+        ->postJson("/api/v1/workspace-invitations/{$invitation->id}/accept")
+        ->assertOk();
 
     expect($invitee->fresh()->isMemberOfWorkspace($workspace->id))->toBeTrue()
         ->and($invitee->fresh()->current_workspace_id)->toBe($workspace->id)
@@ -88,8 +88,8 @@ test('invitee can deny a workspace invitation from a notification action', funct
     [$invitee, , $invitation, $notificationId] = inviteeWithWorkspaceInvitation();
 
     $this->actingAs($invitee)
-        ->delete(route('workspace.invitations.deny', $invitation))
-        ->assertRedirect();
+        ->deleteJson("/api/v1/workspace-invitations/{$invitation->id}")
+        ->assertNoContent();
 
     expect(WorkspaceInvitation::find($invitation->id))->toBeNull()
         ->and($invitee->notifications()->find($notificationId))->toBeNull();
@@ -100,7 +100,7 @@ test('another user cannot answer someone elses invitation notification', functio
     $other = User::factory()->create(['email' => 'other@example.com']);
 
     $this->actingAs($other)
-        ->post(route('workspace.invitations.accept', $invitation))
+        ->postJson("/api/v1/workspace-invitations/{$invitation->id}/accept")
         ->assertNotFound();
 
     expect(WorkspaceMembership::where('workspace_id', $invitation->workspace_id)->exists())->toBeFalse()
