@@ -397,8 +397,9 @@ export function AppSidebar() {
                                                 tooltip={item.title}
                                                 isActive={isItemActive(item)}
                                                 render={
-                                                    <a
-                                                        href={toUrl(item.href)}
+                                                    <NavItemLink
+                                                        href={item.href}
+                                                        spa
                                                     />
                                                 }
                                             >

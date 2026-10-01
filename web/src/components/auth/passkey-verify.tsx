@@ -16,6 +16,7 @@ type Props = {
     loadingLabel?: string;
     separator?: string;
     showSeparator?: boolean;
+    onSuccess?: () => void;
 };
 
 export default function PasskeyVerify({
@@ -24,6 +25,7 @@ export default function PasskeyVerify({
     loadingLabel,
     separator,
     showSeparator = true,
+    onSuccess,
 }: Props = {}) {
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
         ...(routes && {
@@ -32,11 +34,13 @@ export default function PasskeyVerify({
                 submit: toUrl(routes.submit),
             },
         }),
-        onSuccess: () => {
-            // Passkey sign-in lands on the SPA dashboard; the me query is
-            // refetched by the router guard on navigation.
-            window.location.href = appUrl('/dashboard');
-        },
+        onSuccess:
+            onSuccess ??
+            (() => {
+                // Passkey sign-in lands on the SPA dashboard; the me query is
+                // refetched by the router guard on navigation.
+                window.location.href = appUrl('/dashboard');
+            }),
     });
 
     if (!isSupported) {
