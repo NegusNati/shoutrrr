@@ -220,9 +220,8 @@ export async function apiCall<T>(
 }
 
 /**
- * Calls non-API (web) endpoints such as Fortify's auth routes, the passkeys
- * routes, and the legacy workspace lifecycle routes that have no `/api/v1`
- * equivalent. Same XSRF contract as apiFetch, but the path is absolute.
+ * Calls non-API (web) endpoints such as Fortify's auth routes and the passkeys
+ * routes. Same XSRF contract as apiFetch, but the path is absolute.
  * Note: redirects land on HTML pages, so a followed 302 resolves `{}` —
  * callers that need the error bag get it via a non-2xx status instead.
  */

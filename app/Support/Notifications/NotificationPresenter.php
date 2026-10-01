@@ -107,14 +107,14 @@ class NotificationPresenter
                 'label' => 'Accept',
                 'variant' => 'primary',
                 'method' => 'post',
-                'href' => route('workspace.invitations.accept', $invitationId, absolute: false),
+                'href' => "/api/v1/workspace-invitations/{$invitationId}/accept",
             ],
             [
                 'key' => 'deny',
                 'label' => 'Deny',
                 'variant' => 'secondary',
                 'method' => 'delete',
-                'href' => route('workspace.invitations.deny', $invitationId, absolute: false),
+                'href' => "/api/v1/workspace-invitations/{$invitationId}",
             ],
         ];
     }
