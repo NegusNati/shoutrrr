@@ -584,6 +584,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1.feedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/gifs/{catalog}": {
         parameters: {
             query?: never;
@@ -2021,6 +2037,11 @@ export interface components {
             /** Format: uri */
             webhook_url: string;
         };
+        /**
+         * FeedbackType
+         * @enum {string}
+         */
+        FeedbackType: "bug" | "feedback" | "question";
         /**
          * InstanceRole
          * @enum {string}
@@ -3886,6 +3907,48 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "v1.feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    type: components["schemas"]["FeedbackType"];
+                    message: string;
+                    url?: string | null;
+                    browser?: string | null;
+                    /**
+                     * Format: binary
+                     * @description Maximum file size: 5120 kilobytes.
+                     */
+                    screenshot?: string | null;
+                    /**
+                     * Format: binary
+                     * @description KB → 5 MB
+                     */
+                    diagnostics?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "gifBrowser.index": {

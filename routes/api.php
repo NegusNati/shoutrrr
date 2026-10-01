@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\ConversationMediaController;
 use App\Http\Controllers\Api\V1\ConversationVideoUploadController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\EngagementController;
+use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\InstanceSettingsController;
 use App\Http\Controllers\Api\V1\LinkedInConnectController;
 use App\Http\Controllers\Api\V1\MeController;
@@ -169,6 +170,11 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
     Route::get('instance-settings/admins', [InstanceSettingsController::class, 'listAdmins']);
     Route::post('instance-settings/admins', [InstanceSettingsController::class, 'addAdmin']);
     Route::delete('instance-settings/admins/{owner}', [InstanceSettingsController::class, 'removeAdmin']);
+
+    // Mirrors the legacy web group (`auth` + `verified`): widget reports carry
+    // the signed-in user and their current workspace, so keys stay out.
+    Route::post('feedback', FeedbackController::class)
+        ->middleware(['feedback.enabled', 'verified', 'throttle:5,1']);
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session
