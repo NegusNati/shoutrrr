@@ -140,7 +140,7 @@ class PostsController extends Controller
         $this->authorize('create', Post::class);
 
         $validated = $request->validate([
-            'base_text' => ['present', 'nullable', 'string'],
+            'base_text' => ['sometimes', 'nullable', 'string'],
             'segments' => ['array'],
             'segments.*' => ['string'],
             'mentions' => ['array'],
@@ -182,7 +182,7 @@ class PostsController extends Controller
         $this->authorize('update', $model);
 
         $validated = $request->validate([
-            'base_text' => ['present', 'nullable', 'string'],
+            'base_text' => ['sometimes', 'nullable', 'string'],
             'segments' => ['array'],
             'segments.*' => ['string'],
             'mentions' => ['array'],
