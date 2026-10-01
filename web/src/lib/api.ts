@@ -9,6 +9,8 @@ export class ApiError extends Error {
         public readonly status: number,
         message: string,
         public readonly errors: Record<string, string[]> = {},
+        /** Raw response body — needed by callers that parse error bodies (409 conflict snapshot, 422 blocked accounts). */
+        public readonly payload: Record<string, unknown> = {},
     ) {
         super(message);
         this.name = 'ApiError';
@@ -64,6 +66,7 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
                 ? payload.message
                 : `Request failed (${response.status})`,
             errors,
+            payload,
         );
     }
 
@@ -209,6 +212,9 @@ export async function apiCall<T>(
             : `Request failed (${response.status})`,
         typeof body.errors === 'object' && body.errors !== null
             ? (body.errors as Record<string, string[]>)
+            : {},
+        typeof error === 'object' && error !== null
+            ? (error as Record<string, unknown>)
             : {},
     );
 }

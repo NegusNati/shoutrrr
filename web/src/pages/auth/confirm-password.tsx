@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { meQuery } from '@/features/me/me';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { ApiError, webPost } from '@/lib/api';
+import { fieldString } from '@/lib/forms';
 import { appUrl } from '@/lib/href';
 
 export default function ConfirmPassword({ returnTo }: { returnTo?: string }) {
@@ -56,7 +57,7 @@ export default function ConfirmPassword({ returnTo }: { returnTo?: string }) {
         setProcessing(true);
         setErrors({});
         void webPost('/user/confirm-password', {
-            password: String(form.get('password') ?? ''),
+            password: fieldString(form, 'password'),
         })
             .then(redirectBack)
             .catch((error: unknown) => {

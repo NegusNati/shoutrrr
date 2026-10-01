@@ -13,8 +13,11 @@ type Endpoints = {
 };
 
 type Options = {
-    ownerId: string;
+    /** Owning record id — a reply/post id; when null the caller must pass onEnsurePost. */
+    ownerId: string | null;
     endpoints: Endpoints;
+    /** Resolve the owner lazily (composer drafts the post on first save). */
+    onEnsurePost?: () => Promise<string>;
     onAddMedia: (media: MediaView) => void;
     onReplaceMedia: (media: MediaView) => void;
 };
@@ -34,10 +37,22 @@ function blobToFile(blob: Blob, baseName: string): File {
 export function useImageEditor({
     ownerId,
     endpoints,
+    onEnsurePost,
     onAddMedia,
     onReplaceMedia,
 }: Options) {
     const [isSaving, setIsSaving] = useState(false);
+
+    async function resolveOwner(): Promise<string> {
+        if (onEnsurePost) {
+            return onEnsurePost();
+        }
+        if (ownerId === null) {
+            throw new Error('No owner id to save the image against.');
+        }
+
+        return ownerId;
+    }
 
     /** Returns true only if the image was saved and attached. */
     async function applyNew(
@@ -48,8 +63,9 @@ export function useImageEditor({
     ): Promise<boolean> {
         setIsSaving(true);
         try {
+            const id = await resolveOwner();
             const { media } = await apiUpload<{ media: MediaView }>(
-                endpoints.store(ownerId),
+                endpoints.store(id),
                 {
                     composed: blobToFile(composed, 'image'),
                     source: blobToFile(source, 'source'),
@@ -78,8 +94,9 @@ export function useImageEditor({
     ): Promise<boolean> {
         setIsSaving(true);
         try {
+            const id = await resolveOwner();
             const { media } = await apiUpload<{ media: MediaView }>(
-                endpoints.update(ownerId, mediaId),
+                endpoints.update(id, mediaId),
                 {
                     composed: blobToFile(composed, 'image'),
                     settings: JSON.stringify(settings),

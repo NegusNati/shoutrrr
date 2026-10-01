@@ -1,4 +1,4 @@
-import { xsrfHeader } from '@/lib/csrf';
+import { apiFetch, errorMessage } from '@/lib/api';
 import type { MediaView } from '@/types/compose';
 import type { GifItem } from '@/types/gifs';
 
@@ -19,29 +19,18 @@ export async function postGifAttachment(
     item: GifItem,
     mediaIds: string[],
 ): Promise<MediaView> {
-    const response = await fetch(url, {
+    const { media } = await apiFetch<{ media: MediaView }>(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            ...xsrfHeader(),
-        },
-        body: JSON.stringify({
+        body: {
             catalog: item.catalog,
             slug: item.slug,
             title: item.title,
             variants: item.variants,
             media_ids: mediaIds,
-        }),
+        },
+    }).catch((error: unknown) => {
+        throw new Error(errorMessage(error, 'That GIF could not be attached.'));
     });
 
-    if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as {
-            message?: string;
-        };
-
-        throw new Error(body.message ?? 'That GIF could not be attached.');
-    }
-
-    return ((await response.json()) as { media: MediaView }).media;
+    return media;
 }

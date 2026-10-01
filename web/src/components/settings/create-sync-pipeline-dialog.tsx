@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCreatePipeline, type SyncAccount } from '@/features/sync/sync';
 import { ApiError } from '@/lib/api';
+import { fieldString } from '@/lib/forms';
 
 export type { SyncAccount };
 
@@ -123,7 +124,7 @@ export default function CreateSyncPipelineDialog({
         setErrors({});
         create.mutate(
             {
-                name: String(form.get('name') ?? ''),
+                name: fieldString(form, 'name'),
                 source_connected_account_id: source,
                 destination_connected_account_ids: destinations,
                 track_source: willTrackSource,

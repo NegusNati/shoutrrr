@@ -47,7 +47,7 @@ describe('postGifAttachment', () => {
             }),
         );
 
-        const media = await postGifAttachment('/posts/p1/gifs', gifItem(), [
+        const media = await postGifAttachment('posts/p1/gifs', gifItem(), [
             'm1',
             'm2',
         ]);
@@ -55,7 +55,7 @@ describe('postGifAttachment', () => {
         expect(media.id).toBe('m9');
 
         const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0];
-        expect(url).toBe('/posts/p1/gifs');
+        expect(url).toBe('/api/v1/posts/p1/gifs');
         expect((init as RequestInit).method).toBe('POST');
         expect((init as RequestInit).headers).toMatchObject({
             'X-XSRF-TOKEN': 'test-token',
@@ -78,7 +78,7 @@ describe('postGifAttachment', () => {
         );
 
         await expect(
-            postGifAttachment('/posts/p1/gifs', gifItem(), []),
+            postGifAttachment('posts/p1/gifs', gifItem(), []),
         ).rejects.toThrow('You cannot mix images and video on one post.');
     });
 
@@ -88,7 +88,7 @@ describe('postGifAttachment', () => {
         );
 
         await expect(
-            postGifAttachment('/posts/p1/gifs', gifItem(), []),
+            postGifAttachment('posts/p1/gifs', gifItem(), []),
         ).rejects.toThrow('That GIF could not be attached.');
     });
 });
