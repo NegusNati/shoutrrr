@@ -33,7 +33,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('settings/workspace/api-keys', [ApiKeysController::class, 'store'])->name('settings.workspace.api-keys.store');
     Route::delete('settings/workspace/api-keys/{apiKey}', [ApiKeysController::class, 'destroy'])->name('settings.workspace.api-keys.destroy');
 
-    Route::get('sync', SpaRedirect::to('/sync'))->name('sync.index');
+    Route::get('sync', SpaRedirect::to('/settings/sync'))->name('sync.index');
     Route::post('sync', [SyncPipelinesController::class, 'store'])->name('sync.store');
     Route::patch('sync/{syncPipeline}', [SyncPipelinesController::class, 'update'])->name('sync.update');
     Route::delete('sync/{syncPipeline}', [SyncPipelinesController::class, 'destroy'])->name('sync.destroy');

@@ -77,13 +77,15 @@ Route::middleware(['auth:api,sanctum', 'throttle:api'])->group(function (): void
 Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'])->group(function (): void {
     Route::get('settings/profile', [UserProfileController::class, 'show']);
     Route::put('settings/profile', [UserProfileController::class, 'updateProfile']);
-    Route::delete('settings/profile', [UserProfileController::class, 'destroyProfile']);
+    Route::delete('settings/profile', [UserProfileController::class, 'destroyProfile'])
+        ->middleware('verified'); // mirrors the legacy profile.destroy gate
     // RequireConfirmedPassword mirrors the web group's password.confirm gate:
     // an unconfirmed session gets a JSON 423 and the SPA shows its
     // confirm-password page (Fortify's /user/confirm-password unlocks it).
     Route::get('settings/security', [UserSecurityController::class, 'show'])
-        ->middleware(RequireConfirmedPassword::class);
-    Route::put('settings/password', [UserSecurityController::class, 'updatePassword']);
+        ->middleware(['verified', RequireConfirmedPassword::class]);
+    Route::put('settings/password', [UserSecurityController::class, 'updatePassword'])
+        ->middleware('verified');
     Route::get('settings/connections', [UserConnectionsController::class, 'show']);
     Route::delete('settings/connections/{socialAccountId}', [UserConnectionsController::class, 'remove']);
     Route::get('settings/notifications', [UserNotificationsController::class, 'show']);
@@ -108,9 +110,14 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
     Route::post('settings/workspace/api-keys', [WorkspaceApiKeysController::class, 'create']);
     Route::delete('settings/workspace/api-keys/{apiKeyId}', [WorkspaceApiKeysController::class, 'remove']);
 
-    Route::get('settings/workspace/subscription', [BillingController::class, 'show']);
-    Route::post('billing/checkout', [BillingController::class, 'createCheckout']);
-    Route::post('billing/portal', [BillingController::class, 'createPortal']);
+    // Billing was behind `verified` in the legacy web group — the rest of the
+    // session-only settings surface was not.
+    Route::get('settings/workspace/subscription', [BillingController::class, 'show'])
+        ->middleware('verified');
+    Route::post('billing/checkout', [BillingController::class, 'createCheckout'])
+        ->middleware('verified');
+    Route::post('billing/portal', [BillingController::class, 'createPortal'])
+        ->middleware('verified');
 
     // Connected accounts: connect flows + per-account management. The OAuth
     // pickers pass provider data through the session stash and ResolveApiWorkspace
@@ -153,9 +160,23 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session
 // cookies (auth:sanctum) for the first-party SPA.
+//
+// The auth-only tail mirrors the legacy web split: /me and notifications were
+// reachable by unverified users (SPA bootstrap + unread badge), while every
+// workspace-data route required `verified` email.
 Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api', RecordApiUsage::class])
     ->group(function (): void {
         Route::get('me', [MeController::class, 'show']);
+
+        Route::get('notifications', [NotificationsController::class, 'index']);
+        Route::delete('notifications', [NotificationsController::class, 'destroyAll']);
+        Route::post('notifications/read-all', [NotificationsController::class, 'markAllRead']);
+        Route::delete('notifications/{notification}', [NotificationsController::class, 'destroy']);
+        Route::post('notifications/{notification}/read', [NotificationsController::class, 'markRead']);
+    });
+
+Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api', RecordApiUsage::class, 'verified'])
+    ->group(function (): void {
         Route::get('dashboard', [DashboardController::class, 'index']);
 
         Route::get('workspaces', [WorkspacesController::class, 'index']);
@@ -167,12 +188,6 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
         Route::post('onboarding/steps/complete', [OnboardingController::class, 'completeStep']);
 
         Route::get('workspace-mentions', [WorkspaceMentionsController::class, 'index']);
-
-        Route::get('notifications', [NotificationsController::class, 'index']);
-        Route::delete('notifications', [NotificationsController::class, 'destroyAll']);
-        Route::post('notifications/read-all', [NotificationsController::class, 'markAllRead']);
-        Route::delete('notifications/{notification}', [NotificationsController::class, 'destroy']);
-        Route::post('notifications/{notification}/read', [NotificationsController::class, 'markRead']);
 
         Route::get('posts', [PostsController::class, 'index']);
         Route::get('posts/next-slot', [NextSlotController::class, 'show']);

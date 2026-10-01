@@ -111,7 +111,9 @@ it('does not show a soft-deleted post', function (): void {
 
     $this->actingAs($user)->delete(route('posts.destroy', $post))->assertRedirect();
 
-    $this->actingAs($user)->get(route('posts.show', $post))->assertNotFound();
+    // The legacy GET is now an SPA redirect; the deleted post 404s client-side.
+    $this->actingAs($user)->get(route('posts.show', $post))
+        ->assertRedirect('/app/posts/'.$post->id);
 });
 
 it('soft-deletes partial and failed posts via the remote-delete path', function (PostStatus $status): void {

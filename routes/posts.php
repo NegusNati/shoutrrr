@@ -62,7 +62,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::post('posts', [PostController::class, 'store'])->name('posts.store');
     Route::put('posts/{post}', [PostController::class, 'update'])->name('posts.update');
-    Route::get('posts/{post}', fn (string $post) => redirect("/app/posts/{$post}"))->name('posts.show');
+    // {postId} is deliberately NOT the scoped 'post' binding: this redirect must
+    // also work for stale links to deleted/foreign posts — the SPA renders its
+    // own 404 instead of a bare framework error page.
+    Route::get('posts/{postId}', fn (string $postId) => redirect("/app/posts/{$postId}"))->name('posts.show');
     Route::delete('posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
     // Throttled: each call copies every media file on the source post.
     Route::post('posts/{post}/duplicate', [PostController::class, 'duplicate'])

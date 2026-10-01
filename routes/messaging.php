@@ -20,7 +20,9 @@ Route::bind('conversation', fn (string $value): Conversation => Conversation::qu
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('messages', SpaRedirect::to('/messages'))->middleware('messages.enabled')->name('messages.index');
-    Route::get('messages/{conversation}/thread', fn () => redirect('/app/messages'))->middleware('messages.enabled')->name('messages.thread');
+    // {conversationId} is deliberately NOT the scoped 'conversation' binding:
+    // stale links should reach the SPA (deep-linked by id) rather than 404 here.
+    Route::get('messages/{conversationId}/thread', fn (string $conversationId) => redirect("/app/messages?conversation={$conversationId}"))->middleware('messages.enabled')->name('messages.thread');
     Route::post('messages/{conversation}/read', [MessagingController::class, 'markRead'])->middleware('messages.enabled')->name('messages.read');
     Route::post('messages/{conversation}/archive', [MessagingController::class, 'archive'])->middleware('messages.enabled')->name('messages.archive');
     Route::post('messages/{conversation}/reply', [MessagingController::class, 'respond'])->middleware(['messages.enabled', 'throttle:30,1'])->name('messages.respond');

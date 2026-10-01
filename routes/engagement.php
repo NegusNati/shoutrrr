@@ -29,7 +29,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('engagement', SpaRedirect::to('/engagement'))
         ->middleware('engagement.enabled')
         ->name('engagement.index');
-    Route::get('engagement/{reply}/thread', fn () => redirect('/app/engagement'))
+    // {replyId} is deliberately NOT the scoped 'reply' binding: stale links to
+    // deleted/foreign replies should reach the SPA (deep-linked by id) rather
+    // than 404 here.
+    Route::get('engagement/{replyId}/thread', fn (string $replyId) => redirect("/app/engagement?reply={$replyId}"))
         ->middleware('engagement.enabled')->name('engagement.thread');
     Route::post('engagement/{reply}/read', [EngagementController::class, 'markRead'])
         ->middleware('engagement.enabled')->name('engagement.read');
