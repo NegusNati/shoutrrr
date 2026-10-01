@@ -7,13 +7,17 @@ export const Route = createFileRoute('/_app/settings')({
 });
 
 /**
- * `/settings/workspace/*` has its own layout (sidebar section, no inner
- * side-nav), so the user-settings nav wraps only the user-facing pages.
+ * `/settings/workspace/*` and `/settings/instance/*` have their own layouts
+ * (sidebar sections, no inner side-nav), so the user-settings nav wraps only
+ * the user-facing pages.
  */
 function SettingsSection() {
     const pathname = useLocation({ select: (l) => l.pathname });
 
-    if (pathname.startsWith('/app/settings/workspace')) {
+    if (
+        pathname.startsWith('/app/settings/workspace') ||
+        pathname.startsWith('/app/settings/instance')
+    ) {
         return <Outlet />;
     }
 

@@ -62,4 +62,13 @@ export const endpoints = {
     settingsWorkspaceApiKeys: 'settings/workspace/api-keys',
     settingsWorkspaceApiKey: (id: string) => `settings/workspace/api-keys/${id}`,
     settingsWorkspaceSubscription: 'settings/workspace/subscription',
+    settingsInstance: 'settings/instance',
+    settingsInstancePolling: 'settings/instance/polling',
+    settingsInstancePlatforms: 'settings/instance/platforms',
+    settingsInstanceUsage: 'settings/instance/usage',
+    settingsInstanceUsageX: 'settings/instance/usage/x',
+    settingsInstanceWorkspaceBudget: (id: string) =>
+        `settings/instance/usage/workspaces/${id}/budget`,
+    settingsInstanceAdmins: 'settings/instance/admins',
+    settingsInstanceAdmin: (id: string) => `settings/instance/admins/${id}`,
 } as const;

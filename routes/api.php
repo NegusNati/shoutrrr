@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\PostMetricsRefreshController;
 use App\Http\Controllers\Api\V1\PostsController;
 use App\Http\Controllers\Api\V1\PostVideoUploadController;
 use App\Http\Controllers\Api\V1\Settings\ConnectionsController as ConnectionsSettingsController;
+use App\Http\Controllers\Api\V1\Settings\InstanceSettingsController;
 use App\Http\Controllers\Api\V1\Settings\NotificationPreferencesController as NotificationSettingsController;
 use App\Http\Controllers\Api\V1\Settings\ProfileController as ProfileSettingsController;
 use App\Http\Controllers\Api\V1\Settings\SecurityController as SecuritySettingsController;
@@ -61,6 +62,19 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'
     Route::delete('settings/connections/{socialAccount}', [ConnectionsSettingsController::class, 'destroy']);
     Route::get('settings/notifications', [NotificationSettingsController::class, 'show']);
     Route::put('settings/notifications', [NotificationSettingsController::class, 'update']);
+    // Instance administration — owner-only, not bound to a workspace.
+    Route::get('settings/instance', [InstanceSettingsController::class, 'show']);
+    Route::put('settings/instance', [InstanceSettingsController::class, 'update']);
+    Route::get('settings/instance/polling', [InstanceSettingsController::class, 'polling']);
+    Route::put('settings/instance/polling', [InstanceSettingsController::class, 'updatePolling']);
+    Route::get('settings/instance/platforms', [InstanceSettingsController::class, 'platforms']);
+    Route::put('settings/instance/platforms', [InstanceSettingsController::class, 'updatePlatforms']);
+    Route::get('settings/instance/usage', [InstanceSettingsController::class, 'usage']);
+    Route::get('settings/instance/usage/x', [InstanceSettingsController::class, 'xUsage']);
+    Route::put('settings/instance/usage/workspaces/{workspace}/budget', [InstanceSettingsController::class, 'updateWorkspaceBudget']);
+    Route::get('settings/instance/admins', [InstanceSettingsController::class, 'admins']);
+    Route::post('settings/instance/admins', [InstanceSettingsController::class, 'storeAdmin']);
+    Route::delete('settings/instance/admins/{owner}', [InstanceSettingsController::class, 'destroyAdmin']);
 });
 
 // Session-only + current-workspace bound: workspace settings operate on the
