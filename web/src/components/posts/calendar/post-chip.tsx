@@ -1,7 +1,7 @@
 import { useDraggable } from '@dnd-kit/core';
+import { useNavigate } from '@tanstack/react-router';
 import type { CSSProperties, MouseEvent } from 'react';
 
-import ComposerController from '@/actions/App/Http/Controllers/Posts/ComposerController';
 import { PlatformGlyphStack } from '@/components/common/platform-glyph-stack';
 import type { PostRowData } from '@/components/posts/post-row';
 import { useSchedulingTimezone } from '@/hooks/posts/use-scheduling-timezone';
@@ -44,6 +44,7 @@ export function PostChip({
     post: PostRowData;
     draggable: boolean;
 }) {
+    const navigate = useNavigate();
     const { attributes, listeners, setNodeRef, transform, isDragging } =
         useDraggable({
             id: `post-${post.id}`,
@@ -75,8 +76,10 @@ export function PostChip({
         if (isDragging) {
             return;
         }
-        // The composer still lives in the server-rendered app.
-        window.location.assign(ComposerController.show(post.id).url);
+        void navigate({
+            to: '/posts/$postId',
+            params: { postId: post.id },
+        });
     }
 
     return (

@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
+import { useNavigate } from '@tanstack/react-router';
 
-import ComposerController from '@/actions/App/Http/Controllers/Posts/ComposerController';
 import type { PostRowData } from '@/components/posts/post-row';
 import {
     Popover,
@@ -108,6 +108,7 @@ function DayCell({
     posts: PostRowData[];
     onEmptyClick: () => void;
 }) {
+    const navigate = useNavigate();
     const { setNodeRef, isOver } = useDroppable({
         id: `day-${day.format('YYYY-MM-DD')}`,
         data: { day: day.format('YYYY-MM-DD') },
@@ -213,13 +214,12 @@ function DayCell({
                                                 key={p.id}
                                                 type="button"
                                                 onClick={() =>
-                                                    // The composer still lives
-                                                    // in the server-rendered app.
-                                                    window.location.assign(
-                                                        ComposerController.show(
-                                                            p.id,
-                                                        ).url,
-                                                    )
+                                                    void navigate({
+                                                        to: '/posts/$postId',
+                                                        params: {
+                                                            postId: p.id,
+                                                        },
+                                                    })
                                                 }
                                                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted"
                                             >

@@ -37,7 +37,6 @@ import { useDocumentTitle } from '@/hooks/use-document-title';
 import { errorMessage } from '@/lib/api';
 import { dayjs, parseYm, ymKey } from '@/lib/datetime/dayjs';
 import type { Dayjs } from '@/lib/datetime/dayjs';
-import { dashboard } from '@/routes';
 
 export type CalendarSearch = {
     /** YYYY-MM month anchor; '' resolves to the current month. */
@@ -164,12 +163,12 @@ export default function CalendarIndexPage({
     // Clicking an empty slot opens the composer pre-set to that schedule time.
     // Month cells default to 09:00; week cells use the clicked hour. Both resolve
     // the wall-clock time in the user's tz (same math as a drag-reschedule).
-    // The composer still lives in the server-rendered dashboard.
     function openComposerAt(day: Dayjs, hour: number) {
         const scheduleAt = computeWeekDrop(day.format('YYYY-MM-DD'), hour, tz);
-        window.location.assign(
-            dashboard.url({ query: { schedule_at: scheduleAt } }),
-        );
+        void navigate({
+            to: '/dashboard',
+            search: { schedule_at: scheduleAt },
+        });
     }
 
     function onEmptyDay(day: Dayjs) {

@@ -1,4 +1,5 @@
-import ComposerController from '@/actions/App/Http/Controllers/Posts/ComposerController';
+import { useNavigate } from '@tanstack/react-router';
+
 import { PlatformGlyphStack } from '@/components/common/platform-glyph-stack';
 import type { PostRowData, PostStatus } from '@/components/posts/post-row';
 import { Plus } from '@/components/ui/icons';
@@ -143,6 +144,7 @@ export function AgendaList({ anchor, view, posts, onEmptyDayClick }: Props) {
 }
 
 function AgendaItem({ post }: { post: PostRowData }) {
+    const navigate = useNavigate();
     const tz = useSchedulingTimezone();
     const at = post.scheduled_at ?? post.published_at;
     const when = at ? toUserTz(at, tz).format('h:mm a') : '';
@@ -155,8 +157,10 @@ function AgendaItem({ post }: { post: PostRowData }) {
         <button
             type="button"
             onClick={() =>
-                // The composer still lives in the server-rendered app.
-                window.location.assign(ComposerController.show(post.id).url)
+                void navigate({
+                    to: '/posts/$postId',
+                    params: { postId: post.id },
+                })
             }
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left transition-colors hover:bg-muted/60 active:bg-muted"
             title={title}
