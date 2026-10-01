@@ -9,15 +9,11 @@ use App\Http\Requests\Workspace\StoreWorkspaceRequest;
 use App\Http\Requests\Workspace\TransferOwnershipRequest;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMembership;
-use App\Services\Workspace\WorkspaceInvitationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class WorkspaceController extends Controller
 {
@@ -152,39 +148,15 @@ class WorkspaceController extends Controller
         return back()->with('success', 'Ownership transferred.');
     }
 
-    public function showInvitation(Request $request, string $token): Response|RedirectResponse
+    /**
+     * The accept page lives in the SPA now — the token URL itself stays valid
+     * (it's what the invitation email links to), it just hands off to
+     * /app/invitation/{token}, which accepts signed-in users through
+     * POST /api/v1/workspace-invitations/{invitation}/accept.
+     */
+    public function showInvitation(string $token): RedirectResponse
     {
-        $invitation = WorkspaceInvitation::findByToken($token);
-
-        if (! $invitation || ! $invitation->isValid()) {
-            return redirect()->route('home')->withErrors([
-                'invitation' => 'This invitation link is invalid or has expired.',
-            ]);
-        }
-
-        $user = $request->user();
-
-        if ($user) {
-            /** @var User $user */
-            $result = app(WorkspaceInvitationService::class)->accept($invitation, $user);
-
-            return $result->wasSuccessful()
-                ? redirect()->route('dashboard')->with('success', $result->message)
-                : redirect()->route('dashboard')->with('error', $result->message);
-        }
-
-        return Inertia::render('auth/workspace-invitation', [
-            'invitation' => [
-                'token' => $token,
-                'workspace_name' => $invitation->workspace->name,
-                'role' => $invitation->role,
-                'inviter_name' => $invitation->inviter()->value('name') ?? 'Someone',
-                'expires_at' => $invitation->expires_at,
-            ],
-            'userExists' => User::where('email', $invitation->email)->exists(),
-            'loginUrl' => route('login', ['invitation' => $token]),
-            'registerUrl' => route('register', ['invitation' => $token]),
-        ]);
+        return redirect("/app/invitation/{$token}");
     }
 
     private function uniqueSlug(string $name): string

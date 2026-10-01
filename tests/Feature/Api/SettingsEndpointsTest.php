@@ -116,7 +116,19 @@ test('profile delete is blocked for sole owners of multi-member workspaces', fun
 test('security payload exposes password rules and two-factor flags', function () {
     ownerActingIn();
 
-    $this->getJson('/api/v1/settings/security')
+    // RequireConfirmedPassword gates the read until the session confirms its
+    // password — the SPA routes a 423 through its confirm-password page. The
+    // Referer marks the request stateful so the session store is attached.
+    $headers = ['Referer' => 'http://localhost'];
+
+    $this->withHeaders($headers)
+        ->getJson('/api/v1/settings/security')->assertStatus(423);
+
+    $this->postJson('/user/confirm-password', ['password' => 'password'])
+        ->assertCreated();
+
+    $this->withHeaders($headers)
+        ->getJson('/api/v1/settings/security')
         ->assertOk()
         ->assertJsonStructure([
             'canManageTwoFactor',

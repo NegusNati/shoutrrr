@@ -1,9 +1,8 @@
 <?php
 
-test('browsers visiting the mcp endpoint get a friendly landing page', function (): void {
+test('browsers visiting the mcp endpoint are sent to the SPA landing page', function (): void {
     $this->get('/mcp', ['Accept' => 'text/html'])
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('mcp/landing'));
+        ->assertRedirect('/app/mcp');
 });
 
 test('non-browser GET requests still receive the spec 405 with Allow: POST', function (): void {

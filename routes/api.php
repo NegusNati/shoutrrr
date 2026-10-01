@@ -22,11 +22,14 @@ use App\Http\Controllers\Api\V1\PostMediaController;
 use App\Http\Controllers\Api\V1\PostMetricsRefreshController;
 use App\Http\Controllers\Api\V1\PostsController;
 use App\Http\Controllers\Api\V1\PostVideoUploadController;
+use App\Http\Controllers\Api\V1\PublicShareController;
 use App\Http\Controllers\Api\V1\Settings\ConnectionsController as ConnectionsSettingsController;
 use App\Http\Controllers\Api\V1\Settings\InstanceSettingsController as InstanceSettingsApiController;
+use App\Http\Controllers\Api\V1\Settings\NativeTrackingController;
 use App\Http\Controllers\Api\V1\Settings\NotificationPreferencesController as NotificationSettingsController;
 use App\Http\Controllers\Api\V1\Settings\ProfileController as ProfileSettingsController;
 use App\Http\Controllers\Api\V1\Settings\SecurityController as SecuritySettingsController;
+use App\Http\Controllers\Api\V1\Settings\SyncPipelinesController;
 use App\Http\Controllers\Api\V1\Settings\WorkspaceApiKeysController;
 use App\Http\Controllers\Api\V1\Settings\WorkspaceSettingsController as WorkspaceSettingsApiController;
 use App\Http\Controllers\Api\V1\Settings\WorkspaceSubscriptionController;
@@ -35,6 +38,7 @@ use App\Http\Controllers\Api\V1\WorkspaceInvitationsController;
 use App\Http\Controllers\Api\V1\WorkspaceMentionsController;
 use App\Http\Controllers\Api\V1\WorkspacesController;
 use App\Http\Middleware\RecordApiUsage;
+use App\Http\Middleware\RequireConfirmedPassword;
 use App\Http\Middleware\RequireSessionAuth;
 use App\Http\Middleware\RequireWriteScope;
 use App\Http\Middleware\ResolveApiWorkspace;
@@ -43,6 +47,15 @@ use Illuminate\Support\Facades\Route;
 // Public: the SPA's auth pages render before login and need the feature flags
 // (registration enabled, social providers, password rules) without a session.
 Route::get('auth/options', [AuthOptionsController::class, 'show']);
+
+// Public: share links and the workspace-invitation landing render without a
+// session (the token is the capability). Throttles mirror the web routes the
+// SPA pages replace.
+Route::get('shares/{token}', [PublicShareController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->where('token', '[A-Za-z0-9\\-]+');
+Route::get('invitations/{token}', [WorkspaceInvitationsController::class, 'show'])
+    ->middleware('throttle:5,1');
 
 // Session-only: invitation accept/deny is keyed to the invitee's user account,
 // not a workspace — kept outside the workspace-scoped group.
@@ -56,7 +69,11 @@ Route::middleware(['auth:api,sanctum', 'throttle:api'])->group(function (): void
 Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'])->group(function (): void {
     Route::patch('settings/profile', [ProfileSettingsController::class, 'update']);
     Route::delete('settings/profile', [ProfileSettingsController::class, 'destroy']);
-    Route::get('settings/security', [SecuritySettingsController::class, 'show']);
+    // RequireConfirmedPassword mirrors the web group's password.confirm gate:
+    // an unconfirmed session gets a JSON 423 and the SPA shows its
+    // confirm-password page (Fortify's /user/confirm-password unlocks it).
+    Route::get('settings/security', [SecuritySettingsController::class, 'show'])
+        ->middleware(RequireConfirmedPassword::class);
     Route::put('settings/password', [SecuritySettingsController::class, 'updatePassword']);
     Route::get('settings/connections', [ConnectionsSettingsController::class, 'index']);
     Route::delete('settings/connections/{socialAccount}', [ConnectionsSettingsController::class, 'destroy']);
@@ -104,6 +121,14 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
     Route::get('settings/workspace/subscription', [WorkspaceSubscriptionController::class, 'show']);
     Route::post('settings/workspace/subscription/checkout', [WorkspaceSubscriptionController::class, 'checkout']);
     Route::post('settings/workspace/subscription/portal', [WorkspaceSubscriptionController::class, 'portal']);
+
+    // Literal segment before the {syncPipeline} wildcard.
+    Route::post('sync/native-tracking/{account}', [NativeTrackingController::class, 'store']);
+    Route::delete('sync/native-tracking/{account}', [NativeTrackingController::class, 'destroy']);
+    Route::get('sync', [SyncPipelinesController::class, 'index']);
+    Route::post('sync', [SyncPipelinesController::class, 'store']);
+    Route::patch('sync/{syncPipeline}', [SyncPipelinesController::class, 'update']);
+    Route::delete('sync/{syncPipeline}', [SyncPipelinesController::class, 'destroy']);
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session

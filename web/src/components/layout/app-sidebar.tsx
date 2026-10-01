@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
 import PostingScheduleController from '@/actions/App/Http/Controllers/Posts/PostingScheduleController';
-import SyncPipelinesController from '@/actions/App/Http/Controllers/Settings/SyncPipelinesController';
 import AppLogo from '@/components/layout/app-logo';
 import { NavUser } from '@/components/layout/nav-user';
 import { SidebarFooterCard } from '@/components/layout/sidebar-footer-card';
@@ -344,16 +343,9 @@ export function AppSidebar() {
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Sync pipelines"
-                                        isActive={isCurrentOrParentUrl(
-                                            SyncPipelinesController.index().url,
-                                        )}
+                                        isActive={isCurrentOrParentUrl('/sync')}
                                         render={
-                                            <a
-                                                href={
-                                                    SyncPipelinesController.index()
-                                                        .url
-                                                }
-                                            />
+                                            <NavItemLink href="/sync" spa />
                                         }
                                     >
                                         <RefreshCw aria-hidden="true" />
