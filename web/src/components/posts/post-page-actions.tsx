@@ -202,6 +202,7 @@ export function PostPageActions({ post }: Props) {
                                 platform: '',
                                 target: '',
                                 post: post.id,
+                                reply: '',
                                 unread: false,
                                 archived: false,
                             }}
