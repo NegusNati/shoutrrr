@@ -26,7 +26,7 @@ beforeEach(function () {
 test('a target format round-trips through save and PostView', function () {
     $post = Post::factory()->create(['workspace_id' => $this->workspace->id]);
 
-    $response = $this->actingAs($this->user)->putJson(route('posts.update', $post), [
+    $response = $this->actingAs($this->user)->patchJson("/api/v1/posts/{$post->id}", [
         'segments' => ['Hello from a story'],
         'destination' => ['kind' => 'account', 'id' => $this->account->id],
         'targets' => [[
@@ -52,7 +52,7 @@ test('an omitted format leaves the existing target format untouched', function (
         'format' => 'reels',
     ]);
 
-    $this->actingAs($this->user)->putJson(route('posts.update', $post), [
+    $this->actingAs($this->user)->patchJson("/api/v1/posts/{$post->id}", [
         'segments' => ['x'],
         'destination' => ['kind' => 'account', 'id' => $this->account->id],
         'targets' => [['connected_account_id' => $this->account->id]],

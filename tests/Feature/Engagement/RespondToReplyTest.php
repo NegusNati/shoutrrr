@@ -63,7 +63,7 @@ function fakePostReply(ReplyPostResult $result): void
 test('responding posts the reply and records our row', function (): void {
     fakePostReply(ReplyPostResult::ok('at://mine', 'cidmine'));
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => 'thank you!'])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => 'thank you!'])
         ->assertCreated()
         ->assertJsonPath('reply.text', 'thank you!')
         ->assertJsonPath('reply.is_ours', true);
@@ -78,7 +78,7 @@ test('our outgoing reply joins the conversation of the reply it answers', functi
 
     $this->reply->forceFill(['conversation_remote_id' => 'at://base'])->save();
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => 'thank you!'])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => 'thank you!'])
         ->assertCreated();
 
     $ourRow = PostTargetReply::withoutGlobalScopes()->where('remote_reply_id', 'at://mine')->firstOrFail();
@@ -91,7 +91,7 @@ test('our outgoing reply starts the conversation when it answers a base reply', 
 
     $this->reply->forceFill(['conversation_remote_id' => null])->save();
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => 'thank you!'])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => 'thank you!'])
         ->assertCreated();
 
     $ourRow = PostTargetReply::withoutGlobalScopes()->where('remote_reply_id', 'at://mine')->firstOrFail();
@@ -102,7 +102,7 @@ test('our outgoing reply starts the conversation when it answers a base reply', 
 test('responding rejects over-length text', function (): void {
     fakePostReply(ReplyPostResult::ok('at://mine'));
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => str_repeat('x', 5000)])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => str_repeat('x', 5000)])
         ->assertJsonValidationErrors('text');
 });
 
@@ -139,7 +139,7 @@ test('replying up to account capability limit is accepted', function (): void {
     fakePostReply(ReplyPostResult::ok('id-premium'));
 
     // A ~1000-char text exceeds X default (280) but is within the capability (25000)
-    $this->postJson(route('engagement.respond', $reply), ['text' => str_repeat('a', 1000)])
+    $this->postJson("/api/v1/engagement/{$reply->id}/reply", ['text' => str_repeat('a', 1000)])
         ->assertCreated();
 });
 
@@ -148,7 +148,7 @@ test('responding is blocked when the account is disabled', function (): void {
 
     $this->target->account->forceFill(['disabled_at' => now()])->save();
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => 'nope'])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => 'nope'])
         ->assertStatus(409)
         ->assertJson(['status' => 'unsupported']);
 
@@ -159,7 +159,7 @@ test('responding is blocked when the account is disabled', function (): void {
 test('a failed post surfaces an error and does not mark responded', function (): void {
     fakePostReply(ReplyPostResult::failed('platform down'));
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => 'hi'])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => 'hi'])
         ->assertStatus(502)
         ->assertJson(['status' => 'failed', 'message' => 'platform down']);
 
@@ -172,7 +172,7 @@ test('media is rejected on platforms whose comments cannot carry it', function (
     $this->reply->forceFill(['platform' => Platform::LinkedIn])->save();
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id]);
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => 'hi', 'media' => [$media->id]])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => 'hi', 'media' => [$media->id]])
         ->assertStatus(422)
         ->assertJsonValidationErrors('media');
 });
@@ -180,6 +180,6 @@ test('media is rejected on platforms whose comments cannot carry it', function (
 test('media is still accepted on x, which does support reply media', function (): void {
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id]);
 
-    $this->postJson(route('engagement.respond', $this->reply), ['text' => 'hi', 'media' => [$media->id]])
+    $this->postJson("/api/v1/engagement/{$this->reply->id}/reply", ['text' => 'hi', 'media' => [$media->id]])
         ->assertCreated();
 });

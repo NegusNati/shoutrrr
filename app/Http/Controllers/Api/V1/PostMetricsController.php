@@ -16,7 +16,7 @@ class PostMetricsController extends PostMetricsRefreshController
     use ResolvesWorkspacePost;
 
     /**
-     * Resolved equivalent of the Inertia deferred `stats` prop: metrics for a
+     * Resolved equivalent of the old deferred `stats` payload: metrics for a
      * post once it has at least one published target, else null.
      */
     public function show(Request $request, string $postId): JsonResponse

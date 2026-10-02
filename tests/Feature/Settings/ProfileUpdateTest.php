@@ -21,14 +21,13 @@ test('profile information can be updated', function () {
 
     $response = $this
         ->actingAs($user)
-        ->patch(route('profile.update'), [
+        ->putJson('/api/v1/settings/profile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
 
     $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertOk();
 
     $user->refresh();
 
@@ -48,13 +47,12 @@ test('profile photo can be uploaded', function () {
     $photo = UploadedFile::fake()->image('avatar.jpg');
 
     $this->actingAs($user)
-        ->patch(route('profile.update'), [
+        ->putJson('/api/v1/settings/profile', [
             'name' => $user->name,
             'email' => $user->email,
             'photo' => $photo,
         ])
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertOk();
 
     $user->refresh();
 
@@ -76,13 +74,12 @@ test('profile photo uses the configured public image disk', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->patch(route('profile.update'), [
+        ->putJson('/api/v1/settings/profile', [
             'name' => $user->name,
             'email' => $user->email,
             'photo' => UploadedFile::fake()->image('avatar.jpg'),
         ])
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertOk();
 
     $user->refresh();
 
@@ -99,13 +96,12 @@ test('profile photo must be an image', function () {
 
     $this->actingAs($user)
         ->from(route('profile.edit'))
-        ->patch(route('profile.update'), [
+        ->putJson('/api/v1/settings/profile', [
             'name' => $user->name,
             'email' => $user->email,
             'photo' => UploadedFile::fake()->create('avatar.txt', 1, 'text/plain'),
         ])
-        ->assertSessionHasErrors('photo')
-        ->assertRedirect(route('profile.edit'));
+        ->assertJsonValidationErrors('photo');
 
     expect($user->refresh()->avatar_path)->toBeNull();
 });
@@ -117,14 +113,13 @@ test('email verification status is unchanged when the email address is unchanged
 
     $response = $this
         ->actingAs($user)
-        ->patch(route('profile.update'), [
+        ->putJson('/api/v1/settings/profile', [
             'name' => 'Test User',
             'email' => $user->email,
         ]);
 
     $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertOk();
 
     $this->assertNotNull($user->refresh()->email_verified_at);
 });
@@ -136,12 +131,11 @@ test('email verification status is unchanged when mail delivery verification is 
 
     $this
         ->actingAs($user)
-        ->patch(route('profile.update'), [
+        ->putJson('/api/v1/settings/profile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
         ])
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertOk();
 
     $this->assertNotNull($user->refresh()->email_verified_at);
 });
@@ -151,15 +145,14 @@ test('user can delete their account', function () {
 
     $response = $this
         ->actingAs($user)
-        ->delete(route('profile.destroy'), [
+        ->deleteJson('/api/v1/settings/profile', [
             'password' => 'password',
         ]);
 
     $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('home'));
+        ->assertOk();
 
-    $this->assertGuest();
+    $this->assertNull($user->fresh());
     $this->assertNull($user->fresh());
 });
 
@@ -169,13 +162,12 @@ test('correct password must be provided to delete account', function () {
     $response = $this
         ->actingAs($user)
         ->from(route('profile.edit'))
-        ->delete(route('profile.destroy'), [
+        ->deleteJson('/api/v1/settings/profile', [
             'password' => 'wrong-password',
         ]);
 
     $response
-        ->assertSessionHasErrors('password')
-        ->assertRedirect(route('profile.edit'));
+        ->assertJsonValidationErrors('password');
 
     $this->assertNotNull($user->fresh());
 });

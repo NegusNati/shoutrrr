@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, Link } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { FilterTabs } from '@/components/common/filter-tabs';
@@ -30,7 +30,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { postsInfiniteQuery } from '@/features/posts/posts';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { STATUS_TABS, type StatusTab } from '@/lib/posts/status-tabs';
-import { dashboard } from '@/routes';
 
 export type PostsSearch = {
     status: StatusTab;
@@ -259,7 +258,7 @@ export default function PostsIndexPage({ search }: { search: PostsSearch }) {
                         nativeButton={false}
                         size="sm"
                         className="h-8"
-                        render={<a href={dashboard().url} />}
+                        render={<Link to="/dashboard" />}
                     >
                         New post
                     </Button>

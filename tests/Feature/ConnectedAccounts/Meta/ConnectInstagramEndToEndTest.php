@@ -30,6 +30,10 @@ function instagramOwnerActingIn(): array
         'role' => WorkspaceRole::Owner,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];
@@ -40,7 +44,7 @@ test('posting a stashed page selection creates an instagram connected account an
 
     expect(Platform::launchedMetaGraphPlatforms())->toBe([Platform::Facebook, Platform::Instagram]);
 
-    test()->withSession(['accounts.meta.connect' => [
+    test()->withHeaders(['Referer' => 'http://localhost'])->withSession(['accounts.meta.connect' => [
         'assets' => [
             'PAGE1' => [
                 'pageId' => 'PAGE1',
@@ -52,12 +56,11 @@ test('posting a stashed page selection creates an instagram connected account an
             ],
         ],
         'userTokenExpiresAt' => null,
-    ]])->post(route('accounts.meta.store'), [
+    ]])->postJson('/api/v1/connected-accounts/connect/meta', [
         'selected' => [
             ['assetKey' => 'PAGE1', 'platform' => 'instagram'],
         ],
-    ])->assertRedirect(route('accounts.index'))
-        ->assertSessionHas('success', '1 account connected.');
+    ])->assertCreated()->assertJsonPath('connected', 1);
 
     $account = ConnectedAccount::withoutGlobalScopes()->sole();
 

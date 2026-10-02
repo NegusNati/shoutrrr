@@ -111,16 +111,6 @@ export default function WorkspaceOverviewPage() {
         });
     }
 
-    /**
-     * The legacy lifecycle routes report failure via `back()->withErrors` —
-     * a 200 the fetch layer can't distinguish from success — so confirm the
-     * leave/delete actually happened by refetching /me.
-     */
-    async function currentWorkspaceStill(workspaceId: string) {
-        const me = await queryClient.fetchQuery(meQuery);
-        return me.workspaces.current?.id === workspaceId;
-    }
-
     async function handleLeave() {
         if (!workspace || leaving) {
             return;
@@ -133,12 +123,9 @@ export default function WorkspaceOverviewPage() {
         setLeaving(true);
         try {
             await leaveWorkspace(workspace.id);
-            if (await currentWorkspaceStill(workspace.id)) {
-                toast.error('Could not leave the workspace.');
-            } else {
-                toast.success('You left the workspace.');
-                void navigate({ to: '/dashboard' });
-            }
+            toast.success('You left the workspace.');
+            await invalidateWorkspaceData();
+            void navigate({ to: '/dashboard' });
         } catch (error) {
             toast.error(errorMessage(error, 'Could not leave the workspace.'));
         } finally {
@@ -166,12 +153,9 @@ export default function WorkspaceOverviewPage() {
         setDeleting(true);
         try {
             await deleteWorkspace(workspace.id);
-            if (await currentWorkspaceStill(workspace.id)) {
-                toast.error('Could not delete the workspace.');
-            } else {
-                toast.success('Workspace deleted.');
-                void navigate({ to: '/dashboard' });
-            }
+            toast.success('Workspace deleted.');
+            await invalidateWorkspaceData();
+            void navigate({ to: '/dashboard' });
         } catch (error) {
             toast.error(errorMessage(error, 'Could not delete the workspace.'));
         } finally {

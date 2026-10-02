@@ -48,7 +48,7 @@ test('owner cannot delete their last workspace', function () {
     $owner = User::factory()->create(['current_workspace_id' => $workspace->id]);
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->delete(route('workspaces.destroy', $workspace))->assertSessionHasErrors('workspace');
+    $this->actingAs($owner)->deleteJson("/api/v1/workspaces/{$workspace->id}")->assertJsonValidationErrors('workspace');
 
     $this->assertDatabaseHas('workspaces', ['id' => $workspace->id]);
     $this->assertSame($workspace->id, $owner->fresh()->current_workspace_id);
@@ -87,7 +87,7 @@ test('owner can delete workspace and memberships cascade when another workspace 
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $other->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->delete(route('workspaces.destroy', $workspace))->assertRedirect();
+    $this->actingAs($owner)->deleteJson("/api/v1/workspaces/{$workspace->id}")->assertOk();
 
     $this->assertDatabaseMissing('workspaces', ['id' => $workspace->id]);
     $this->assertDatabaseMissing('workspace_memberships', ['workspace_id' => $workspace->id]);
@@ -99,7 +99,7 @@ test('non owner cannot delete workspace', function () {
     $member = User::factory()->create(['current_workspace_id' => $workspace->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $member->id]);
 
-    $this->actingAs($member)->delete(route('workspaces.destroy', $workspace))->assertForbidden();
+    $this->actingAs($member)->deleteJson("/api/v1/workspaces/{$workspace->id}")->assertForbidden();
 
     $this->assertDatabaseHas('workspaces', ['id' => $workspace->id]);
 });
@@ -120,7 +120,7 @@ test('the initial workspace cannot be deleted on a cloud instance', function () 
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $other->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->delete(route('workspaces.destroy', $workspace))->assertSessionHasErrors('workspace');
+    $this->actingAs($owner)->deleteJson("/api/v1/workspaces/{$workspace->id}")->assertJsonValidationErrors('workspace');
 
     $this->assertDatabaseHas('workspaces', ['id' => $workspace->id]);
 
@@ -136,7 +136,7 @@ test('deleting current workspace reassigns to another membership', function () {
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $a->id, 'user_id' => $owner->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $b->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->delete(route('workspaces.destroy', $a))->assertRedirect();
+    $this->actingAs($owner)->deleteJson("/api/v1/workspaces/{$a->id}")->assertOk();
 
     $this->assertSame($b->id, $owner->fresh()->current_workspace_id);
 });
@@ -155,7 +155,7 @@ test('deleting a workspace cancels its live stripe subscription', function () {
         ->once()
         ->with($subscription->stripe_id, Mockery::type('array'));
 
-    $this->actingAs($owner)->delete(route('workspaces.destroy', $workspace))->assertRedirect();
+    $this->actingAs($owner)->deleteJson("/api/v1/workspaces/{$workspace->id}")->assertOk();
 
     $this->assertDatabaseMissing('workspaces', ['id' => $workspace->id]);
     $this->assertDatabaseMissing('subscriptions', ['id' => $subscription->id]);

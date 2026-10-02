@@ -11,7 +11,7 @@ test('member can leave and current workspace is reassigned', function () {
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $user->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $other->id, 'user_id' => $user->id]);
 
-    $this->actingAs($user)->delete(route('workspaces.leave', $workspace))->assertRedirect();
+    $this->actingAs($user)->deleteJson("/api/v1/workspaces/{$workspace->id}/leave")->assertOk();
 
     $this->assertFalse($user->fresh()->isMemberOfWorkspace($workspace->id));
     $this->assertSame($other->id, $user->fresh()->current_workspace_id);
@@ -24,7 +24,7 @@ test('sole owner with other members cannot leave', function () {
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $member->id]);
 
-    $this->actingAs($owner)->delete(route('workspaces.leave', $workspace))->assertSessionHasErrors();
+    $this->actingAs($owner)->deleteJson("/api/v1/workspaces/{$workspace->id}/leave")->assertJsonValidationErrors('workspace');
 
     $this->assertTrue($owner->fresh()->isMemberOfWorkspace($workspace->id));
 });

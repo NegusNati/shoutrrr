@@ -17,6 +17,10 @@ function actingWorkspaceUser(): User
         'workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     return $user;
@@ -27,7 +31,7 @@ it('returns 404 when the feature is disabled', function () {
     Http::fake();
 
     $this->actingAs(actingWorkspaceUser())
-        ->postJson(route('feedback.store'), ['type' => 'bug', 'message' => 'hi'])
+        ->postJson('/api/v1/feedback', ['type' => 'bug', 'message' => 'hi'])
         ->assertNotFound();
 
     Http::assertNothingSent();
@@ -37,14 +41,14 @@ it('returns 404 when enabled but webhook url is missing', function () {
     config(['feedback.enabled' => true, 'feedback.webhook_url' => null]);
 
     $this->actingAs(actingWorkspaceUser())
-        ->postJson(route('feedback.store'), ['type' => 'bug', 'message' => 'hi'])
+        ->postJson('/api/v1/feedback', ['type' => 'bug', 'message' => 'hi'])
         ->assertNotFound();
 });
 
 it('requires authentication', function () {
     config(['feedback.enabled' => true, 'feedback.webhook_url' => 'https://discord.com/api/webhooks/1/tok']);
 
-    $this->postJson(route('feedback.store'), ['type' => 'bug', 'message' => 'hi'])
+    $this->postJson('/api/v1/feedback', ['type' => 'bug', 'message' => 'hi'])
         ->assertUnauthorized();
 });
 
@@ -53,7 +57,7 @@ it('sends a report to discord with server-derived context', function () {
     Http::fake(['https://discord.com/*' => Http::response('', 204)]);
 
     $this->actingAs(actingWorkspaceUser())
-        ->postJson(route('feedback.store'), [
+        ->postJson('/api/v1/feedback', [
             'type' => 'bug',
             'message' => 'It broke',
             'url' => 'https://app.test/dashboard',
@@ -80,7 +84,7 @@ it('keeps the full page url on cloud instances', function () {
     Http::fake(['https://discord.com/*' => Http::response('', 204)]);
 
     $this->actingAs(actingWorkspaceUser())
-        ->postJson(route('feedback.store'), [
+        ->postJson('/api/v1/feedback', [
             'type' => 'bug',
             'message' => 'It broke',
             'url' => 'https://acme.example.com/dashboard/posts?tab=drafts',
@@ -104,7 +108,7 @@ it('hides the host in the page url on self-hosted instances', function () {
     Http::fake(['https://discord.com/*' => Http::response('', 204)]);
 
     $this->actingAs(actingWorkspaceUser())
-        ->postJson(route('feedback.store'), [
+        ->postJson('/api/v1/feedback', [
             'type' => 'bug',
             'message' => 'It broke',
             'url' => 'https://acme.example.com/dashboard/posts?tab=drafts',
@@ -125,7 +129,7 @@ it('includes the app environment in the embed', function () {
     Http::fake(['https://discord.com/*' => Http::response('', 204)]);
 
     $this->actingAs(actingWorkspaceUser())
-        ->postJson(route('feedback.store'), [
+        ->postJson('/api/v1/feedback', [
             'type' => 'bug', 'message' => 'hi', 'url' => 'https://app.test', 'browser' => 'UA',
         ])
         ->assertOk();
@@ -147,7 +151,7 @@ it('forwards an attached diagnostics file to discord', function () {
     );
 
     $this->actingAs(actingWorkspaceUser())
-        ->post(route('feedback.store'), [
+        ->post('/api/v1/feedback', [
             'type' => 'bug',
             'message' => 'It broke',
             'url' => 'https://app.test/dashboard',
@@ -175,7 +179,7 @@ it('redacts the operator origin from diagnostics on self-hosted instances', func
     );
 
     $this->actingAs(actingWorkspaceUser())
-        ->post(route('feedback.store'), [
+        ->post('/api/v1/feedback', [
             'type' => 'bug',
             'message' => 'It broke',
             'url' => 'https://acme.example.com/dashboard',
@@ -214,7 +218,7 @@ it('redacts both the submitted url host and the actual request host on self-host
     );
 
     $this->actingAs(actingWorkspaceUser())
-        ->post(route('feedback.store'), [
+        ->post('/api/v1/feedback', [
             'type' => 'bug',
             'message' => 'It broke',
             'url' => 'https://acme.example.com/dashboard',
@@ -247,7 +251,7 @@ it('keeps diagnostics urls intact on cloud instances', function () {
     );
 
     $this->actingAs(actingWorkspaceUser())
-        ->post(route('feedback.store'), [
+        ->post('/api/v1/feedback', [
             'type' => 'bug',
             'message' => 'It broke',
             'url' => 'https://app.shoutrrr.com/dashboard',
@@ -264,7 +268,7 @@ it('attaches an uploaded screenshot as multipart', function () {
     Http::fake(['https://discord.com/*' => Http::response('', 204)]);
 
     $this->actingAs(actingWorkspaceUser())
-        ->post(route('feedback.store'), [
+        ->post('/api/v1/feedback', [
             'type' => 'feedback',
             'message' => 'Looks great',
             'url' => 'https://app.test/dashboard',
@@ -282,15 +286,15 @@ it('validates the request', function () {
     $user = actingWorkspaceUser();
 
     // missing message
-    $this->actingAs($user)->postJson(route('feedback.store'), ['type' => 'bug'])
+    $this->actingAs($user)->postJson('/api/v1/feedback', ['type' => 'bug'])
         ->assertJsonValidationErrors('message');
 
     // bad type
-    $this->actingAs($user)->postJson(route('feedback.store'), ['type' => 'rant', 'message' => 'x'])
+    $this->actingAs($user)->postJson('/api/v1/feedback', ['type' => 'rant', 'message' => 'x'])
         ->assertJsonValidationErrors('type');
 
     // over-length message
-    $this->actingAs($user)->postJson(route('feedback.store'), ['type' => 'bug', 'message' => str_repeat('a', 2001)])
+    $this->actingAs($user)->postJson('/api/v1/feedback', ['type' => 'bug', 'message' => str_repeat('a', 2001)])
         ->assertJsonValidationErrors('message');
 });
 
@@ -301,12 +305,12 @@ it('throttles after five requests', function () {
     $user = actingWorkspaceUser();
 
     foreach (range(1, 5) as $i) {
-        $this->actingAs($user)->postJson(route('feedback.store'), [
+        $this->actingAs($user)->postJson('/api/v1/feedback', [
             'type' => 'bug', 'message' => "n{$i}", 'url' => 'https://app.test', 'browser' => 'UA',
         ])->assertOk();
     }
 
-    $this->actingAs($user)->postJson(route('feedback.store'), [
+    $this->actingAs($user)->postJson('/api/v1/feedback', [
         'type' => 'bug', 'message' => 'n6', 'url' => 'https://app.test', 'browser' => 'UA',
     ])->assertStatus(429);
 });
@@ -319,7 +323,7 @@ it('sends with unknown workspace when the user has no current workspace', functi
     $user->forceFill(['current_workspace_id' => null])->save();
 
     $this->actingAs($user)
-        ->postJson(route('feedback.store'), [
+        ->postJson('/api/v1/feedback', [
             'type' => 'bug', 'message' => 'broke', 'url' => 'https://app.test', 'browser' => 'UA',
         ])
         ->assertOk();

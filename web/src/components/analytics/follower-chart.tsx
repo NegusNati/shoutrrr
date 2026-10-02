@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router';
 import {
     Area,
     AreaChart,
@@ -21,7 +22,6 @@ import {
     type ChartConfig,
 } from '@/components/ui/chart';
 import { dayjs } from '@/lib/datetime/dayjs';
-import { show as postRoute } from '@/routes/posts';
 import type {
     AnalyticsAccount,
     AnalyticsPageProps,
@@ -295,12 +295,17 @@ type PostMarkerProps = {
 };
 
 function PostMarker({ x, y, post }: PostMarkerProps) {
+    const navigate = useNavigate();
+
     return (
         <g
             transform={`translate(${x}, ${y})`}
             className="cursor-pointer"
             onClick={() => {
-                window.location.href = postRoute(post.id).url;
+                void navigate({
+                    to: '/posts/$postId',
+                    params: { postId: post.id },
+                });
             }}
         >
             <title>

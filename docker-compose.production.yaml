@@ -1,11 +1,10 @@
 # Production deployment: pulls the prebuilt image from GHCR (no local build).
 # `pull_policy: always` makes `up` re-pull the latest published image. One
 # container whose supervisord runs the Octane web server plus the queue worker,
-# scheduler, and (when toggled) SSR.
+# scheduler.
 #
 #   docker compose -f docker-compose.production.yaml up -d
 #
-#   INERTIA_SSR_ENABLED=true ... up   -> also runs the in-container SSR process.
 #   QUEUE_WORKER_ENABLED=false /      -> disable the in-container worker/scheduler
 #   SCHEDULER_ENABLED=false           (e.g. when running them elsewhere in the cloud).
 #   Uncomment the postgres/redis services below to use them instead of SQLite.
@@ -48,9 +47,6 @@ x-environment: &app-env
     QUEUE_WORKER_ENABLED: "${QUEUE_WORKER_ENABLED:-true}"
     QUEUE_WORKER_COUNT: "${QUEUE_WORKER_COUNT:-1}"
     SCHEDULER_ENABLED: "${SCHEDULER_ENABLED:-true}"
-    # In-container SSR uses localhost; off by default.
-    INERTIA_SSR_ENABLED: "${INERTIA_SSR_ENABLED:-false}"
-    INERTIA_SSR_URL: "${INERTIA_SSR_URL:-http://127.0.0.1:13714}"
 
 services:
     app:

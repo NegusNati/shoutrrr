@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Sync pipelines + native tracking for the SPA/API. Payload shapes mirror the
- * legacy Inertia `sync` page.
+ * legacy `sync` page.
  */
 class SyncPipelinesController extends WebSyncPipelinesController
 {

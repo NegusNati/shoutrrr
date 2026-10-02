@@ -17,9 +17,13 @@ function imageEditMember(): array
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => WorkspaceRole::Member]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
     ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'platform' => Platform::X->value]);
-    $post = test()->postJson('/posts', ['base_text' => '', 'segments' => [''], 'destination' => ['kind' => 'all']])->json('post');
+    $post = test()->postJson('/api/v1/posts', ['base_text' => '', 'segments' => [''], 'destination' => ['kind' => 'all']])->json('post');
 
     return [$user, $workspace, $post];
 }
@@ -43,7 +47,7 @@ test('POST /posts/{post}/image-edit stores composed + source and returns edit se
     Storage::fake('public');
     [$user, $workspace, $post] = imageEditMember();
 
-    $response = test()->post("/posts/{$post['id']}/image-edit", [
+    $response = test()->postJson("/api/v1/posts/{$post['id']}/image-edit", [
         'composed' => UploadedFile::fake()->image('out.png', 800, 600),
         'source' => UploadedFile::fake()->image('src.png', 1200, 900),
         'settings' => settingsPayload(),
@@ -59,7 +63,7 @@ test('PUT /posts/{post}/image-edit/{media} replaces composed + settings', functi
     Storage::fake('public');
     [$user, $workspace, $post] = imageEditMember();
 
-    $mediaId = test()->post("/posts/{$post['id']}/image-edit", [
+    $mediaId = test()->postJson("/api/v1/posts/{$post['id']}/image-edit", [
         'composed' => UploadedFile::fake()->image('out.png', 800, 600),
         'source' => UploadedFile::fake()->image('src.png', 1200, 900),
         'settings' => settingsPayload(),
@@ -68,7 +72,7 @@ test('PUT /posts/{post}/image-edit/{media} replaces composed + settings', functi
     $newSettings = json_decode(settingsPayload(), true);
     $newSettings['padding'] = 120;
 
-    test()->put("/posts/{$post['id']}/image-edit/{$mediaId}", [
+    test()->putJson("/api/v1/posts/{$post['id']}/image-edit/{$mediaId}", [
         'composed' => UploadedFile::fake()->image('out2.png', 900, 600),
         'settings' => json_encode($newSettings),
     ], ['Accept' => 'application/json'])
@@ -83,7 +87,7 @@ test('it rejects an image upload to a non-editable post', function () {
     [$user, $workspace, $post] = imageEditMember();
     Post::findOrFail($post['id'])->forceFill(['status' => 'published'])->save();
 
-    test()->post("/posts/{$post['id']}/image-edit", [
+    test()->postJson("/api/v1/posts/{$post['id']}/image-edit", [
         'composed' => UploadedFile::fake()->image('out.png', 800, 600),
         'source' => UploadedFile::fake()->image('src.png', 1200, 900),
         'settings' => settingsPayload(),
@@ -95,7 +99,7 @@ test('it 404s when updating media from another workspace', function () {
     [$user, $workspace, $post] = imageEditMember();
     $foreign = PostMedia::factory()->create();
 
-    test()->put("/posts/{$post['id']}/image-edit/{$foreign->id}", [
+    test()->putJson("/api/v1/posts/{$post['id']}/image-edit/{$foreign->id}", [
         'composed' => UploadedFile::fake()->image('out.png', 800, 600),
         'settings' => settingsPayload(),
     ], ['Accept' => 'application/json'])->assertStatus(404);
@@ -112,7 +116,7 @@ test('it rejects editing an animated gif', function () {
         'mime' => 'image/gif',
     ]);
 
-    test()->put("/posts/{$post['id']}/image-edit/{$gif->id}", [
+    test()->putJson("/api/v1/posts/{$post['id']}/image-edit/{$gif->id}", [
         'composed' => UploadedFile::fake()->image('out.png', 800, 600),
         'settings' => settingsPayload(),
     ], ['Accept' => 'application/json'])->assertStatus(422);
@@ -130,7 +134,7 @@ test('it rejects editing a gif-browser webp (no edit_settings)', function () {
         'edit_settings' => null,
     ]);
 
-    test()->put("/posts/{$post['id']}/image-edit/{$webp->id}", [
+    test()->putJson("/api/v1/posts/{$post['id']}/image-edit/{$webp->id}", [
         'composed' => UploadedFile::fake()->image('out.png', 800, 600),
         'settings' => settingsPayload(),
     ], ['Accept' => 'application/json'])->assertStatus(422);
@@ -140,7 +144,7 @@ test('it rejects a non-image composed file', function () {
     Storage::fake('public');
     [$user, $workspace, $post] = imageEditMember();
 
-    test()->post("/posts/{$post['id']}/image-edit", [
+    test()->postJson("/api/v1/posts/{$post['id']}/image-edit", [
         'composed' => UploadedFile::fake()->create('x.pdf', 10, 'application/pdf'),
         'source' => UploadedFile::fake()->image('src.png', 1200, 900),
         'settings' => settingsPayload(),
@@ -154,7 +158,7 @@ test('it accepts a compact composed image', function (string $file, string $mime
     // The editor rasterizes to a compressed format (JPEG when opaque, WebP when
     // transparency is possible) so the payload stays under the upload cap — a
     // lossless PNG of a phone photo blows past it. The endpoint must accept them.
-    test()->post("/posts/{$post['id']}/image-edit", [
+    test()->postJson("/api/v1/posts/{$post['id']}/image-edit", [
         'composed' => UploadedFile::fake()->image($file, 800, 600),
         'source' => UploadedFile::fake()->image('src.png', 1200, 900),
         'settings' => settingsPayload(),

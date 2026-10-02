@@ -31,6 +31,10 @@ test('the recent feed exposes full row data including targets', function () {
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $post = Post::factory()->for($workspace)->create(['author_id' => $user->id]);
@@ -51,6 +55,10 @@ test('the recent feed exposes attached media for a row thumbnail', function () {
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $post = Post::factory()->for($workspace)->create(['author_id' => $user->id]);
@@ -82,6 +90,10 @@ test('a video-only post exposes no preview url so the list shows an icon tile', 
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $post = Post::factory()->for($workspace)->create(['author_id' => $user->id]);
@@ -108,6 +120,10 @@ test('the dashboard includes saved workspace mentions for the composer', functio
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     WorkspaceMention::factory()->create([

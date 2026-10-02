@@ -24,6 +24,10 @@ function nextSlotMember(): array
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];
@@ -48,7 +52,7 @@ function nextSlotSchedule(Workspace $workspace, string $tz, array $slots): void
 test('next-slot reports no schedule when none configured', function () {
     [$user, $workspace] = nextSlotMember();
 
-    test()->getJson('/posts/next-slot')
+    test()->getJson('/api/v1/posts/next-slot')
         ->assertOk()
         ->assertJson([
             'has_schedule' => false,
@@ -62,7 +66,7 @@ test('next-slot returns the earliest free slot in UTC', function () {
     [$user, $workspace] = nextSlotMember();
     nextSlotSchedule($workspace, 'UTC', [[1, 9]]); // Monday 09:00
 
-    test()->getJson('/posts/next-slot')
+    test()->getJson('/api/v1/posts/next-slot')
         ->assertOk()
         ->assertJson([
             'has_schedule' => true,
@@ -86,7 +90,7 @@ test('next-slot reports full when every slot in the horizon is occupied', functi
         ]);
     }
 
-    test()->getJson('/posts/next-slot')
+    test()->getJson('/api/v1/posts/next-slot')
         ->assertOk()
         ->assertJson([
             'has_schedule' => true,
@@ -96,5 +100,5 @@ test('next-slot reports full when every slot in the horizon is occupied', functi
 });
 
 test('next-slot requires authentication', function () {
-    test()->getJson('/posts/next-slot')->assertUnauthorized();
+    test()->getJson('/api/v1/posts/next-slot')->assertUnauthorized();
 });

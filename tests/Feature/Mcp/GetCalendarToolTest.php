@@ -1,17 +1,23 @@
 <?php
 
 use App\Enums\PostStatus;
+use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\ShoutrrrServer;
 use App\Mcp\Tools\GetCalendarTool;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use Carbon\CarbonImmutable;
 
 test('get_calendar returns scheduled posts within the month window', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
 
     Post::factory()->for($workspace)->create([
@@ -28,6 +34,10 @@ test('get_calendar rejects a malformed month', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
 
     $response = ShoutrrrServer::actingAs($user)->tool(GetCalendarTool::class, ['month' => 'June']);

@@ -16,11 +16,11 @@ test('an owner can create a pipeline', function () {
     $source = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
     $dest = ConnectedAccount::factory()->linkedin()->create(['workspace_id' => $workspace->id]);
 
-    $this->post('/sync', [
+    $this->postJson('/api/v1/sync-pipelines', [
         'name' => 'X to LinkedIn',
         'source_connected_account_id' => $source->id,
         'destination_connected_account_ids' => [$dest->id],
-    ])->assertRedirect();
+    ])->assertCreated();
 
     $pipeline = SyncPipeline::first();
     expect($pipeline->name)->toBe('X to LinkedIn')
@@ -32,12 +32,12 @@ test('creating a pipeline can enable native tracking on the source', function ()
     $source = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'platform' => Platform::Bluesky]);
     $dest = ConnectedAccount::factory()->linkedin()->create(['workspace_id' => $workspace->id]);
 
-    $this->post('/sync', [
+    $this->postJson('/api/v1/sync-pipelines', [
         'name' => 'Bluesky to LinkedIn',
         'source_connected_account_id' => $source->id,
         'destination_connected_account_ids' => [$dest->id],
         'track_source' => true,
-    ])->assertRedirect();
+    ])->assertCreated();
 
     $this->assertDatabaseHas('connected_account_native_watches', [
         'connected_account_id' => $source->id,
@@ -50,12 +50,12 @@ test('opting into tracking is ignored for a source on an unsupported platform', 
     $source = ConnectedAccount::factory()->linkedin()->create(['workspace_id' => $workspace->id]);
     $dest = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'platform' => Platform::Bluesky]);
 
-    $this->post('/sync', [
+    $this->postJson('/api/v1/sync-pipelines', [
         'name' => 'LinkedIn to Bluesky',
         'source_connected_account_id' => $source->id,
         'destination_connected_account_ids' => [$dest->id],
         'track_source' => true,
-    ])->assertRedirect();
+    ])->assertCreated();
 
     $this->assertDatabaseMissing('connected_account_native_watches', [
         'connected_account_id' => $source->id,
@@ -67,11 +67,11 @@ test('a pipeline created without opting in does not track the source', function 
     $source = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'platform' => Platform::Bluesky]);
     $dest = ConnectedAccount::factory()->linkedin()->create(['workspace_id' => $workspace->id]);
 
-    $this->post('/sync', [
+    $this->postJson('/api/v1/sync-pipelines', [
         'name' => 'No tracking',
         'source_connected_account_id' => $source->id,
         'destination_connected_account_ids' => [$dest->id],
-    ])->assertRedirect();
+    ])->assertCreated();
 
     $this->assertDatabaseMissing('connected_account_native_watches', [
         'connected_account_id' => $source->id,
@@ -90,11 +90,11 @@ test('creation is blocked at the cap of 3 when subscriptions are enabled', funct
     $dest = ConnectedAccount::factory()->linkedin()->create(['workspace_id' => $workspace->id]);
     SyncPipeline::factory()->count(3)->create(['workspace_id' => $workspace->id]);
 
-    $this->post('/sync', [
+    $this->postJson('/api/v1/sync-pipelines', [
         'name' => 'Over cap',
         'source_connected_account_id' => $source->id,
         'destination_connected_account_ids' => [$dest->id],
-    ])->assertSessionHasErrors('name');
+    ])->assertJsonValidationErrors('name');
 
     expect(SyncPipeline::count())->toBe(3);
 });
@@ -104,11 +104,11 @@ test('creation rejects more than three destinations', function () {
     $source = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
     $dests = ConnectedAccount::factory()->count(4)->create(['workspace_id' => $workspace->id]);
 
-    $this->post('/sync', [
+    $this->postJson('/api/v1/sync-pipelines', [
         'name' => 'Too many',
         'source_connected_account_id' => $source->id,
         'destination_connected_account_ids' => $dests->pluck('id')->all(),
-    ])->assertSessionHasErrors('destination_connected_account_ids');
+    ])->assertJsonValidationErrors('destination_connected_account_ids');
 
     expect(SyncPipeline::count())->toBe(0);
 });
@@ -117,11 +117,11 @@ test('creation rejects the source as its own destination', function () {
     [, $workspace] = ownerActingIn();
     $source = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
 
-    $this->post('/sync', [
+    $this->postJson('/api/v1/sync-pipelines', [
         'name' => 'Self',
         'source_connected_account_id' => $source->id,
         'destination_connected_account_ids' => [$source->id],
-    ])->assertSessionHasErrors('destination_connected_account_ids.0');
+    ])->assertJsonValidationErrors('destination_connected_account_ids.0');
 
     expect(SyncPipeline::count())->toBe(0);
 });
@@ -137,9 +137,9 @@ test('update rejects making the source one of the retained destinations', functi
     $pipeline->destinations()->sync([$dest->id]);
 
     // Only the source changes; destinations are omitted and retain [$dest].
-    $this->patch("/sync/{$pipeline->id}", [
+    $this->patchJson("/api/v1/sync-pipelines/{$pipeline->id}", [
         'source_connected_account_id' => $dest->id,
-    ])->assertSessionHasErrors('destination_connected_account_ids');
+    ])->assertJsonValidationErrors('destination_connected_account_ids');
 
     expect($pipeline->fresh()->source_connected_account_id)->toBe($source->id);
 });
@@ -148,9 +148,9 @@ test('update rejects an empty destination list', function () {
     [, $workspace] = ownerActingIn();
     $pipeline = SyncPipeline::factory()->create(['workspace_id' => $workspace->id]);
 
-    $this->patch("/sync/{$pipeline->id}", [
+    $this->patchJson("/api/v1/sync-pipelines/{$pipeline->id}", [
         'destination_connected_account_ids' => [],
-    ])->assertSessionHasErrors('destination_connected_account_ids');
+    ])->assertJsonValidationErrors('destination_connected_account_ids');
 });
 
 test('a member without settings.manage cannot create a pipeline', function () {
@@ -158,9 +158,13 @@ test('a member without settings.manage cannot create a pipeline', function () {
     $workspace = Workspace::factory()->create();
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => WorkspaceRole::Member]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $source = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
 
-    $this->actingAs($user)->post('/sync', [
+    $this->actingAs($user)->post('/api/v1/sync-pipelines', [
         'name' => 'x', 'source_connected_account_id' => $source->id, 'destination_connected_account_ids' => [],
     ])->assertForbidden();
 });
@@ -169,10 +173,10 @@ test('an owner can toggle and delete a pipeline', function () {
     [, $workspace] = ownerActingIn();
     $pipeline = SyncPipeline::factory()->create(['workspace_id' => $workspace->id, 'enabled' => true]);
 
-    $this->patch("/sync/{$pipeline->id}", ['enabled' => false])->assertRedirect();
+    $this->patchJson("/api/v1/sync-pipelines/{$pipeline->id}", ['enabled' => false])->assertOk();
     expect($pipeline->fresh()->enabled)->toBeFalse();
 
-    $this->delete("/sync/{$pipeline->id}")->assertRedirect();
+    $this->deleteJson("/api/v1/sync-pipelines/{$pipeline->id}")->assertOk();
     $this->assertDatabaseMissing('sync_pipelines', ['id' => $pipeline->id]);
 });
 
@@ -180,7 +184,7 @@ test('pipelines from another workspace are not manageable', function () {
     ownerActingIn();
     $foreign = SyncPipeline::factory()->create();
 
-    $this->delete("/sync/{$foreign->id}")->assertNotFound();
+    $this->deleteJson("/api/v1/sync-pipelines/{$foreign->id}")->assertNotFound();
 });
 
 test('the settings page renders', function () {

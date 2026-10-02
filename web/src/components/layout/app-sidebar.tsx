@@ -60,20 +60,11 @@ import {
     type WorkspaceSettingsNavKey,
 } from '@/lib/navigation/workspace-settings-nav';
 import { appVersion, githubReleaseUrl } from '@/lib/version';
-import { dashboard } from '@/routes';
-import { index as accountsRoute } from '@/routes/accounts';
-import { index as analyticsRoute } from '@/routes/analytics';
-import { index as calendarRoute } from '@/routes/calendar';
-import { index as engagementRoute } from '@/routes/engagement';
-import { index as messagesRoute } from '@/routes/messages';
-import { index as postsRoute } from '@/routes/posts';
 
 type NavItem = {
     title: string;
     href: Href;
     icon: IconComponent;
-    /** When true, the target lives inside the SPA and navigates client-side. */
-    spa?: boolean;
 };
 
 export const workspaceSettingsLabel = 'Workspace';
@@ -98,62 +89,28 @@ const versionBadgeClassName =
     'rounded-full border border-sidebar-border px-1.5 py-0.5 text-[10px] leading-none font-medium text-sidebar-foreground/60 transition-colors hover:border-sidebar-accent-foreground/30 hover:text-sidebar-foreground';
 
 const postsNavItems: NavItem[] = [
-    { title: 'Posts', href: postsRoute(), icon: Inbox, spa: true },
-    {
-        title: 'Calendar',
-        href: calendarRoute(),
-        icon: CalendarDays,
-        spa: true,
-    },
-    {
-        title: 'Queue',
-        href: '/queue',
-        icon: ListChecks,
-        spa: true,
-    },
-    { title: 'Accounts', href: accountsRoute(), icon: Share2, spa: true },
-    {
-        title: 'Engagement',
-        href: engagementRoute(),
-        icon: MessageCircle,
-        spa: true,
-    },
-    {
-        title: 'Messages',
-        href: messagesRoute(),
-        icon: MessageSquare,
-        spa: true,
-    },
+    { title: 'Posts', href: '/posts', icon: Inbox },
+    { title: 'Calendar', href: '/calendar', icon: CalendarDays },
+    { title: 'Queue', href: '/queue', icon: ListChecks },
+    { title: 'Accounts', href: '/accounts', icon: Share2 },
+    { title: 'Engagement', href: '/engagement', icon: MessageCircle },
+    { title: 'Messages', href: '/messages', icon: MessageSquare },
 ];
 
-/**
- * Navigation link for sidebar items: TanStack Link (client-side) when the
- * target is a ported SPA route, a plain anchor (full load into the
- * server-rendered app) for pages that haven't been ported yet.
- */
+/** Client-side navigation link for sidebar items. */
 function NavItemLink({
     href,
-    spa,
     className,
     children,
     ...props
 }: {
     href: Href;
-    spa?: boolean;
     children?: React.ReactNode;
 } & Omit<React.ComponentProps<'a'>, 'href'>) {
-    if (spa) {
-        return (
-            <Link to={toUrl(href)} className={className} {...props}>
-                {children}
-            </Link>
-        );
-    }
-
     return (
-        <a href={toUrl(href)} className={className} {...props}>
+        <Link to={toUrl(href)} className={className} {...props}>
             {children}
-        </a>
+        </Link>
     );
 }
 
@@ -179,7 +136,7 @@ export function AppSidebar() {
         setOpenMobile(false);
     }, [currentUrl, setOpenMobile]);
 
-    const composeHref = dashboard();
+    const composeHref = '/dashboard';
     const showWorkspaceSettings = workspaces?.enabled && workspaces.current;
     const canManageWorkspace = (
         workspaces?.current?.permissions ?? []
@@ -209,7 +166,7 @@ export function AppSidebar() {
                     <SidebarMenuItem className="flex items-center gap-1">
                         <SidebarMenuButton
                             className="h-8 min-w-0 flex-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
-                            render={<NavItemLink href={composeHref} spa />}
+                            render={<NavItemLink href={composeHref} />}
                         >
                             <AppLogo />
                         </SidebarMenuButton>
@@ -269,9 +226,7 @@ export function AppSidebar() {
                                     className={composeButtonClassName(
                                         collapsed,
                                     )}
-                                    render={
-                                        <NavItemLink href={composeHref} spa />
-                                    }
+                                    render={<NavItemLink href={composeHref} />}
                                 >
                                     <span className="pointer-events-none flex items-center gap-2">
                                         <span
@@ -312,10 +267,7 @@ export function AppSidebar() {
                                             tooltip={item.title}
                                             isActive={isCurrentUrl(item.href)}
                                             render={
-                                                <NavItemLink
-                                                    href={item.href}
-                                                    spa={item.spa}
-                                                />
+                                                <NavItemLink href={item.href} />
                                             }
                                         >
                                             <item.icon aria-hidden="true" />
@@ -343,14 +295,9 @@ export function AppSidebar() {
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
                                         tooltip="Analytics"
-                                        isActive={isCurrentUrl(
-                                            analyticsRoute(),
-                                        )}
+                                        isActive={isCurrentUrl('/analytics')}
                                         render={
-                                            <NavItemLink
-                                                href={analyticsRoute()}
-                                                spa
-                                            />
+                                            <NavItemLink href="/analytics" />
                                         }
                                     >
                                         <ChartColumn aria-hidden="true" />
@@ -366,10 +313,7 @@ export function AppSidebar() {
                                             '/settings/sync',
                                         )}
                                         render={
-                                            <NavItemLink
-                                                href="/settings/sync"
-                                                spa
-                                            />
+                                            <NavItemLink href="/settings/sync" />
                                         }
                                     >
                                         <RefreshCw aria-hidden="true" />
@@ -400,7 +344,6 @@ export function AppSidebar() {
                                                 render={
                                                     <NavItemLink
                                                         href={item.href}
-                                                        spa
                                                     />
                                                 }
                                             >
@@ -434,7 +377,6 @@ export function AppSidebar() {
                                                 render={
                                                     <NavItemLink
                                                         href={item.href}
-                                                        spa
                                                     />
                                                 }
                                             >

@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\WorkspaceRole;
 use App\Models\ConnectedAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use App\Services\Posts\DraftService;
 use Illuminate\Support\Facades\Context;
 
@@ -10,6 +12,10 @@ test('a draft built from segments splits one section per non-empty segment', fun
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $account = ConnectedAccount::factory()->create([
@@ -34,6 +40,10 @@ test('a literal --- typed inside a segment publishes as text, not a break', func
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $account = ConnectedAccount::factory()->create([

@@ -123,16 +123,14 @@ export default function WorkspaceMembersPage() {
     const transfer = useMutation({
         mutationFn: (membershipId: string) =>
             transferOwnership(workspaceId, membershipId),
-        // The legacy route answers with a redirect either way, so verify the
-        // transfer by refetching /me — the caller drops from owner to admin.
+        // The caller drops from owner to admin, so /me must refetch before
+        // role-gated UI (transfer dialog, owner-only actions) re-renders.
         onSuccess: async () => {
-            const fresh = await queryClient.fetchQuery(meQuery);
-            if (fresh.workspaces.current?.role === 'owner') {
-                toast.error('Could not transfer ownership');
-            } else {
-                toast.success('Ownership transferred');
-            }
+            toast.success('Ownership transferred');
             setMemberToPromote(null);
+            await queryClient.invalidateQueries({
+                queryKey: meQuery.queryKey,
+            });
             void invalidateMembers();
         },
         onError: (error) => {

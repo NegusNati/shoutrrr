@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AuthOptionsController;
 use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\CalendarController;
+use App\Http\Controllers\Api\V1\CommandSearchController;
 use App\Http\Controllers\Api\V1\ComposerController;
 use App\Http\Controllers\Api\V1\ConnectedAccountsController;
 use App\Http\Controllers\Api\V1\ConversationGifController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\V1\ConversationMediaController;
 use App\Http\Controllers\Api\V1\ConversationVideoUploadController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\EngagementController;
+use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\InstanceSettingsController;
 use App\Http\Controllers\Api\V1\LinkedInConnectController;
 use App\Http\Controllers\Api\V1\MeController;
@@ -44,6 +46,7 @@ use App\Http\Controllers\Api\V1\UserProfileController;
 use App\Http\Controllers\Api\V1\UserSecurityController;
 use App\Http\Controllers\Api\V1\WorkspaceApiKeysController;
 use App\Http\Controllers\Api\V1\WorkspaceInvitationsController;
+use App\Http\Controllers\Api\V1\WorkspaceLifecycleController;
 use App\Http\Controllers\Api\V1\WorkspaceMentionsController;
 use App\Http\Controllers\Api\V1\WorkspacesController;
 use App\Http\Controllers\Api\V1\WorkspaceSettingsController;
@@ -54,6 +57,7 @@ use App\Http\Middleware\RequireConfirmedPassword;
 use App\Http\Middleware\RequireSessionAuth;
 use App\Http\Middleware\RequireWriteScope;
 use App\Http\Middleware\ResolveApiWorkspace;
+use App\Services\Gifs\KlipyClient;
 use Illuminate\Support\Facades\Route;
 
 // Public: the SPA's auth pages render before login and need the feature flags
@@ -77,13 +81,15 @@ Route::middleware(['auth:api,sanctum', 'throttle:api'])->group(function (): void
 Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'])->group(function (): void {
     Route::get('settings/profile', [UserProfileController::class, 'show']);
     Route::put('settings/profile', [UserProfileController::class, 'updateProfile']);
-    Route::delete('settings/profile', [UserProfileController::class, 'destroyProfile']);
+    Route::delete('settings/profile', [UserProfileController::class, 'destroyProfile'])
+        ->middleware('verified'); // mirrors the legacy profile.destroy gate
     // RequireConfirmedPassword mirrors the web group's password.confirm gate:
     // an unconfirmed session gets a JSON 423 and the SPA shows its
     // confirm-password page (Fortify's /user/confirm-password unlocks it).
     Route::get('settings/security', [UserSecurityController::class, 'show'])
-        ->middleware(RequireConfirmedPassword::class);
-    Route::put('settings/password', [UserSecurityController::class, 'updatePassword']);
+        ->middleware(['verified', RequireConfirmedPassword::class]);
+    Route::put('settings/password', [UserSecurityController::class, 'updatePassword'])
+        ->middleware('verified');
     Route::get('settings/connections', [UserConnectionsController::class, 'show']);
     Route::delete('settings/connections/{socialAccountId}', [UserConnectionsController::class, 'remove']);
     Route::get('settings/notifications', [UserNotificationsController::class, 'show']);
@@ -95,6 +101,18 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api'
 // current workspace — API keys stay out while ResolveApiWorkspace installs
 // the workspace_id Context the shared FormRequests authorize against.
 Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWorkspace::class, 'throttle:api'])->group(function (): void {
+    // Workspace lifecycle (leave, delete, ownership transfer) — session-only
+    // like workspaces/switch: these act on the signed-in user's memberships,
+    // which a workspace-bound API key cannot express. `verified` mirrors the
+    // legacy routes/workspace.php group. The {workspace} binding stays
+    // unscoped; membership is checked per action exactly as the web routes did.
+    Route::delete('workspaces/{workspace}', [WorkspaceLifecycleController::class, 'destroy'])
+        ->middleware('verified');
+    Route::delete('workspaces/{workspace}/leave', [WorkspaceLifecycleController::class, 'leave'])
+        ->middleware('verified');
+    Route::post('workspaces/{workspace}/transfer', [WorkspaceLifecycleController::class, 'transfer'])
+        ->middleware('verified');
+
     Route::get('settings/workspace', [WorkspaceSettingsController::class, 'showOverviewApi']);
     Route::patch('settings/workspace', [WorkspaceSettingsController::class, 'updateWorkspace']);
     Route::put('settings/workspace/timezone', [WorkspaceSettingsController::class, 'updateTimezoneApi']);
@@ -108,9 +126,14 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
     Route::post('settings/workspace/api-keys', [WorkspaceApiKeysController::class, 'create']);
     Route::delete('settings/workspace/api-keys/{apiKeyId}', [WorkspaceApiKeysController::class, 'remove']);
 
-    Route::get('settings/workspace/subscription', [BillingController::class, 'show']);
-    Route::post('billing/checkout', [BillingController::class, 'createCheckout']);
-    Route::post('billing/portal', [BillingController::class, 'createPortal']);
+    // Billing was behind `verified` in the legacy web group — the rest of the
+    // session-only settings surface was not.
+    Route::get('settings/workspace/subscription', [BillingController::class, 'show'])
+        ->middleware('verified');
+    Route::post('billing/checkout', [BillingController::class, 'createCheckout'])
+        ->middleware('verified');
+    Route::post('billing/portal', [BillingController::class, 'createPortal'])
+        ->middleware('verified');
 
     // Connected accounts: connect flows + per-account management. The OAuth
     // pickers pass provider data through the session stash and ResolveApiWorkspace
@@ -136,43 +159,75 @@ Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, ResolveApiWork
     Route::post('sync-pipelines/native-tracking/{accountId}', [SyncPipelinesController::class, 'trackNative']);
     Route::delete('sync-pipelines/native-tracking/{accountId}', [SyncPipelinesController::class, 'untrackNative']);
 
-    // Instance-owner settings (owner-gated inside the controller).
-    Route::get('instance-settings', [InstanceSettingsController::class, 'show']);
-    Route::put('instance-settings', [InstanceSettingsController::class, 'updateSettings']);
-    Route::get('instance-settings/polling', [InstanceSettingsController::class, 'showPolling']);
-    Route::put('instance-settings/polling', [InstanceSettingsController::class, 'updatePollingSettings']);
-    Route::get('instance-settings/platforms', [InstanceSettingsController::class, 'showPlatforms']);
-    Route::put('instance-settings/platforms', [InstanceSettingsController::class, 'updatePlatformSettings']);
-    Route::get('instance-settings/usage', [InstanceSettingsController::class, 'showUsage']);
-    Route::get('instance-settings/usage/x', [InstanceSettingsController::class, 'xUsage']);
-    Route::put('instance-settings/usage/workspaces/{workspace}/budget', [InstanceSettingsController::class, 'updateBudget']);
-    Route::get('instance-settings/admins', [InstanceSettingsController::class, 'listAdmins']);
-    Route::post('instance-settings/admins', [InstanceSettingsController::class, 'addAdmin']);
-    Route::delete('instance-settings/admins/{owner}', [InstanceSettingsController::class, 'removeAdmin']);
+    // Command-palette post search: session-only and not verified-gated, with
+    // the legacy web route's own 60/min throttle on top of the group default.
+    Route::get('command-search', CommandSearchController::class)
+        ->middleware('throttle:60,1');
 });
 
 // Dual-auth: Passport API keys (auth:api) for external automation OR session
 // cookies (auth:sanctum) for the first-party SPA.
-Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api', RecordApiUsage::class])
+//
+// The auth-only tail mirrors the legacy web split: /me and notifications were
+// reachable by unverified users (SPA bootstrap + unread badge), while every
+// workspace-data route required `verified` email.
+Route::middleware(['auth:api,sanctum', 'throttle:api', RecordApiUsage::class])
     ->group(function (): void {
         Route::get('me', [MeController::class, 'show']);
-        Route::get('dashboard', [DashboardController::class, 'index']);
-
-        Route::get('workspaces', [WorkspacesController::class, 'index']);
-        Route::post('workspaces', [WorkspacesController::class, 'store']);
-        Route::post('workspaces/switch', [WorkspacesController::class, 'switch']);
-
-        Route::post('onboarding/welcomed', [OnboardingController::class, 'welcomed']);
-        Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss']);
-        Route::post('onboarding/steps/complete', [OnboardingController::class, 'completeStep']);
-
-        Route::get('workspace-mentions', [WorkspaceMentionsController::class, 'index']);
 
         Route::get('notifications', [NotificationsController::class, 'index']);
         Route::delete('notifications', [NotificationsController::class, 'destroyAll']);
         Route::post('notifications/read-all', [NotificationsController::class, 'markAllRead']);
         Route::delete('notifications/{notification}', [NotificationsController::class, 'destroy']);
         Route::post('notifications/{notification}/read', [NotificationsController::class, 'markRead']);
+    });
+
+// Workspace listing, creation and switching deliberately skip
+// ResolveApiWorkspace: they must work for a user with no current workspace
+// (first-workspace onboarding, or right after signing up), and they act on the
+// user's membership set rather than on one resolved workspace. The session-only
+// /workspaces/{workspace} lifecycle routes live in the group below.
+Route::middleware(['auth:api,sanctum', 'throttle:api', RecordApiUsage::class, 'verified'])
+    ->group(function (): void {
+        Route::get('workspaces', [WorkspacesController::class, 'index']);
+        Route::post('workspaces', [WorkspacesController::class, 'store']);
+        Route::post('workspaces/switch', [WorkspacesController::class, 'switch']);
+    });
+
+// Feedback is session-only but must work without a resolved workspace —
+// a user whose current workspace was just deleted still needs to file a report.
+Route::middleware(['auth:api,sanctum', RequireSessionAuth::class, 'throttle:api', RecordApiUsage::class])
+    ->group(function (): void {
+        // Mirrors the legacy web group (`auth` + `verified`): widget reports carry
+        // the signed-in user and their current workspace, so keys stay out.
+        Route::post('feedback', FeedbackController::class)
+            ->middleware(['feedback.enabled', 'verified', 'throttle:5,1']);
+
+        // Instance-owner settings act on the instance, not a workspace — no
+        // ResolveApiWorkspace, mirroring the legacy `auth`-only web group.
+        Route::get('instance-settings', [InstanceSettingsController::class, 'show']);
+        Route::put('instance-settings', [InstanceSettingsController::class, 'updateSettings']);
+        Route::get('instance-settings/polling', [InstanceSettingsController::class, 'showPolling']);
+        Route::put('instance-settings/polling', [InstanceSettingsController::class, 'updatePollingSettings']);
+        Route::get('instance-settings/platforms', [InstanceSettingsController::class, 'showPlatforms']);
+        Route::put('instance-settings/platforms', [InstanceSettingsController::class, 'updatePlatformSettings']);
+        Route::get('instance-settings/usage', [InstanceSettingsController::class, 'showUsage']);
+        Route::get('instance-settings/usage/x', [InstanceSettingsController::class, 'xUsage']);
+        Route::put('instance-settings/usage/workspaces/{workspace}/budget', [InstanceSettingsController::class, 'updateBudget']);
+        Route::get('instance-settings/admins', [InstanceSettingsController::class, 'listAdmins']);
+        Route::post('instance-settings/admins', [InstanceSettingsController::class, 'addAdmin']);
+        Route::delete('instance-settings/admins/{owner}', [InstanceSettingsController::class, 'removeAdmin']);
+    });
+
+Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api', RecordApiUsage::class, 'verified'])
+    ->group(function (): void {
+        Route::get('dashboard', [DashboardController::class, 'index']);
+
+        Route::post('onboarding/welcomed', [OnboardingController::class, 'welcomed']);
+        Route::post('onboarding/dismiss', [OnboardingController::class, 'dismiss']);
+        Route::post('onboarding/steps/complete', [OnboardingController::class, 'completeStep']);
+
+        Route::get('workspace-mentions', [WorkspaceMentionsController::class, 'index']);
 
         Route::get('posts', [PostsController::class, 'index']);
         Route::get('posts/next-slot', [NextSlotController::class, 'show']);
@@ -193,8 +248,12 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
         Route::get('messages/{conversationId}/thread', [MessagingController::class, 'thread'])->middleware('messages.enabled');
 
         Route::middleware('gifs.enabled')->group(function (): void {
-            Route::get('gifs/{catalog}', [GifBrowserController::class, 'index']);
-            Route::get('gifs/{catalog}/recent', [GifBrowserController::class, 'recent']);
+            // whereIn constrains catalog before auth runs — an unknown catalog 404s
+            // even for a guest, exactly like the legacy web routes did.
+            Route::get('gifs/{catalog}', [GifBrowserController::class, 'index'])
+                ->whereIn('catalog', KlipyClient::CATALOGS);
+            Route::get('gifs/{catalog}/recent', [GifBrowserController::class, 'recent'])
+                ->whereIn('catalog', KlipyClient::CATALOGS);
         });
 
         Route::middleware(RequireWriteScope::class)->group(function (): void {
@@ -258,7 +317,7 @@ Route::middleware(['auth:api,sanctum', ResolveApiWorkspace::class, 'throttle:api
                 Route::post('messages/{conversationId}/archive', [MessagingController::class, 'archive']);
                 Route::post('messages/{conversationId}/reply', [MessagingController::class, 'respond'])->middleware('throttle:30,1');
 
-                Route::middleware('throttle:60,1')->group(function (): void {
+                Route::middleware(['conversation.supports-media', 'throttle:60,1'])->group(function (): void {
                     Route::post('messages/{conversationId}/media', [ConversationMediaController::class, 'store']);
                     Route::patch('messages/{conversationId}/media/{mediaId}/alt', [ConversationMediaController::class, 'updateAlt']);
                     Route::delete('messages/{conversationId}/media/{mediaId}', [ConversationMediaController::class, 'destroy']);

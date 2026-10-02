@@ -65,7 +65,7 @@ test('the first cloud workspace can use the app without a subscription', functio
         'connected_account_id' => addXAccount($workspace)->id,
     ]);
 
-    $this->postJson("/posts/{$post->id}/publish")->assertOk();
+    $this->postJson("/api/v1/posts/{$post->id}/publish")->assertAccepted();
 });
 
 test('additional cloud workspaces can draft without a subscription', function () {
@@ -74,7 +74,7 @@ test('additional cloud workspaces can draft without a subscription', function ()
     actingInWorkspace($workspace);
     addXAccount($workspace);
 
-    $this->postJson('/posts', [
+    $this->postJson('/api/v1/posts', [
         'segments' => ['draft allowed'],
         'destination' => ['kind' => 'all'],
     ])->assertCreated();
@@ -95,7 +95,7 @@ test('additional cloud workspaces must subscribe before publishing', function ()
         'connected_account_id' => addXAccount($workspace)->id,
     ]);
 
-    $this->postJson("/posts/{$post->id}/publish")
+    $this->postJson("/api/v1/posts/{$post->id}/publish")
         ->assertPaymentRequired()
         ->assertJsonPath('message', 'Subscribe to publish this post.')
         ->assertJsonPath('billing_url', route('billing.index'));
@@ -116,7 +116,7 @@ test('subscribed additional cloud workspaces can publish', function () {
         'connected_account_id' => addXAccount($workspace)->id,
     ]);
 
-    $this->postJson("/posts/{$post->id}/publish")->assertOk();
+    $this->postJson("/api/v1/posts/{$post->id}/publish")->assertAccepted();
 });
 
 test('additional cloud workspaces must subscribe before queueing', function () {
@@ -130,7 +130,7 @@ test('additional cloud workspaces must subscribe before queueing', function () {
         'status' => PostStatus::Draft,
     ]);
 
-    $this->postJson("/posts/{$post->id}/queue")
+    $this->postJson("/api/v1/posts/{$post->id}/queue")
         ->assertPaymentRequired()
         ->assertJsonPath('message', 'Subscribe to publish this post.');
 });
@@ -146,7 +146,7 @@ test('additional cloud workspaces must subscribe before scheduling', function ()
         'status' => PostStatus::Draft,
     ]);
 
-    $this->putJson("/posts/{$post->id}/schedule", ['scheduled_at' => '2030-01-01T09:00:00+00:00'])
+    $this->postJson("/api/v1/posts/{$post->id}/schedule", ['scheduled_at' => '2030-01-01T09:00:00+00:00'])
         ->assertPaymentRequired()
         ->assertJsonPath('message', 'Subscribe to publish this post.');
 });

@@ -31,6 +31,10 @@ function duplicateMember(): array
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     return [$user, $workspace];
@@ -79,11 +83,11 @@ beforeEach(function (): void {
 test('duplicating a published post creates a reset draft copy', function (): void {
     $post = publishedPostWithMediaAndTarget($this->workspace, $this->user);
 
-    $response = $this->actingAs($this->user)->post(route('posts.duplicate', $post));
+    $response = $this->actingAs($this->user)->postJson("/api/v1/posts/{$post->id}/duplicate");
 
     $draft = Post::query()->where('status', PostStatus::Draft->value)->firstOrFail();
 
-    $response->assertRedirect(route('posts.show', $draft));
+    $response->assertCreated()->assertJsonPath('post.id', $draft->id);
     expect($draft->id)->not->toBe($post->id)
         ->and($draft->workspace_id)->toBe($this->workspace->id)
         ->and($draft->segments)->toBe(['Hello world'])
@@ -95,7 +99,7 @@ test('duplicating a published post creates a reset draft copy', function (): voi
 test('cloned media is a new file that survives deleting the original post', function (): void {
     $post = publishedPostWithMediaAndTarget($this->workspace, $this->user);
 
-    $this->actingAs($this->user)->post(route('posts.duplicate', $post));
+    $this->actingAs($this->user)->postJson("/api/v1/posts/{$post->id}/duplicate");
 
     $draft = Post::query()->where('status', PostStatus::Draft->value)->firstOrFail();
     $copy = $draft->media()->firstOrFail();
@@ -111,7 +115,7 @@ test('cloned media is a new file that survives deleting the original post', func
 test('cloned target is pending with overrides preserved and media ids remapped', function (): void {
     $post = publishedPostWithMediaAndTarget($this->workspace, $this->user);
 
-    $this->actingAs($this->user)->post(route('posts.duplicate', $post));
+    $this->actingAs($this->user)->postJson("/api/v1/posts/{$post->id}/duplicate");
 
     $draft = Post::query()->where('status', PostStatus::Draft->value)->firstOrFail();
     $target = $draft->targets()->firstOrFail();
@@ -128,7 +132,7 @@ test('targets for deleted accounts are skipped', function (): void {
     $post = publishedPostWithMediaAndTarget($this->workspace, $this->user);
     $post->targets()->firstOrFail()->account->forceDelete();
 
-    $this->actingAs($this->user)->post(route('posts.duplicate', $post));
+    $this->actingAs($this->user)->postJson("/api/v1/posts/{$post->id}/duplicate");
 
     $draft = Post::query()->where('status', PostStatus::Draft->value)->firstOrFail();
 
@@ -142,8 +146,8 @@ test('a draft post is not eligible to be copied', function (): void {
     ]);
 
     $this->actingAs($this->user)
-        ->post(route('posts.duplicate', $post))
-        ->assertStatus(422);
+        ->postJson("/api/v1/posts/{$post->id}/duplicate")
+        ->assertUnprocessable();
 
     expect(Post::query()->where('status', PostStatus::Draft->value)->count())->toBe(1);
 });
@@ -153,6 +157,6 @@ test('a post from another workspace cannot be duplicated', function (): void {
     [$other] = duplicateMember();
 
     $this->actingAs($other)
-        ->post(route('posts.duplicate', $post))
+        ->postJson("/api/v1/posts/{$post->id}/duplicate")
         ->assertNotFound();
 });

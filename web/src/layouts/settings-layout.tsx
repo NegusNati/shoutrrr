@@ -8,11 +8,6 @@ import { useMeData } from '@/features/me/me';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { toUrl } from '@/lib/href';
 import { cn } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
-import { edit as editConnections } from '@/routes/connections';
-import { preferences as notificationPreferences } from '@/routes/notifications';
-import { edit } from '@/routes/profile';
-import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
@@ -23,31 +18,31 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     const sidebarNavItems: NavItem[] = [
         {
             title: 'Profile',
-            href: edit(),
+            href: '/settings/profile',
             icon: null,
         },
         {
             title: 'Security',
-            href: editSecurity(),
+            href: '/settings/security',
             icon: null,
         },
         ...(hasSocialProviders
             ? [
                   {
                       title: 'Connected accounts',
-                      href: editConnections(),
+                      href: '/settings/connections',
                       icon: null,
                   },
               ]
             : []),
         {
             title: 'Appearance',
-            href: editAppearance(),
+            href: '/settings/appearance',
             icon: null,
         },
         {
             title: 'Notifications',
-            href: notificationPreferences(),
+            href: '/settings/notifications',
             icon: null,
         },
     ];

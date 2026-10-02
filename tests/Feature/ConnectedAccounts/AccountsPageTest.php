@@ -20,6 +20,10 @@ function viewerInWorkspace(WorkspaceRole $role): User
         'role' => $role,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
         'handle' => '@listed',
@@ -66,6 +70,10 @@ test('owners can refresh an X subscription tier without reconnecting', function 
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
         'status' => ConnectedAccountStatus::NeedsAttention->value,
@@ -96,10 +104,10 @@ test('owners can refresh an X subscription tier without reconnecting', function 
     ]);
 
     test()->actingAs($owner)
-        ->post(route('accounts.refresh-x-tier', $account))
-        ->assertRedirect()
-        ->assertSessionHas('success', fn (string $message): bool => str_contains($message, 'X Premium+')
-            && str_contains($message, '25000'));
+        ->postJson("/api/v1/connected-accounts/{$account->id}/refresh-x-tier")
+        ->assertOk()
+        ->assertJsonPath('x_subscription_label', 'X Premium+')
+        ->assertJsonPath('max_text_length', 25_000);
 
     expect($account->fresh()->xSubscriptionTier())->toBe('premium_plus')
         ->and($account->fresh()->maxTextLength())->toBe(25_000)
@@ -116,6 +124,10 @@ test('a failed X tier lookup retains the existing account limit', function () {
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
         'token_expires_at' => now()->addHour(),
@@ -137,9 +149,9 @@ test('a failed X tier lookup retains the existing account limit', function () {
     ]);
 
     test()->actingAs($owner)
-        ->post(route('accounts.refresh-x-tier', $account))
-        ->assertRedirect()
-        ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'existing limit was kept'));
+        ->postJson("/api/v1/connected-accounts/{$account->id}/refresh-x-tier")
+        ->assertUnprocessable()
+        ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'existing limit was kept'));
 
     expect($account->fresh()->xSubscriptionTier())->toBe('premium')
         ->and($account->fresh()->maxTextLength())->toBe(25_000);
@@ -153,6 +165,10 @@ test('the accounts page exposes a saved custom PDS so reconnect can replay it', 
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
 
     $default = ConnectedAccount::factory()->create([
         'workspace_id' => $workspace->id,
@@ -195,11 +211,16 @@ test('owners can set a workspace default account from the accounts page', functi
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
 
     test()->actingAs($owner)
-        ->post(route('accounts.default', $account))
-        ->assertRedirect(route('accounts.index'));
+        ->postJson("/api/v1/connected-accounts/{$account->id}/default")
+        ->assertOk()
+        ->assertJsonPath('is_default', true);
 
     expect($workspace->fresh()->default_connected_account_id)->toBe($account->id);
 });
@@ -212,10 +233,14 @@ test('members cannot set a workspace default account', function () {
         'user_id' => $member->id,
     ]);
     $member->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $member->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
 
     test()->actingAs($member)
-        ->post(route('accounts.default', $account))
+        ->postJson("/api/v1/connected-accounts/{$account->id}/default")
         ->assertForbidden();
 
     expect($workspace->fresh()->default_connected_account_id)->toBeNull();
@@ -229,6 +254,10 @@ test('the accounts page marks and lists the workspace default account first', fu
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'handle' => '@regular']);
     $default = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id, 'handle' => '@default']);
     $workspace->forceFill(['default_connected_account_id' => $default->id])->save();
@@ -248,12 +277,17 @@ test('disconnecting the workspace default account clears the default', function 
         'user_id' => $owner->id,
     ]);
     $owner->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $owner->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $account = ConnectedAccount::factory()->create(['workspace_id' => $workspace->id]);
     $workspace->forceFill(['default_connected_account_id' => $account->id])->save();
 
     test()->actingAs($owner)
-        ->delete(route('accounts.destroy', $account))
-        ->assertRedirect(route('accounts.index'));
+        ->deleteJson("/api/v1/connected-accounts/{$account->id}")
+        ->assertOk()
+        ->assertJsonPath('deleted', true);
 
     expect($workspace->fresh()->default_connected_account_id)->toBeNull();
 });
@@ -287,6 +321,6 @@ test('get requests to account member paths return method not allowed', function 
     $owner = viewerInWorkspace(WorkspaceRole::Owner);
 
     test()->actingAs($owner)
-        ->get('/accounts/does-not-exist')
+        ->get('/api/v1/connected-accounts/does-not-exist')
         ->assertMethodNotAllowed();
 });

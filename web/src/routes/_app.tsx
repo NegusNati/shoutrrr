@@ -1,5 +1,7 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
+import { CommandPalette } from '@/components/command-palette/command-palette';
+import FeedbackWidget from '@/components/feedback/feedback-widget';
 import { AppContent } from '@/components/layout/app-content';
 import { AppShell } from '@/components/layout/app-shell';
 import { AppSidebar } from '@/components/layout/app-sidebar';
@@ -36,6 +38,8 @@ function AppLayoutRoute() {
                 <AppSidebarHeader />
                 <Outlet />
             </AppContent>
+            <FeedbackWidget />
+            <CommandPalette />
         </AppShell>
     );
 }

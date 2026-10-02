@@ -24,6 +24,10 @@ function queueMember(): array
         'role' => WorkspaceRole::Member,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];
@@ -55,7 +59,7 @@ test('queueing schedules a draft into the next open slot', function () {
         'status' => PostStatus::Draft,
     ]);
 
-    test()->postJson("/posts/{$post->id}/queue")
+    test()->postJson("/api/v1/posts/{$post->id}/queue")
         ->assertOk()
         ->assertJsonPath('post.status', 'scheduled')
         ->assertJsonPath('post.scheduled_at', '2026-05-18T09:00:00+00:00');
@@ -74,7 +78,7 @@ test('queueing returns 422 when no open slot is available', function () {
         'status' => PostStatus::Draft,
     ]);
 
-    test()->postJson("/posts/{$post->id}/queue")
+    test()->postJson("/api/v1/posts/{$post->id}/queue")
         ->assertStatus(422)
         ->assertJsonPath('message', 'No open posting slot available. Add posting-schedule slots in settings.');
 
@@ -97,7 +101,7 @@ test('queueing skips a slot already taken and uses the next', function () {
         'status' => PostStatus::Draft,
     ]);
 
-    test()->postJson("/posts/{$post->id}/queue")
+    test()->postJson("/api/v1/posts/{$post->id}/queue")
         ->assertOk()
         ->assertJsonPath('post.scheduled_at', '2026-05-18T11:00:00+00:00');
 });
@@ -106,7 +110,7 @@ test('a member cannot queue a post in another workspace', function () {
     [$user, $workspace] = queueMember();
     $foreign = Post::factory()->create(); // different workspace
 
-    test()->postJson("/posts/{$foreign->id}/queue")->assertNotFound();
+    test()->postJson("/api/v1/posts/{$foreign->id}/queue")->assertNotFound();
 });
 
 test('queueing can use a selected open slot instead of the next one', function () {
@@ -119,7 +123,7 @@ test('queueing can use a selected open slot instead of the next one', function (
         'status' => PostStatus::Draft,
     ]);
 
-    test()->postJson("/posts/{$post->id}/queue", [
+    test()->postJson("/api/v1/posts/{$post->id}/queue", [
         'scheduled_at' => '2026-05-18T11:00:00+00:00',
     ])
         ->assertOk()
@@ -144,7 +148,7 @@ test('queueing rejects a selected slot that is already occupied', function () {
         'status' => PostStatus::Draft,
     ]);
 
-    test()->postJson("/posts/{$post->id}/queue", [
+    test()->postJson("/api/v1/posts/{$post->id}/queue", [
         'scheduled_at' => '2026-05-18T09:00:00+00:00',
     ])
         ->assertStatus(422)
@@ -164,7 +168,7 @@ test('the next-slot endpoint includes open slots users can choose from', functio
         'scheduled_at' => '2026-05-18T09:00:00+00:00',
     ]);
 
-    test()->getJson('/posts/next-slot')
+    test()->getJson('/api/v1/posts/next-slot')
         ->assertOk()
         ->assertJsonPath('slot', '2026-05-18T11:00:00+00:00')
         ->assertJsonPath('slots.0', '2026-05-18T11:00:00+00:00');

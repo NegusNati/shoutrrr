@@ -14,8 +14,8 @@ test('owner can transfer ownership and is demoted to admin', function () {
     $targetMembership = WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $target->id]);
 
     $this->actingAs($owner)
-        ->post(route('workspaces.transfer', $workspace), ['membership_id' => $targetMembership->id])
-        ->assertRedirect();
+        ->postJson("/api/v1/workspaces/{$workspace->id}/transfer", ['membership_id' => $targetMembership->id])
+        ->assertOk();
 
     $this->assertSame($target->id, $workspace->fresh()->owner_id);
     $this->assertSame(WorkspaceRole::Owner, $target->fresh()->getMembershipForWorkspace($workspace->id)->role);
@@ -30,6 +30,6 @@ test('non owner cannot transfer ownership', function () {
     $targetMembership = WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $target->id]);
 
     $this->actingAs($member)
-        ->post(route('workspaces.transfer', $workspace), ['membership_id' => $targetMembership->id])
+        ->postJson("/api/v1/workspaces/{$workspace->id}/transfer", ['membership_id' => $targetMembership->id])
         ->assertForbidden();
 });

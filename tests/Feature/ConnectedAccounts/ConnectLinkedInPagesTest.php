@@ -73,9 +73,9 @@ test('store persists the personal profile and selected pages', function () {
         'approvedScopes' => ['r_member_social_feed', 'r_organization_social'],
     ]]);
 
-    test()->post(route('accounts.linkedin.store'), [
+    test()->withHeaders(['Referer' => 'http://localhost'])->postJson('/api/v1/connected-accounts/connect/linkedin', [
         'selected' => [['type' => 'person'], ['type' => 'organization', 'id' => '2414183']],
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertCreated()->assertJsonPath('connected', 2);
 
     $person = ConnectedAccount::where('remote_account_id', 'PERSON1')->firstOrFail();
     $page = ConnectedAccount::where('remote_account_id', '2414183')->firstOrFail();
@@ -100,9 +100,9 @@ test('store gates page engagement capability off when the org scope was not gran
         'approvedScopes' => ['r_member_social_feed'],
     ]]);
 
-    test()->post(route('accounts.linkedin.store'), [
+    test()->withHeaders(['Referer' => 'http://localhost'])->postJson('/api/v1/connected-accounts/connect/linkedin', [
         'selected' => [['type' => 'person'], ['type' => 'organization', 'id' => '2414183']],
-    ])->assertRedirect(route('accounts.index'));
+    ])->assertCreated()->assertJsonPath('connected', 2);
 
     $person = ConnectedAccount::where('remote_account_id', 'PERSON1')->firstOrFail();
     $page = ConnectedAccount::where('remote_account_id', '2414183')->firstOrFail();
@@ -124,9 +124,9 @@ test('store rejects an organization selection missing an id and persists nothing
         'approvedScopes' => ['r_member_social_feed', 'r_organization_social'],
     ]]);
 
-    test()->post(route('accounts.linkedin.store'), [
+    test()->withHeaders(['Referer' => 'http://localhost'])->postJson('/api/v1/connected-accounts/connect/linkedin', [
         'selected' => [['type' => 'organization']],
-    ])->assertSessionHasErrors('selected.0.id');
+    ])->assertJsonValidationErrors('selected.0.id');
 
     expect(ConnectedAccount::where('platform', 'linkedin')->count())->toBe(0);
 });
@@ -144,9 +144,9 @@ test('store rejects an organization selection with an id outside the stashed whi
         'approvedScopes' => ['r_member_social_feed', 'r_organization_social'],
     ]]);
 
-    test()->post(route('accounts.linkedin.store'), [
+    test()->withHeaders(['Referer' => 'http://localhost'])->postJson('/api/v1/connected-accounts/connect/linkedin', [
         'selected' => [['type' => 'organization', 'id' => '9999999']],
-    ])->assertSessionHasErrors('selected.0.id');
+    ])->assertJsonValidationErrors('selected.0.id');
 
     expect(ConnectedAccount::where('platform', 'linkedin')->count())->toBe(0);
 });

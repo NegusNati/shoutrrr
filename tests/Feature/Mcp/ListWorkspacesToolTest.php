@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\ShoutrrrServer;
 use App\Mcp\Tools\ListWorkspacesTool;
 use App\Models\User;
@@ -16,6 +17,10 @@ test('list_workspaces shows the bound workspace and the users others', function 
         ]);
     }
     $user->forceFill(['current_workspace_id' => $bound->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $bound->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $bound);
 
     $response = ShoutrrrServer::actingAs($user)->tool(ListWorkspacesTool::class, []);

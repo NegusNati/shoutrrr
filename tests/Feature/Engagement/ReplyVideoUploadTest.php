@@ -28,7 +28,7 @@ beforeEach(function (): void {
 
 test('presign returns a workspace-scoped mp4 key', function () {
     $res = $this->actingAs($this->user)
-        ->postJson(route('engagement.media.video-url', $this->reply), ['content_type' => 'video/mp4'])
+        ->postJson("/api/v1/engagement/{$this->reply->id}/media/video-url", ['content_type' => 'video/mp4'])
         ->assertOk()
         ->json();
 
@@ -42,13 +42,13 @@ test('confirm rejects a non-mp4 object and accepts a valid one', function () {
 
     // Bytes whose offset-4 is NOT "ftyp" → rejected.
     $disk->put($key, 'not-an-mp4-file-at-all');
-    $this->actingAs($this->user)->postJson(route('engagement.media.video', $this->reply), [
+    $this->actingAs($this->user)->postJson("/api/v1/engagement/{$this->reply->id}/media/video", [
         'key' => $key, 'duration_seconds' => 5, 'width' => 100, 'height' => 100,
     ])->assertStatus(422);
 
     // Valid ftyp signature at offset 4 → accepted.
     $disk->put($key, "\x00\x00\x00\x18ftypmp42extra-bytes-here");
-    $this->actingAs($this->user)->postJson(route('engagement.media.video', $this->reply), [
+    $this->actingAs($this->user)->postJson("/api/v1/engagement/{$this->reply->id}/media/video", [
         'key' => $key, 'duration_seconds' => 5, 'width' => 100, 'height' => 100,
     ])->assertCreated();
 
@@ -56,7 +56,7 @@ test('confirm rejects a non-mp4 object and accepts a valid one', function () {
 });
 
 test('confirm rejects a key outside the workspace prefix', function () {
-    $this->actingAs($this->user)->postJson(route('engagement.media.video', $this->reply), [
+    $this->actingAs($this->user)->postJson("/api/v1/engagement/{$this->reply->id}/media/video", [
         'key' => 'tmp/media/other-ws/'.Str::uuid().'.mp4',
         'duration_seconds' => 5, 'width' => 100, 'height' => 100,
     ])->assertStatus(422);

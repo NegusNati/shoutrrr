@@ -1,15 +1,21 @@
 <?php
 
+use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\ShoutrrrServer;
 use App\Mcp\Tools\UpdatePostTool;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 
 test('update_post edits a draft', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
 
     $post = Post::factory()->for($workspace)->create(['base_text' => 'old']);
@@ -28,6 +34,10 @@ test('update_post reports a stale write conflict', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspace);
 
     $post = Post::factory()->for($workspace)->create(['base_text' => 'old']);

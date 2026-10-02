@@ -176,6 +176,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/command-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search the current workspace's posts by body text for the command palette */
+        get: operations["v1.commandSearch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/{postId}/compose": {
         parameters: {
             query?: never;
@@ -184,7 +201,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Full composer payload for the SPA — same shape the Inertia page received,
+         * Full composer payload for the SPA — same shape the old page received,
          *     with `metricsEnabled` instead of the deferred `stats` prop (the SPA lazy
          *     loads stats via the metrics-refresh endpoint when needed)
          */
@@ -579,6 +596,22 @@ export interface paths {
         post?: never;
         /** Delete an outbound reply (only replies the workspace posted) */
         delete: operations["engagement.destroyReply"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1.feedback"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1212,7 +1245,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Resolved equivalent of the Inertia deferred `stats` prop: metrics for a
+         * Resolved equivalent of the old deferred `stats` payload: metrics for a
          *     post once it has at least one published target, else null
          */
         get: operations["postMetrics.show"];
@@ -1756,6 +1789,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspace}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["workspaceLifecycle.destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["workspaceLifecycle.leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaceLifecycle.transfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspace-mentions": {
         parameters: {
             query?: never;
@@ -1974,6 +2055,11 @@ export interface components {
             webhook_url: string;
         };
         /**
+         * FeedbackType
+         * @enum {string}
+         */
+        FeedbackType: "bug" | "feedback" | "question";
+        /**
          * InstanceRole
          * @enum {string}
          */
@@ -2009,6 +2095,11 @@ export interface components {
             password: string;
             password_confirmation: string;
         };
+        /**
+         * PostFormat
+         * @enum {string}
+         */
+        PostFormat: "feed" | "reels" | "story";
         /** ProfileUpdateRequest */
         ProfileUpdateRequest: {
             /**
@@ -2059,6 +2150,39 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        /** StorePostRequest */
+        StorePostRequest: {
+            base_text?: string | null;
+            segments?: (string | null)[];
+            mentions?: {
+                id: string;
+                label: string;
+                handles?: {
+                    x?: string | null;
+                    bluesky?: string | null;
+                    linkedin?: string | null;
+                    facebook?: string | null;
+                    instagram?: string | null;
+                    threads?: string | null;
+                    discord?: string | null;
+                    linkedin_urn?: string | null;
+                };
+            }[];
+            destination: {
+                /** @enum {string} */
+                kind: "all" | "none" | "set" | "account" | "accounts";
+                id?: string | null;
+                ids?: string[];
+            };
+            auto_repost?: boolean | null;
+            skip_sync?: boolean;
+            segment_breaks?: string[];
+            placements?: {
+                media_id: string;
+                segment_ref: string;
+                position: number;
+            }[];
+        };
         /** StoreReplyImageEditRequest */
         StoreReplyImageEditRequest: {
             /**
@@ -2104,6 +2228,10 @@ export interface components {
         /** StoreWorkspaceRequest */
         StoreWorkspaceRequest: {
             name: string;
+        };
+        /** TransferOwnershipRequest */
+        TransferOwnershipRequest: {
+            membership_id: string;
         };
         /** UpdateAutoRepostRequest */
         UpdateAutoRepostRequest: {
@@ -2198,6 +2326,57 @@ export interface components {
                 in_app: boolean;
                 mail: boolean;
             }[];
+        };
+        /** UpdatePostRequest */
+        UpdatePostRequest: {
+            base_text?: string | null;
+            segments?: (string | null)[];
+            mentions?: {
+                id: string;
+                label: string;
+                handles?: {
+                    x?: string | null;
+                    bluesky?: string | null;
+                    linkedin?: string | null;
+                    facebook?: string | null;
+                    instagram?: string | null;
+                    threads?: string | null;
+                    discord?: string | null;
+                    linkedin_urn?: string | null;
+                };
+            }[];
+            destination: {
+                /** @enum {string} */
+                kind: "all" | "none" | "set" | "account" | "accounts";
+                id?: string | null;
+                ids?: string[];
+            };
+            targets?: {
+                connected_account_id: string;
+                auto_split?: boolean;
+                format?: components["schemas"]["PostFormat"] | null;
+                content_override?: {
+                    text?: string | null;
+                    segments?: (string | null)[];
+                    media_ids?: string[];
+                } | null;
+                segment_breaks?: string[] | null;
+                placements?: {
+                    media_id: string;
+                    segment_ref: string;
+                    position: number;
+                }[] | null;
+            }[];
+            media_ids?: string[];
+            segment_breaks?: string[];
+            placements?: {
+                media_id: string;
+                segment_ref: string;
+                position: number;
+            }[];
+            auto_repost?: boolean | null;
+            skip_sync?: boolean;
+            expected_updated_at?: string | null;
         };
         /** UpdatePostingScheduleRequest */
         UpdatePostingScheduleRequest: {
@@ -2713,6 +2892,38 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             422: components["responses"]["ValidationException"];
+        };
+    };
+    "v1.commandSearch": {
+        parameters: {
+            query?: {
+                /** @description Search text; shorter than two characters returns nothing. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        posts: {
+                            id: string;
+                            excerpt: string;
+                            status: string;
+                            scheduled_at: string | null;
+                        }[];
+                    } | {
+                        posts: string[];
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
         };
     };
     "composer.showCompose": {
@@ -3834,6 +4045,48 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["AuthenticationException"];
+        };
+    };
+    "v1.feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    type: components["schemas"]["FeedbackType"];
+                    message: string;
+                    url?: string | null;
+                    browser?: string | null;
+                    /**
+                     * Format: binary
+                     * @description Maximum file size: 5120 kilobytes.
+                     */
+                    screenshot?: string | null;
+                    /**
+                     * Format: binary
+                     * @description KB → 5 MB
+                     */
+                    diagnostics?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "gifBrowser.index": {
@@ -5335,6 +5588,18 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Subscribe to publish this post.";
+                        billing_url: string;
+                    };
+                };
+            };
             403: components["responses"]["AuthorizationException"];
             422: components["responses"]["ValidationException"];
         };
@@ -5348,7 +5613,14 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: date-time */
+                    scheduled_at?: string | null;
+                };
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5448,22 +5720,20 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
-            403: components["responses"]["AuthorizationException"];
-            /** @description An error */
-            422: {
+            402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /**
-                         * @description Error overview.
-                         * @example No open posting slot available. Add posting-schedule slots first.
-                         */
-                        message: string;
+                        /** @constant */
+                        message: "Subscribe to publish this post.";
+                        billing_url: string;
                     };
                 };
             };
+            403: components["responses"]["AuthorizationException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "postActions.publish": {
@@ -5579,6 +5849,18 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Subscribe to publish this post.";
+                        billing_url: string;
+                    };
+                };
+            };
             403: components["responses"]["AuthorizationException"];
             422: {
                 headers: {
@@ -5596,6 +5878,9 @@ export interface operations {
                                 "empty"
                             ];
                         }[];
+                    } | {
+                        /** @constant */
+                        message: "Select at least one account to publish.";
                     };
                 };
             };
@@ -5845,7 +6130,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
-            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "postMedia.storeMedia": {
@@ -5923,7 +6207,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["AuthenticationException"];
-            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "postMedia.removeMedia": {
@@ -5964,7 +6247,6 @@ export interface operations {
                     };
                 };
             };
-            404: components["responses"]["ModelNotFoundException"];
         };
     };
     "postMetrics.show": {
@@ -6252,27 +6534,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    base_text?: string | null;
-                    segments?: string[];
-                    mentions?: {
-                        id: string;
-                        label: string;
-                        handles?: {
-                            x?: string | null;
-                            bluesky?: string | null;
-                            linkedin?: string | null;
-                            linkedin_urn?: string | null;
-                        };
-                    }[];
-                    destination: {
-                        /** @enum {string} */
-                        kind: "all" | "none" | "set" | "account" | "accounts";
-                        id?: string | null;
-                        ids?: string[];
-                    };
-                    auto_repost?: boolean | null;
-                };
+                "application/json": components["schemas"]["StorePostRequest"];
             };
         };
         responses: {
@@ -6531,37 +6793,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    base_text?: string | null;
-                    segments?: string[];
-                    mentions?: {
-                        id: string;
-                        label: string;
-                        handles?: {
-                            x?: string | null;
-                            bluesky?: string | null;
-                            linkedin?: string | null;
-                            linkedin_urn?: string | null;
-                        };
-                    }[];
-                    destination: {
-                        /** @enum {string} */
-                        kind: "all" | "none" | "set" | "account" | "accounts";
-                        id?: string | null;
-                        ids?: string[];
-                    };
-                    targets?: {
-                        connected_account_id: string;
-                        auto_split?: boolean;
-                        content_override?: {
-                            text?: string | null;
-                            media_ids?: string[];
-                        } | null;
-                    }[];
-                    media_ids?: string[];
-                    auto_repost?: boolean | null;
-                    expected_updated_at?: string | null;
-                };
+                "application/json": components["schemas"]["UpdatePostRequest"];
             };
         };
         responses: {
@@ -6664,15 +6896,102 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             403: components["responses"]["AuthorizationException"];
-            /** @description An error */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /** @description Error overview. */
-                        message: string;
+                        post: {
+                            id: string;
+                            base_text: string;
+                            segments: string[];
+                            mentions: {
+                                id: string;
+                                label: string;
+                                handles: {
+                                    [key: string]: string;
+                                };
+                            }[];
+                            status: string;
+                            scheduled_at: string | null;
+                            auto_repost: boolean | null;
+                            skip_sync: boolean;
+                            published_at: string | null;
+                            updated_at: string;
+                            destination: {
+                                /** @constant */
+                                kind: "all";
+                                id: null;
+                            } | {
+                                /** @constant */
+                                kind: "accounts";
+                                id: null;
+                                ids: unknown[];
+                            } | {
+                                /** @constant */
+                                kind: "account";
+                                id: string;
+                            } | {
+                                /** @constant */
+                                kind: "none";
+                                id: null;
+                            } | {
+                                /** @constant */
+                                kind: "set";
+                                id: string | null;
+                            };
+                            targets: {
+                                id: string;
+                                connected_account_id: string;
+                                platform: string;
+                                handle: string;
+                                display_name: string | null;
+                                avatar_url: string | null;
+                                sections: string[];
+                                segment_breaks: string[];
+                                placements: {
+                                    media_id: string;
+                                    segment_ref: string;
+                                    position: number;
+                                }[];
+                                content_override: {
+                                    text?: string | null;
+                                    media_ids?: string[];
+                                } | null;
+                                auto_split: boolean;
+                                format: string;
+                                status: string;
+                                error_kind: string | null;
+                                error_message: string | null;
+                                attempts: number;
+                                remote_id: string | null;
+                                issues: string;
+                            }[];
+                            media: {
+                                id: string;
+                                url: string;
+                                mime: string;
+                                kind: string;
+                                duration_seconds: number | null;
+                                alt_text: string | null;
+                                position: number;
+                                edit_settings: {
+                                    [key: string]: unknown;
+                                } | null;
+                                source_url: string | null;
+                                edit_url: string;
+                                source_edit_url: string | null;
+                            }[];
+                            segment_breaks: string[];
+                            placements: {
+                                media_id: string;
+                                segment_ref: string;
+                                position: number;
+                            }[];
+                        };
+                        /** @constant */
+                        message: "stale_write";
                     };
                 };
             };
@@ -7903,6 +8222,122 @@ export interface operations {
             };
             401: components["responses"]["AuthenticationException"];
             404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceLifecycle.destroy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The workspace ID */
+                workspace: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Workspace deleted.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceLifecycle.leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The workspace ID */
+                workspace: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "You left the workspace.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            404: components["responses"]["ModelNotFoundException"];
+        };
+    };
+    "workspaceLifecycle.transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The workspace ID */
+                workspace: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferOwnershipRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        message: "Ownership transferred.";
+                    };
+                };
+            };
+            401: components["responses"]["AuthenticationException"];
+            /** @description An error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Error overview.
+                         * @example
+                         */
+                        message: string;
+                    };
+                };
+            };
+            404: components["responses"]["ModelNotFoundException"];
+            422: components["responses"]["ValidationException"];
         };
     };
     "workspaceMentions.index": {

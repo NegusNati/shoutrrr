@@ -7,12 +7,12 @@ use App\Support\InstanceSettings;
 it('lets an instance owner enable usage tracking', function () {
     $owner = User::factory()->create(['instance_role' => InstanceRole::Owner->value]);
 
-    $this->actingAs($owner)->put('/settings/instance', [
+    $this->actingAs($owner)->put('/api/v1/instance-settings', [
         'registrations_enabled' => false,
         'workspace_creation_enabled' => true,
         'usage_tracking_enabled' => true,
         'quote_tweets_enabled' => false,
-    ])->assertRedirect();
+    ])->assertOk();
 
     expect(app(InstanceSettings::class)->usageTrackingEnabled())->toBeTrue();
 });
@@ -20,8 +20,8 @@ it('lets an instance owner enable usage tracking', function () {
 it('rejects a missing usage_tracking_enabled field', function () {
     $owner = User::factory()->create(['instance_role' => InstanceRole::Owner->value]);
 
-    $this->actingAs($owner)->put('/settings/instance', [
+    $this->actingAs($owner)->put('/api/v1/instance-settings', [
         'registrations_enabled' => false,
         'workspace_creation_enabled' => true,
-    ])->assertSessionHasErrors('usage_tracking_enabled');
+    ])->assertJsonValidationErrors('usage_tracking_enabled');
 });

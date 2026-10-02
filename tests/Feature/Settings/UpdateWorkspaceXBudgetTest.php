@@ -10,18 +10,18 @@ it('lets an instance owner set a dollar budget, unlimited, or clear it', functio
     $workspace = Workspace::factory()->create(['is_initial' => false]);
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.usage.budget', $workspace), ['unlimited' => false, 'dollars' => 15])
-        ->assertRedirect();
+        ->putJson("/api/v1/instance-settings/usage/workspaces/{$workspace->id}/budget", ['unlimited' => false, 'dollars' => 15])
+        ->assertOk();
     expect(app(InstanceSettings::class)->xWorkspaceBudget($workspace->id))->toBe(1500);
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.usage.budget', $workspace), ['unlimited' => true, 'dollars' => null])
-        ->assertRedirect();
+        ->putJson("/api/v1/instance-settings/usage/workspaces/{$workspace->id}/budget", ['unlimited' => true, 'dollars' => null])
+        ->assertOk();
     expect(app(InstanceSettings::class)->xWorkspaceBudget($workspace->id))->toBe('unlimited');
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.usage.budget', $workspace), ['unlimited' => false, 'dollars' => null])
-        ->assertRedirect();
+        ->putJson("/api/v1/instance-settings/usage/workspaces/{$workspace->id}/budget", ['unlimited' => false, 'dollars' => null])
+        ->assertOk();
     expect(app(InstanceSettings::class)->xWorkspaceBudget($workspace->id))->toBeNull();
 });
 
@@ -30,6 +30,6 @@ it('forbids non-owners from editing a workspace budget', function (): void {
     $workspace = Workspace::factory()->create();
 
     $this->actingAs($user)
-        ->put(route('instance-settings.usage.budget', $workspace), ['unlimited' => true, 'dollars' => null])
+        ->putJson("/api/v1/instance-settings/usage/workspaces/{$workspace->id}/budget", ['unlimited' => true, 'dollars' => null])
         ->assertForbidden();
 });

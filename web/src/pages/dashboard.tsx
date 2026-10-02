@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearch } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 
 import Composer from '@/components/compose/composer';
@@ -91,14 +92,12 @@ export default function DashboardPage() {
     );
 
     // A calendar slot click opens the composer here with a pre-set schedule
-    // time; a "compose for channel" action arrives with ?destination=… — read
-    // once from the URL, mirroring the Inertia page's page.url parsing.
-    const initialScheduleAt = new URL(window.location.href).searchParams.get(
-        'schedule_at',
-    );
-    const initialDestination = parseDestinationParam(
-        new URL(window.location.href).searchParams.get('destination'),
-    );
+    // time; a "compose for channel" action arrives with ?destination=….
+    const { schedule_at, destination } = useSearch({
+        from: '/_app/dashboard',
+    });
+    const initialScheduleAt = schedule_at ?? null;
+    const initialDestination = parseDestinationParam(destination ?? null);
 
     const firstName = (me?.auth.user?.name ?? '').split(/\s+/)[0] || 'there';
     const showNoAccountsNotice = shouldShowDashboardNoAccountsNotice(
@@ -133,6 +132,7 @@ export default function DashboardPage() {
 
             {me && data && (
                 <Composer
+                    key={`${initialScheduleAt ?? ''}:${JSON.stringify(initialDestination)}`}
                     post={null}
                     accounts={me.shell.accounts}
                     sets={me.shell.sets}

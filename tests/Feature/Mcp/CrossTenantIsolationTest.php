@@ -2,6 +2,7 @@
 
 use App\Enums\PostStatus;
 use App\Enums\PostTargetStatus;
+use App\Enums\WorkspaceRole;
 use App\Mcp\Servers\ShoutrrrServer;
 use App\Mcp\Tools\CreatePostTool;
 use App\Mcp\Tools\DeleteAccountSetTool;
@@ -20,6 +21,7 @@ use App\Models\PostShare;
 use App\Models\PostTarget;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use Illuminate\Database\Eloquent\Model;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -29,6 +31,10 @@ function setupUserInWorkspaceA(): array
     $user = User::factory()->create();
     $workspaceA = Workspace::factory()->create();
     $user->forceFill(['current_workspace_id' => $workspaceA->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspaceA->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     bindTokenToWorkspace($user, $workspaceA);
 
     return [$user, $workspaceA];

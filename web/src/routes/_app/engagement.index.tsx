@@ -12,6 +12,7 @@ export const Route = createFileRoute('/_app/engagement/')({
         platform: str(search.platform),
         target: str(search.target),
         post: str(search.post),
+        reply: str(search.reply),
         unread: search.unread === true || search.unread === 'true',
         archived: search.archived === true || search.archived === 'true',
     }),

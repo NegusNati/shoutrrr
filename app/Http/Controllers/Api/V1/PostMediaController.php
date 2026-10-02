@@ -28,7 +28,6 @@ class PostMediaController extends WebPostMediaController
     {
         $post = $this->findPostOrFail($postId);
         $media = $this->findMediaOrFail($mediaId);
-        abort_unless($media->post_id === $post->id, 404);
 
         return $this->updateAlt($post, $media, $request);
     }
@@ -37,7 +36,6 @@ class PostMediaController extends WebPostMediaController
     {
         $post = $this->findPostOrFail($postId);
         $media = $this->findMediaOrFail($mediaId);
-        abort_unless($media->post_id === $post->id, 404);
         $request = request();
         abort_unless($request->user()->can('update', $post), 403);
 

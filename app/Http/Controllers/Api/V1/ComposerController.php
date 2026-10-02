@@ -15,7 +15,7 @@ class ComposerController extends WebComposerController
     use ResolvesWorkspacePost;
 
     /**
-     * Full composer payload for the SPA — same shape the Inertia page received,
+     * Full composer payload for the SPA — same shape the old page received,
      * with `metricsEnabled` instead of the deferred `stats` prop (the SPA lazy
      * loads stats via the metrics-refresh endpoint when needed).
      */

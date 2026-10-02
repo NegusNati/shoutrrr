@@ -2,62 +2,28 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\WorkspaceRole;
-use App\Http\Requests\Workspace\StoreWorkspaceRequest;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Workspace\TransferOwnershipRequest;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
-class WorkspaceController extends Controller
+/**
+ * Session-only workspace lifecycle: leave, delete and ownership transfer.
+ * Mirrors the legacy routes/workspace.php controller — the {workspace} param
+ * may name any workspace the user belongs to, not only their current one, and
+ * membership is enforced per action exactly as the web routes did.
+ */
+class WorkspaceLifecycleController extends Controller
 {
-    public function store(StoreWorkspaceRequest $request): RedirectResponse
-    {
-        $user = $request->user();
-
-        /** @var User $user */
-        DB::transaction(function () use ($request, $user): void {
-            $workspace = Workspace::create([
-                'name' => $request->validated('name'),
-                'slug' => $this->uniqueSlug($request->validated('name')),
-                'owner_id' => $user->id,
-            ]);
-
-            WorkspaceMembership::create([
-                'workspace_id' => $workspace->id,
-                'user_id' => $user->id,
-                'role' => WorkspaceRole::Owner,
-            ]);
-
-            $user->forceFill(['current_workspace_id' => $workspace->id])->save();
-        });
-
-        return redirect()->route('dashboard')->with('success', 'Workspace created successfully.');
-    }
-
-    public function switch(Request $request): RedirectResponse
-    {
-        $request->validate(['workspace_id' => ['required', 'string']]);
-
-        $user = $request->user();
-
-        /** @var User $user */
-        if (! $user->isMemberOfWorkspace($request->input('workspace_id'))) {
-            return back()->withErrors(['workspace_id' => 'You do not have access to this workspace.']);
-        }
-
-        $user->forceFill(['current_workspace_id' => $request->input('workspace_id')])->save();
-
-        return redirect()->route('dashboard')->with('success', 'Workspace switched.');
-    }
-
-    public function leave(Request $request, Workspace $workspace): RedirectResponse
+    public function leave(Request $request, Workspace $workspace): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -68,7 +34,9 @@ class WorkspaceController extends Controller
         }
 
         if ($this->isSoleOwnerWithOtherMembers($workspace, $user->id)) {
-            return back()->withErrors(['workspace' => 'Transfer ownership or delete the workspace before leaving.']);
+            throw ValidationException::withMessages([
+                'workspace' => 'Transfer ownership or delete the workspace before leaving.',
+            ]);
         }
 
         DB::transaction(function () use ($membership, $user, $workspace): void {
@@ -80,10 +48,10 @@ class WorkspaceController extends Controller
             }
         });
 
-        return redirect()->route('dashboard')->with('success', 'You left the workspace.');
+        return response()->json(['message' => 'You left the workspace.']);
     }
 
-    public function destroy(Request $request, Workspace $workspace): RedirectResponse
+    public function destroy(Request $request, Workspace $workspace): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -93,13 +61,17 @@ class WorkspaceController extends Controller
         }
 
         if (! $user->workspaceMemberships()->where('workspace_id', '!=', $workspace->id)->exists()) {
-            return back()->withErrors(['workspace' => 'Create or join another workspace before deleting this one.']);
+            throw ValidationException::withMessages([
+                'workspace' => 'Create or join another workspace before deleting this one.',
+            ]);
         }
 
         // The initial workspace anchors the cloud billing exemption; deleting it
         // would silently move the free tier to the next-oldest workspace.
         if ($workspace->is_initial && (bool) config('subscriptions.enabled')) {
-            return back()->withErrors(['workspace' => 'The initial workspace of this instance cannot be deleted.']);
+            throw ValidationException::withMessages([
+                'workspace' => 'The initial workspace of this instance cannot be deleted.',
+            ]);
         }
 
         DB::transaction(function () use ($workspace): void {
@@ -119,10 +91,10 @@ class WorkspaceController extends Controller
             $workspace->delete(); // cascades memberships + invitations via FK
         });
 
-        return redirect()->route('dashboard')->with('success', 'Workspace deleted.');
+        return response()->json(['message' => 'Workspace deleted.']);
     }
 
-    public function transferOwnership(TransferOwnershipRequest $request, Workspace $workspace): RedirectResponse
+    public function transfer(TransferOwnershipRequest $request, Workspace $workspace): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -145,16 +117,7 @@ class WorkspaceController extends Controller
             $workspace->update(['owner_id' => $target->user_id]);
         });
 
-        return back()->with('success', 'Ownership transferred.');
-    }
-
-    private function uniqueSlug(string $name): string
-    {
-        do {
-            $slug = Str::slug($name).'-'.Str::lower(Str::random(5));
-        } while (Workspace::where('slug', $slug)->exists());
-
-        return $slug;
+        return response()->json(['message' => 'Ownership transferred.']);
     }
 
     private function isSoleOwnerWithOtherMembers(Workspace $workspace, string $userId): bool

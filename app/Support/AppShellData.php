@@ -17,10 +17,8 @@ use App\Support\Notifications\NotificationPresenter;
 
 /**
  * Data shared by the web app shell: workspaces, sidebar shell data, unread
- * badges, billing/community/update metadata. Both HandleInertiaRequests
- * (legacy Inertia frontend) and the JSON API `/me` endpoint (consumed by the
- * standalone SPA) consume this service so the two surfaces expose the same
- * data.
+ * badges, billing/community/update metadata. The JSON API `/me` endpoint
+ * (consumed by the standalone SPA) is the single consumer of this service.
  *
  * The members are exposed individually (accounts(), sets(), unreadReplies(),
  * ...) so lazy callers can resolve only what they need; shell() composes

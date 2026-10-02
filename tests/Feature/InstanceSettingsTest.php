@@ -37,13 +37,13 @@ test('instance owner can update instance settings', function () {
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.update'), [
+        ->putJson('/api/v1/instance-settings', [
             'registrations_enabled' => false,
             'workspace_creation_enabled' => false,
             'usage_tracking_enabled' => false,
             'quote_tweets_enabled' => false,
         ])
-        ->assertRedirect();
+        ->assertOk();
 
     expect(app(InstanceSettings::class)->registrationsEnabled())->toBeFalse()
         ->and(app(InstanceSettings::class)->workspaceCreationEnabled())->toBeFalse();
@@ -70,13 +70,13 @@ test('workspace creation setting cannot be enabled when workspaces are globally 
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.update'), [
+        ->putJson('/api/v1/instance-settings', [
             'registrations_enabled' => true,
             'workspace_creation_enabled' => true,
             'usage_tracking_enabled' => false,
             'quote_tweets_enabled' => false,
         ])
-        ->assertRedirect();
+        ->assertOk();
 
     expect(app(InstanceSettings::class)->workspaceCreationEnabled())->toBeFalse();
 });
@@ -259,13 +259,13 @@ test('instance owner can fetch x api usage', function () {
     ]);
 
     $this->actingAs($owner)
-        ->getJson(route('instance-settings.usage.x'))
+        ->getJson('/api/v1/instance-settings/usage/x')
         ->assertOk()
         ->assertJsonPath('data.project_usage', 15420)
         ->assertJsonPath('source', 'https://api.x.com/2/usage/tweets');
 
     $this->actingAs($owner)
-        ->getJson(route('instance-settings.usage.x'))
+        ->getJson('/api/v1/instance-settings/usage/x')
         ->assertOk()
         ->assertJsonPath('data.project_usage', 15420)
         ->assertJsonPath('source', 'https://api.x.com/2/usage/tweets');
@@ -281,7 +281,7 @@ test('x api usage fetch requires a configured bearer token', function () {
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->getJson(route('instance-settings.usage.x'))
+        ->getJson('/api/v1/instance-settings/usage/x')
         ->assertUnprocessable()
         ->assertJsonPath('message', 'Configure X_BEARER_TOKEN before fetching X API usage.');
 });
@@ -292,7 +292,7 @@ test('regular users cannot fetch x api usage', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->getJson(route('instance-settings.usage.x'))
+        ->getJson('/api/v1/instance-settings/usage/x')
         ->assertForbidden();
 });
 
@@ -334,7 +334,7 @@ test('instance owner can update polling settings', function () {
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.polling.update'), [
+        ->putJson('/api/v1/instance-settings/polling', [
             'engagement' => [
                 'enabled' => ['x' => false, 'bluesky' => true, 'linkedin' => true, 'facebook' => true, 'instagram' => true, 'threads' => true],
                 'x' => 720, 'bluesky' => 30, 'linkedin' => 120, 'facebook' => 15, 'instagram' => 15, 'threads' => 15,
@@ -352,7 +352,7 @@ test('instance owner can update polling settings', function () {
             'messages_enabled' => true,
             'direct_messages_enabled' => true,
         ])
-        ->assertRedirect();
+        ->assertOk();
 
     $polling = app(InstanceSettings::class)->polling();
 
@@ -381,7 +381,7 @@ test('instance owner can toggle the metrics and engagement master switches from 
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.polling.update'), [
+        ->putJson('/api/v1/instance-settings/polling', [
             'engagement' => [
                 'enabled' => ['x' => true, 'bluesky' => true, 'linkedin' => true, 'facebook' => true, 'instagram' => true, 'threads' => true],
                 'x' => 360, 'bluesky' => 15, 'linkedin' => 15, 'facebook' => 15, 'instagram' => 15, 'threads' => 15,
@@ -399,7 +399,7 @@ test('instance owner can toggle the metrics and engagement master switches from 
             'messages_enabled' => false,
             'direct_messages_enabled' => false,
         ])
-        ->assertRedirect();
+        ->assertOk();
 
     expect(app(InstanceSettings::class)->metricsEnabled())->toBeFalse()
         ->and(app(InstanceSettings::class)->engagementEnabled())->toBeFalse()
@@ -412,7 +412,7 @@ test('instance owner can toggle the messages master switch from the polling page
     expect(app(InstanceSettings::class)->messagesEnabled())->toBeTrue();
 
     $this->actingAs($owner)
-        ->put(route('instance-settings.polling.update'), [
+        ->putJson('/api/v1/instance-settings/polling', [
             'engagement' => [
                 'enabled' => ['x' => true, 'bluesky' => true, 'linkedin' => true, 'facebook' => true, 'instagram' => true, 'threads' => true],
                 'x' => 360, 'bluesky' => 15, 'linkedin' => 15, 'facebook' => 15, 'instagram' => 15, 'threads' => 15,
@@ -430,7 +430,7 @@ test('instance owner can toggle the messages master switch from the polling page
             'messages_enabled' => false,
             'direct_messages_enabled' => true,
         ])
-        ->assertRedirect();
+        ->assertOk();
 
     // Turning messages off also stops asking connecting users for DM scopes.
     expect(app(InstanceSettings::class)->messagesEnabled())->toBeFalse()
@@ -482,10 +482,10 @@ test('instance owner can add another registered user as an instance owner', func
     $candidate = User::factory()->create(['email' => 'candidate@example.com']);
 
     $this->actingAs($owner)
-        ->post(route('instance-settings.admins.store'), [
+        ->postJson('/api/v1/instance-settings/admins', [
             'email' => 'candidate@example.com',
         ])
-        ->assertRedirect();
+        ->assertCreated();
 
     expect($candidate->fresh()->instance_role)->toBe(InstanceRole::Owner);
 });
@@ -494,12 +494,10 @@ test('instance owner cannot add a missing user as an instance owner', function (
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->from(route('instance-settings.admins'))
-        ->post(route('instance-settings.admins.store'), [
+        ->postJson('/api/v1/instance-settings/admins', [
             'email' => 'missing@example.com',
         ])
-        ->assertRedirect(route('instance-settings.admins'))
-        ->assertSessionHasErrors('email');
+        ->assertJsonValidationErrors('email');
 });
 
 test('instance owner can remove another instance owner', function () {
@@ -507,8 +505,8 @@ test('instance owner can remove another instance owner', function () {
     $otherOwner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->delete(route('instance-settings.admins.destroy', $otherOwner))
-        ->assertRedirect();
+        ->deleteJson("/api/v1/instance-settings/admins/{$otherOwner->id}")
+        ->assertOk();
 
     expect($otherOwner->fresh()->instance_role)->toBeNull();
 });
@@ -517,10 +515,8 @@ test('instance owner cannot remove the last instance owner', function () {
     $owner = User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->from(route('instance-settings.admins'))
-        ->delete(route('instance-settings.admins.destroy', $owner))
-        ->assertRedirect(route('instance-settings.admins'))
-        ->assertSessionHasErrors('owner');
+        ->deleteJson("/api/v1/instance-settings/admins/{$owner->id}")
+        ->assertJsonValidationErrors('owner');
 
     expect($owner->fresh()->instance_role)->toBe(InstanceRole::Owner);
 });
@@ -530,10 +526,8 @@ test('instance owner cannot remove themselves while another owner exists', funct
     User::factory()->instanceOwner()->withWorkspace()->create();
 
     $this->actingAs($owner)
-        ->from(route('instance-settings.admins'))
-        ->delete(route('instance-settings.admins.destroy', $owner))
-        ->assertRedirect(route('instance-settings.admins'))
-        ->assertSessionHasErrors('owner');
+        ->deleteJson("/api/v1/instance-settings/admins/{$owner->id}")
+        ->assertJsonValidationErrors('owner');
 
     expect($owner->fresh()->instance_role)->toBe(InstanceRole::Owner);
 });

@@ -16,6 +16,10 @@ function tzMember(WorkspaceRole $role): array
         'role' => $role,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];
@@ -42,8 +46,8 @@ test('the overview timezone defaults to UTC when no schedule exists', function (
 test('an admin updates the posting timezone, creating the schedule', function () {
     [$user, $workspace] = tzMember(WorkspaceRole::Admin);
 
-    test()->put(route('settings.workspace.timezone'), ['timezone' => 'Europe/London'])
-        ->assertRedirect();
+    test()->putJson('/api/v1/settings/workspace/timezone', ['timezone' => 'Europe/London'])
+        ->assertOk();
 
     $schedule = PostingSchedule::query()->where('workspace_id', $workspace->id)->first();
     expect($schedule)->not->toBeNull();
@@ -55,8 +59,8 @@ test('updating the timezone preserves existing slots', function () {
     $schedule = PostingSchedule::factory()->create(['workspace_id' => $workspace->id, 'timezone' => 'UTC']);
     $schedule->slots()->create(['weekday' => 1, 'hour' => 9, 'minute' => 0, 'position' => 0]);
 
-    test()->put(route('settings.workspace.timezone'), ['timezone' => 'Europe/London'])
-        ->assertRedirect();
+    test()->putJson('/api/v1/settings/workspace/timezone', ['timezone' => 'Europe/London'])
+        ->assertOk();
 
     expect($schedule->refresh()->timezone)->toBe('Europe/London');
     expect($schedule->slots()->count())->toBe(1);
@@ -66,13 +70,13 @@ test('an invalid timezone is rejected', function () {
     [$user, $workspace] = tzMember(WorkspaceRole::Admin);
 
     test()->from(route('settings.workspace'))
-        ->put(route('settings.workspace.timezone'), ['timezone' => 'Mars/Olympus'])
-        ->assertSessionHasErrors('timezone');
+        ->putJson('/api/v1/settings/workspace/timezone', ['timezone' => 'Mars/Olympus'])
+        ->assertJsonValidationErrors('timezone');
 });
 
 test('a plain member cannot update the timezone', function () {
     [$user, $workspace] = tzMember(WorkspaceRole::Member);
 
-    test()->put(route('settings.workspace.timezone'), ['timezone' => 'Europe/London'])
+    test()->putJson('/api/v1/settings/workspace/timezone', ['timezone' => 'Europe/London'])
         ->assertForbidden();
 });

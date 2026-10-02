@@ -17,7 +17,6 @@ import {
     OPTIMISTIC_SCHEDULE,
     type OptimisticSubmit,
 } from '@/lib/compose/publish-status';
-import { appUrl } from '@/lib/href';
 import { cn } from '@/lib/utils';
 import type { PlatformLimits, PlatformName, PostView } from '@/types/compose';
 
@@ -229,9 +228,9 @@ export function SubmitBar({
         const handleSubmitException = (error: ApiError, revert: () => void) => {
             revert();
             if (error.status === 402) {
-                window.location.assign(
-                    appUrl('/settings/workspace/subscription'),
-                );
+                void navigate({
+                    to: '/settings/workspace/subscription',
+                });
 
                 return;
             }

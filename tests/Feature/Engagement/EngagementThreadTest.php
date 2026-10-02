@@ -99,7 +99,7 @@ test('archive returns 204 even without an Accept: application/json header', func
         'workspace_id' => $this->workspace->id,
     ]);
 
-    $this->post(route('engagement.archive', $reply))->assertNoContent();
+    $this->postJson("/api/v1/engagement/{$reply->id}/archive")->assertNoContent();
 
     expect($reply->fresh()->status)->toBe(ReplyStatus::Archived);
 });
@@ -109,7 +109,7 @@ test('archive removes a reply from the inbox query', function (): void {
         'workspace_id' => $this->workspace->id,
     ]);
 
-    $this->postJson(route('engagement.archive', $reply))->assertNoContent();
+    $this->postJson("/api/v1/engagement/{$reply->id}/archive")->assertNoContent();
 
     expect($reply->fresh()->status)->toBe(ReplyStatus::Archived);
 });
@@ -120,7 +120,7 @@ test('mark read sets read_at', function (): void {
         'read_at' => null,
     ]);
 
-    $this->postJson(route('engagement.read', $reply))->assertNoContent();
+    $this->postJson("/api/v1/engagement/{$reply->id}/read")->assertNoContent();
 
     expect($reply->fresh()->read_at)->not->toBeNull();
 });
@@ -203,7 +203,7 @@ test('archiving a conversation archives all inbound replies in the base reply th
         'is_ours' => false,
     ]);
 
-    $this->postJson(route('engagement.archive', $second))->assertNoContent();
+    $this->postJson("/api/v1/engagement/{$second->id}/archive")->assertNoContent();
 
     expect($first->fresh()->status)->toBe(ReplyStatus::Archived)
         ->and($second->fresh()->status)->toBe(ReplyStatus::Archived)
@@ -238,7 +238,7 @@ test('mark read marks all inbound replies in the base reply thread', function ()
         'is_ours' => false,
     ]);
 
-    $this->postJson(route('engagement.read', $second))->assertNoContent();
+    $this->postJson("/api/v1/engagement/{$second->id}/read")->assertNoContent();
 
     expect($first->fresh()->read_at)->not->toBeNull()
         ->and($second->fresh()->read_at)->not->toBeNull()
@@ -270,7 +270,7 @@ test('mark read updates the base reply thread with a single bulk query', functio
         }
     });
 
-    $this->postJson(route('engagement.read', $second))->assertNoContent();
+    $this->postJson("/api/v1/engagement/{$second->id}/read")->assertNoContent();
 
     expect($first->fresh()->read_at)->not->toBeNull()
         ->and($second->fresh()->read_at)->not->toBeNull()
@@ -300,7 +300,7 @@ test('archive updates the base reply thread with a single bulk query', function 
         }
     });
 
-    $this->postJson(route('engagement.archive', $second))->assertNoContent();
+    $this->postJson("/api/v1/engagement/{$second->id}/archive")->assertNoContent();
 
     expect($first->fresh()->status)->toBe(ReplyStatus::Archived)
         ->and($second->fresh()->status)->toBe(ReplyStatus::Archived)

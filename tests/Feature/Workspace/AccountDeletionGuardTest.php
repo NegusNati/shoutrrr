@@ -11,8 +11,8 @@ test('sole owner with other members cannot delete account', function () {
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
     WorkspaceMembership::factory()->create(['workspace_id' => $workspace->id, 'user_id' => $member->id]);
 
-    $this->actingAs($owner)->delete(route('profile.destroy'), ['password' => 'password'])
-        ->assertSessionHasErrors();
+    $this->actingAs($owner)->deleteJson("/api/v1/settings/profile", ['password' => 'password'])
+        ->assertUnprocessable();
 
     $this->assertDatabaseHas('users', ['id' => $owner->id]);
 });
@@ -23,8 +23,8 @@ test('sole owner of a single member workspace can delete account', function () {
     $workspace->update(['owner_id' => $owner->id]);
     WorkspaceMembership::factory()->owner()->create(['workspace_id' => $workspace->id, 'user_id' => $owner->id]);
 
-    $this->actingAs($owner)->delete(route('profile.destroy'), ['password' => 'password'])
-        ->assertRedirect('/');
+    $this->actingAs($owner)->deleteJson("/api/v1/settings/profile", ['password' => 'password'])
+        ->assertOk();
 
     $this->assertDatabaseMissing('users', ['id' => $owner->id]);
     $this->assertDatabaseMissing('workspaces', ['id' => $workspace->id]);

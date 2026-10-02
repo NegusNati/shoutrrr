@@ -29,7 +29,6 @@ class PostImageEditController extends WebPostImageEditController
     {
         $post = $this->findPostOrFail($postId);
         $media = $this->findMediaOrFail($mediaId);
-        abort_unless($media->post_id === $post->id, 404);
         $form = $this->formRequestForPost(UpdatePostImageEditRequest::class, $request, $post);
 
         return $this->update($form, $post, $media);

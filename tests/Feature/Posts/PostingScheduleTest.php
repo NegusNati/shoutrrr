@@ -18,6 +18,10 @@ function scheduleMember(WorkspaceRole $role): array
         'role' => $role,
     ]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     test()->actingAs($user);
 
     return [$user, $workspace];
@@ -72,12 +76,12 @@ test('an admin replaces the whole slot set atomically, preserving timezone', fun
         'weekday' => 5, 'hour' => 22, 'minute' => 0, 'position' => 0,
     ]);
 
-    test()->put(route('queue.update'), [
+    test()->putJson('/api/v1/posting-schedule', [
         'slots' => [
             ['weekday' => 1, 'hour' => 9, 'minute' => 30],
             ['weekday' => 3, 'hour' => 17, 'minute' => 0],
         ],
-    ])->assertRedirect();
+    ])->assertOk();
 
     $schedule->refresh();
     // timezone is untouched by queue.update (managed in workspace settings)
@@ -93,9 +97,9 @@ test('an admin replaces the whole slot set atomically, preserving timezone', fun
 test('updating creates the schedule when none exists, defaulting timezone to UTC', function () {
     [$user, $workspace] = scheduleMember(WorkspaceRole::Owner);
 
-    test()->put(route('queue.update'), [
+    test()->putJson('/api/v1/posting-schedule', [
         'slots' => [['weekday' => 0, 'hour' => 8, 'minute' => 0]],
-    ])->assertRedirect();
+    ])->assertOk();
 
     $schedule = PostingSchedule::query()->where('workspace_id', $workspace->id)->first();
     expect($schedule)->not->toBeNull();
@@ -106,12 +110,12 @@ test('updating creates the schedule when none exists, defaulting timezone to UTC
 test('duplicate weekday+hour slots are de-duplicated', function () {
     [$user, $workspace] = scheduleMember(WorkspaceRole::Admin);
 
-    test()->put(route('queue.update'), [
+    test()->putJson('/api/v1/posting-schedule', [
         'slots' => [
             ['weekday' => 2, 'hour' => 10, 'minute' => 0],
             ['weekday' => 2, 'hour' => 10, 'minute' => 0],
         ],
-    ])->assertRedirect();
+    ])->assertOk();
 
     $schedule = PostingSchedule::query()->where('workspace_id', $workspace->id)->first();
     expect($schedule->slots()->count())->toBe(1);
@@ -120,7 +124,7 @@ test('duplicate weekday+hour slots are de-duplicated', function () {
 test('a plain member cannot edit slots', function () {
     [$user, $workspace] = scheduleMember(WorkspaceRole::Member);
 
-    test()->put(route('queue.update'), [
+    test()->putJson('/api/v1/posting-schedule', [
         'slots' => [['weekday' => 1, 'hour' => 9, 'minute' => 0]],
     ])->assertForbidden();
 });
@@ -128,17 +132,15 @@ test('a plain member cannot edit slots', function () {
 test('out-of-range weekday is rejected', function () {
     [$user, $workspace] = scheduleMember(WorkspaceRole::Admin);
 
-    test()->from('/app/queue')
-        ->put(route('queue.update'), [
-            'slots' => [['weekday' => 7, 'hour' => 9, 'minute' => 0]],
-        ])->assertSessionHasErrors('slots.0.weekday');
+    test()->putJson('/api/v1/posting-schedule', [
+        'slots' => [['weekday' => 7, 'hour' => 9, 'minute' => 0]],
+    ])->assertJsonValidationErrors('slots.0.weekday');
 });
 
 test('out-of-range minute is rejected', function () {
     [$user, $workspace] = scheduleMember(WorkspaceRole::Admin);
 
-    test()->from('/app/queue')
-        ->put(route('queue.update'), [
-            'slots' => [['weekday' => 1, 'hour' => 9, 'minute' => 60]],
-        ])->assertSessionHasErrors('slots.0.minute');
+    test()->putJson('/api/v1/posting-schedule', [
+        'slots' => [['weekday' => 1, 'hour' => 9, 'minute' => 60]],
+    ])->assertJsonValidationErrors('slots.0.minute');
 });

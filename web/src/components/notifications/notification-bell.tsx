@@ -51,12 +51,14 @@ const EMPTY_NOTIFICATIONS: NotificationsData = {
 };
 
 /**
- * Server-emitted action hrefs point at the web app (`/workspace-invitations/…`);
- * the API mirrors the same paths under /api/v1, so strip the leading slash.
- * Returns null for actions without an API equivalent.
+ * Server-emitted action hrefs may arrive prefixed (`/api/v1/…`) or as
+ * legacy web paths (`/workspace-invitations/…`); `apiFetch` prepends
+ * `/api/v1/`, so normalize both to the un-prefixed API path. Returns null
+ * for actions without an API equivalent.
  */
-function apiActionPath(href: string): string | null {
-    return href.startsWith('/workspace-invitations/') ? href.slice(1) : null;
+export function apiActionPath(href: string): string | null {
+    const path = href.startsWith('/api/v1/') ? href.slice(7) : href;
+    return path.startsWith('/workspace-invitations/') ? path.slice(1) : null;
 }
 
 export function NotificationBell() {

@@ -28,6 +28,7 @@ test('publishing dispatches and returns 202', function () {
     Queue::fake();
     [$user, $workspace, $token] = issuedKey();
     $post = Post::factory()->for($workspace)->create(['author_id' => $user->id]);
+    PostTarget::factory()->for($post)->create();
 
     $this->withToken($token)->postJson("/api/v1/posts/{$post->id}/publish")
         ->assertStatus(202)

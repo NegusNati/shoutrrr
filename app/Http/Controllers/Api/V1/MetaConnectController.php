@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 /**
  * The SPA's connect-meta picker: the OAuth callback stashes the enumerated
- * Pages/IG assets server-side (same as the Inertia flow), then the SPA reads
+ * Pages/IG assets server-side (same as the old server-rendered flow), then the SPA reads
  * them here and POSTs the selections back as JSON.
  */
 class MetaConnectController extends MetaConnectionController

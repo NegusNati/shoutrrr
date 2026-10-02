@@ -21,8 +21,8 @@ use Illuminate\Http\Request;
 
 /**
  * Instance-owner settings for the SPA and API keys: the same payloads the
- * Inertia settings pages render, exposed as JSON. Method names avoid the web
- * controller's (its signatures return Inertia/Redirect responses).
+ * settings pages render, exposed as JSON. Method names avoid the web
+ * controller's (its signatures return web responses).
  */
 class InstanceSettingsController extends WebInstanceSettingsController
 {

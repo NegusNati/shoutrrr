@@ -69,16 +69,16 @@ RUN set -eux; \
 USER www-data
 
 # ============================================================
-# Stage: assets — frontend build (client + SSR bundles)
+# Stage: assets — frontend build (standalone SPA bundle)
 # ============================================================
-# Pinned to the native build platform: the built JS/CSS (public/build) and the
-# SSR bundle are arch-independent, and this avoids running Bun/Vite under QEMU
-# emulation. node_modules native deps here (oxide/lightningcss/rolldown) are
-# build-time only; the SSR runtime bundle loads pure-JS deps.
+# Pinned to the native build platform: the built JS/CSS (public/build-spa) is
+# arch-independent, and this avoids running Bun/Vite under QEMU emulation.
+# node_modules native deps here (oxide/lightningcss/rolldown) are build-time
+# only.
 FROM --platform=$BUILDPLATFORM oven/bun:latest AS assets
 
 WORKDIR /app
-COPY package.json bun.lock vite.config.ts vite.spa.config.ts ./
+COPY package.json bun.lock vite.spa.config.ts ./
 RUN bun install --frozen-lockfile
 
 # App source (minus .dockerignore'd paths)
@@ -95,8 +95,6 @@ ENV SKIP_WAYFINDER_GENERATE=true
 # build cannot derive it; APP_VERSION is the only source here).
 ARG APP_VERSION
 ENV APP_VERSION=${APP_VERSION}
-# Builds client assets AND the SSR bundle (bootstrap/ssr/ssr.mjs)
-RUN bun run build:ssr
 # Builds the standalone SPA bundle served at /app (public/build-spa)
 RUN bun run build:spa
 
@@ -105,8 +103,8 @@ RUN bun run build:spa
 # ============================================================
 # serversideup's frankenphp image ships NO s6-overlay (s6 only exists in the
 # fpm-nginx/fpm-apache variants), so in-container supervision uses supervisord.
-# supervisord runs the Octane web server plus the queue worker, scheduler, and
-# (when toggled) the Inertia SSR process — each toggleable via env vars so a
+# supervisord runs the Octane web server plus the queue worker and scheduler —
+# each toggleable via env vars so a
 # cloud deployment can disable the in-container worker/scheduler and run them as
 # separate services with their own entry point (override the image CMD).
 # The serversideup ENTRYPOINT still runs the /etc/entrypoint.d/* init scripts
@@ -129,7 +127,7 @@ RUN docker-php-serversideup-set-id www-data ${USER_ID}:${GROUP_ID} \
 # bcmath: required by moneyphp/money via laravel/cashier
 RUN install-php-extensions redis gd exif bcmath
 
-# System packages + Bun (needed when SSR is toggled on: inertia:start-ssr --runtime=bun)
+# System packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
         postgresql-client-${POSTGRES_VERSION} \
         git \
@@ -139,20 +137,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
         supervisor \
     && rm -rf /var/lib/apt/lists/*
-# Install the Bun binary for the target architecture (amd64 -> x64, arm64 -> aarch64).
-# TARGETARCH is provided automatically by buildx.
-ARG TARGETARCH
-RUN set -eux; \
-    case "${TARGETARCH}" in \
-        amd64) bun_arch=x64 ;; \
-        arm64) bun_arch=aarch64 ;; \
-        *) echo "unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
-    esac; \
-    curl -fsSL "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-${bun_arch}.zip" -o /tmp/bun.zip; \
-    unzip /tmp/bun.zip -d /tmp; \
-    mv "/tmp/bun-linux-${bun_arch}/bun" /usr/local/bin/bun; \
-    chmod 755 /usr/local/bin/bun; \
-    rm -rf /tmp/bun.zip "/tmp/bun-linux-${bun_arch}"
 
 # serversideup runtime configuration knobs
 ARG AUTORUN_ENABLED=true
@@ -197,7 +181,7 @@ ENV PHP_OPCACHE_ENABLE=${PHP_OPCACHE_ENABLE} \
     HEALTHCHECK_PATH=/up \
     QUEUE_WORKER_COUNT=${QUEUE_WORKER_COUNT}
 
-# Supervisor supervises the web/worker/scheduler/ssr processes
+# Supervisor supervises the web/worker/scheduler processes
 COPY docker/supervisord.conf /etc/supervisor/laravel.conf
 # Queue worker launcher (kept out of supervisord.conf's inline command= so
 # supervisor's shlex tokenizer never has to parse the shell logic)
@@ -210,13 +194,10 @@ COPY --chmod=755 docker/entrypoint.d/ /etc/entrypoint.d/
 COPY --chown=www-data:www-data . .
 # Production vendor + built assets on top (so source copies don't clobber them)
 COPY --from=vendor --chown=www-data:www-data /var/www/html/vendor ./vendor
-COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
+COPY --from=assets --chown=www-data:www-data /app/public/build-spa ./public/build-spa
 # Emoji data (emojibase `en`) is generated into public/emoji by the vite build
 # and is gitignored, so it exists only in the assets stage — copy it explicitly.
 COPY --from=assets --chown=www-data:www-data /app/public/emoji ./public/emoji
-COPY --from=assets --chown=www-data:www-data /app/bootstrap/ssr ./bootstrap/ssr
-# node_modules needed for the SSR runtime when toggled on
-COPY --from=assets --chown=www-data:www-data /app/node_modules ./node_modules
 
 # Directory for the optional SQLite database (lives on a named volume at runtime)
 RUN mkdir -p database/sqlite && chown -R www-data:www-data database/sqlite
@@ -226,7 +207,7 @@ RUN composer dump-autoload --no-plugins --no-scripts \
 
 USER www-data
 
-# Default entry point: supervisord runs Octane + worker + scheduler (+ SSR when
-# toggled). Override the CMD to run a single process, e.g. for a cloud worker:
+# Default entry point: supervisord runs Octane + worker + scheduler.
+# Override the CMD to run a single process, e.g. for a cloud worker:
 #   php artisan queue:work --tries=3 --max-time=3600
 CMD ["supervisord", "-c", "/etc/supervisor/laravel.conf"]

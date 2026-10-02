@@ -44,7 +44,7 @@ it('one-shot refreshes a published target that has aged past automatic polling',
     ]);
 
     $this->actingAs($this->user)
-        ->postJson(route('posts.metrics.refresh', $this->post))
+        ->postJson("/api/v1/posts/{$this->post->id}/metrics/refresh")
         ->assertOk()
         ->assertJsonStructure(['supported', 'captured_at', 'totals', 'targets']);
 
@@ -59,7 +59,7 @@ it('rejects a refresh for a post outside the caller workspace', function (): voi
     $foreignPost = Post::factory()->for($otherWorkspace)->create();
 
     $this->actingAs($this->user)
-        ->postJson(route('posts.metrics.refresh', $foreignPost))
+        ->postJson("/api/v1/posts/{$foreignPost->id}/metrics/refresh")
         ->assertNotFound();
 });
 
@@ -67,7 +67,7 @@ it('is unreachable when the metrics feature is disabled instance-wide', function
     config(['metrics.enabled' => false]);
 
     $this->actingAs($this->user)
-        ->postJson(route('posts.metrics.refresh', $this->post))
+        ->postJson("/api/v1/posts/{$this->post->id}/metrics/refresh")
         ->assertNotFound();
 });
 
@@ -75,8 +75,8 @@ it('rate limits repeated manual refreshes, since dispatchSync bypasses the queue
     $this->actingAs($this->user);
 
     for ($i = 0; $i < 10; $i++) {
-        $this->postJson(route('posts.metrics.refresh', $this->post));
+        $this->postJson("/api/v1/posts/{$this->post->id}/metrics/refresh");
     }
 
-    $this->postJson(route('posts.metrics.refresh', $this->post))->assertStatus(429);
+    $this->postJson("/api/v1/posts/{$this->post->id}/metrics/refresh")->assertStatus(429);
 });

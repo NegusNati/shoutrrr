@@ -58,7 +58,7 @@ test('markRead zeroes unread and stamps read_at', function (): void {
         'unread_count' => 3,
     ]);
 
-    $this->actingAs($this->user)->post("/messages/{$convo->id}/read")->assertNoContent();
+    $this->actingAs($this->user)->postJson("/api/v1/messages/{$convo->id}/read")->assertNoContent();
 
     expect($convo->refresh()->unread_count)->toBe(0);
     expect($convo->read_at)->not->toBeNull();
@@ -83,7 +83,7 @@ test('respond on x creates outgoing row and returns 201', function (): void {
         'remote_conversation_id' => 'c-1',
     ]);
 
-    $this->actingAs($this->user)->postJson("/messages/{$convo->id}/reply", ['text' => 'hello'])
+    $this->actingAs($this->user)->postJson("/api/v1/messages/{$convo->id}/reply", ['text' => 'hello'])
         ->assertStatus(201)
         ->assertJsonPath('message.is_ours', true);
 
@@ -102,7 +102,7 @@ test('respond blocked when meta window closed returns non-422 error', function (
         'messaging_window_expires_at' => now()->subMinute(),
     ]);
 
-    $this->actingAs($this->user)->postJson("/messages/{$convo->id}/reply", ['text' => 'late'])
+    $this->actingAs($this->user)->postJson("/api/v1/messages/{$convo->id}/reply", ['text' => 'late'])
         ->assertStatus(409); // Unsupported window; NEVER 422
 });
 
@@ -136,7 +136,7 @@ test('respond on x attaches media and stores a render record on the row', functi
     ]);
 
     $this->actingAs($this->user)
-        ->postJson("/messages/{$convo->id}/reply", ['text' => 'look', 'media' => [$media->id]])
+        ->postJson("/api/v1/messages/{$convo->id}/reply", ['text' => 'look', 'media' => [$media->id]])
         ->assertStatus(201);
 
     $row = DirectMessage::withoutGlobalScopes()->where('conversation_id', $convo->id)->where('is_ours', true)->sole();
@@ -176,7 +176,7 @@ test('respond accepts a media-only message with no text', function (): void {
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id, 'path' => 'media/dm.jpg']);
 
     $this->actingAs($this->user)
-        ->postJson("/messages/{$convo->id}/reply", ['media' => [$media->id]])
+        ->postJson("/api/v1/messages/{$convo->id}/reply", ['media' => [$media->id]])
         ->assertStatus(201);
 });
 
@@ -191,7 +191,7 @@ test('respond rejects a message with neither text nor media', function (): void 
         'platform' => Platform::X,
     ]);
 
-    $this->actingAs($this->user)->postJson("/messages/{$convo->id}/reply", [])
+    $this->actingAs($this->user)->postJson("/api/v1/messages/{$convo->id}/reply", [])
         ->assertStatus(422)
         ->assertJsonValidationErrors('text');
 });
@@ -209,7 +209,7 @@ test('respond rejects media on bluesky, whose DM lexicon has no media embed', fu
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id]);
 
     $this->actingAs($this->user)
-        ->postJson("/messages/{$convo->id}/reply", ['text' => 'hi', 'media' => [$media->id]])
+        ->postJson("/api/v1/messages/{$convo->id}/reply", ['text' => 'hi', 'media' => [$media->id]])
         ->assertStatus(422)
         ->assertJsonValidationErrors('media');
 });
@@ -227,7 +227,7 @@ test('respond rejects media belonging to another workspace', function (): void {
     $foreign = PostMedia::factory()->create(['workspace_id' => Workspace::factory()->create()->id]);
 
     $this->actingAs($this->user)
-        ->postJson("/messages/{$convo->id}/reply", ['text' => 'hi', 'media' => [$foreign->id]])
+        ->postJson("/api/v1/messages/{$convo->id}/reply", ['text' => 'hi', 'media' => [$foreign->id]])
         ->assertStatus(422)
         ->assertJsonValidationErrors('media.0');
 });
@@ -262,7 +262,7 @@ test('respond never claims media already owned by a post in the same workspace',
     ]);
 
     $this->actingAs($this->user)
-        ->postJson("/messages/{$convo->id}/reply", ['text' => 'hi', 'media' => [$owned->id]])
+        ->postJson("/api/v1/messages/{$convo->id}/reply", ['text' => 'hi', 'media' => [$owned->id]])
         ->assertStatus(201);
 
     $row = DirectMessage::withoutGlobalScopes()->where('conversation_id', $convo->id)->where('is_ours', true)->sole();
@@ -300,7 +300,7 @@ test('respond persists the delivered attachment and claims its media when the te
     $media = PostMedia::factory()->create(['workspace_id' => $this->workspace->id, 'path' => 'media/dm.jpg']);
 
     $this->actingAs($this->user)
-        ->postJson("/messages/{$convo->id}/reply", ['text' => 'caption', 'media' => [$media->id]])
+        ->postJson("/api/v1/messages/{$convo->id}/reply", ['text' => 'caption', 'media' => [$media->id]])
         ->assertStatus(502)
         ->assertJsonPath('status', 'failed');
 
@@ -330,7 +330,7 @@ test('respond rejects media already claimed by another sent direct message', fun
     ]);
 
     $this->actingAs($this->user)
-        ->postJson("/messages/{$convo->id}/reply", ['text' => 'hi', 'media' => [$claimed->id]])
+        ->postJson("/api/v1/messages/{$convo->id}/reply", ['text' => 'hi', 'media' => [$claimed->id]])
         ->assertStatus(422)
         ->assertJsonValidationErrors('media.0');
 });

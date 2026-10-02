@@ -13,6 +13,7 @@ export {
     atHandle,
     nextAfterArchive,
     relativeTime,
+    resolveSelectedItem,
 } from '@/lib/inbox/helpers';
 
 /** Up to two uppercase initials from a counterpart's display name or handle. */

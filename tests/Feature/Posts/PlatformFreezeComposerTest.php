@@ -19,6 +19,10 @@ function seedTwoPlatformWorkspace(): array
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspace->id, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     Context::add('workspace_id', $workspace->id);
 
     $xAccount = ConnectedAccount::factory()->create([
@@ -50,11 +54,10 @@ it('excludes frozen-platform accounts from the composer accounts prop', function
     app(InstanceSettings::class)->update(['platforms_enabled' => ['x' => false]]);
 
     $user = User::query()->where('current_workspace_id', $workspaceId)->firstOrFail();
-    WorkspaceMembership::factory()->create([
-        'workspace_id' => $workspaceId,
-        'user_id' => $user->id,
-        'role' => WorkspaceRole::Member,
-    ]);
+    WorkspaceMembership::query()->firstOrCreate(
+        ['workspace_id' => $workspaceId, 'user_id' => $user->id],
+        ['role' => WorkspaceRole::Member],
+    );
     $post = app(DraftService::class)->createDraft($workspaceId, $user, ['kind' => 'all'], ['hello']);
 
     $response = $this->actingAs($user)->getJson("/api/v1/posts/{$post->id}/compose");

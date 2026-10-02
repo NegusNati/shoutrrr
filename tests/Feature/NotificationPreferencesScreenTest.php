@@ -20,7 +20,7 @@ test('updating preferences persists the matrix', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->put(route('notifications.preferences.update'), [
+        ->putJson("/api/v1/settings/notifications", [
             'preferences' => [
                 'post_published' => ['in_app' => false, 'mail' => false],
                 'publish_failed' => ['in_app' => false, 'mail' => true],
@@ -28,7 +28,7 @@ test('updating preferences persists the matrix', function () {
                 'account_needs_attention' => ['in_app' => true, 'mail' => false],
             ],
         ])
-        ->assertRedirect();
+        ->assertOk();
 
     $prefs = $user->fresh()->notificationPreferences();
     expect($prefs->allows(NotificationType::PostPublished, 'in_app'))->toBeFalse();

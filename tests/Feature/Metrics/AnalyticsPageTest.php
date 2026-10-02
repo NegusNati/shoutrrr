@@ -300,8 +300,8 @@ test('disconnecting an account removes it from cached analytics', function (): v
         ->assertJsonCount(2, 'accounts');
 
     $this->actingAs($this->user)
-        ->delete(route('accounts.destroy', $disconnectedAccount))
-        ->assertRedirect(route('accounts.index'));
+        ->deleteJson("/api/v1/connected-accounts/{$disconnectedAccount->id}")
+        ->assertOk();
 
     $this->actingAs($this->user)
         ->getJson('/api/v1/analytics')
